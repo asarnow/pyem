@@ -13,6 +13,8 @@
 #  V2: --particlestack options is replaced by finding the particle files
 #      from various .mrcs stacks. Only requires the .star file now.  
 #  V3: Output generates subtracted stack and equivalent unsubtracted stack
+#  V4: Supports parallelism, requires pathos library, writes multiple stacks
+#      to avoid 16-bit overflow in EMAN2.
 import sys
 from os.path import basename
 from pathos.multiprocessing import Pool
