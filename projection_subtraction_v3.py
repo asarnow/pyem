@@ -13,24 +13,22 @@
 #  V2: --particlestack options is replaced by finding the particle files
 #      from various .mrcs stacks. Only requires the .star file now.  
 #  V3: Output generates subtracted stack and equivalent unsubtracted stack
-
-import os
 import sys
+from pathos.multiprocessing import Pool
 from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform
 from EMAN2star import StarFile
 from sparx import generate_ctf, filt_ctf
 
 
 def main():
-    progname = os.path.basename(sys.argv[0])
     usage = "Not written yet"
-
     # Initialize EMAN2 Argument Parser
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
     parser.add_argument("--particlestar", type=str, help="RELION .star file for particle stack")
     parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
     parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
     parser.add_argument("--output", type=str, help="Name of output stack/star")
+    parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
     (options, args) = parser.parse_args()
 
     star = StarFile(options.particlestar)
@@ -39,7 +37,7 @@ def main():
     dens = EMData(options.wholemap)
     sub_dens = EMData(options.submap)
 
-    # Write star header for output.star...
+    # Write star header for output.star.
     top_header = "\ndata_\n\nloop_\n"
     headings = star.keys()
     output_star = open("{0}.star".format(options.output), 'w')
@@ -48,15 +46,19 @@ def main():
     for i, heading in enumerate(headings):
         output_star.write("_{0} #{1}\n".format(heading, i + 1))
 
-    # Calculate projection subtraction and append output.star
-    for N in range(npart):
-        if N % 100 == 0:
-            print "Projection-subtracted {0} of {1} particles...".format(N, npart)
-        ptcl_n = int(star['rlnImageName'][N].split("@")[0]) - 1
-        ptcl_name = star['rlnImageName'][N].split("@")[1]
-        ptcl = EMData(ptcl_name, ptcl_n)
-        meta = MetaData(star, N)
-        ptcl_sub, ptcl_norm_sub = subtract(ptcl, meta, dens, sub_dens)
+    # Compute subtraction in parallel or using serial generator.
+    pool = None
+    if options.nproc > 1:
+        pool = Pool(processes=options.nproc)
+        results = pool.imap(lambda x: subtract(x, dens, sub_dens), particles(star),
+                            chunksize=min(npart / options.nproc, 1000))
+    else:
+        results = (subtract(x, dens, sub_dens) for x in particles(star))
+
+    # Write subtraction results to .mrcs and .star files.
+    i = 0
+    for r in results:
+        ptcl, ptcl_norm_sub = r[0], r[1]
         ptcl_norm_sub.write_image("{0}.mrcs".format(options.output), -1)
         ptcl.write_image("{0}_original.mrcs".format(options.output), -1)
         # Output for testing
@@ -70,12 +72,30 @@ def main():
         #      ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
         #      ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
         # Change image name and write output.star
-        star['rlnImageName'][N] = "{0:06d}@{1}".format(N+1, "{0}.mrcs".format(options.output))
-        line = '  '.join(str(star[key][N]) for key in headings)
+        star['rlnImageName'][i] = "{0:06d}@{1}".format(i + 1, "{0}.mrcs".format(options.output))
+        line = '  '.join(str(star[key][i]) for key in headings)
         output_star.write("{0}\n".format(line))
+        i += 1
+
+    if pool is not None:
+        pool.close()
+        pool.join()
+
+    sys.exit(0)
 
 
-def subtract(ptcl, meta, dens, sub_dens):
+def particles(star):
+    npart = len(star['rlnImageName'])
+    for N in range(npart):
+        ptcl_n = int(star['rlnImageName'][N].split("@")[0]) - 1
+        ptcl_name = star['rlnImageName'][N].split("@")[1]
+        ptcl = EMData(ptcl_name, ptcl_n)
+        meta = MetaData(star, N)
+        yield ptcl, meta
+
+
+def subtract(particle, dens, sub_dens):
+    ptcl, meta = particle[0], particle[1]
     ctfproj = make_proj(dens, meta)
     ctfproj_sub = make_proj(sub_dens, meta)
     ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub})
