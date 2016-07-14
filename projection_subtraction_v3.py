@@ -1,6 +1,6 @@
 #! /usr/bin/python2.7
-# Eugene Palovcak - 23 June 2015 - UCSF
-# V2 - Eugene Palovcak - 10 September 2015 - UCSF
+# Copyright (C) 2015 Eugene Palovcak, Daniel Asarnow
+# University of California, San Francisco
 
 # Projection subtraction program
 # Given a (presumably partial) map, a particle stack, and
@@ -10,13 +10,14 @@
 #        (3) Appropriately standardizes the projection image (how?)
 #        (4) Subtracts the projected image from the CTF corrected image
 #        (5) Saves the projection-subtracted image
-#  V2: --particlestack options is replaced by finding the particle files
-#      from various .mrcs stacks. Only requires the .star file now.  
+#  2015-06-23 --particlestack options is replaced by finding the particle files
+#             from various .mrcs stacks. Only requires the .star file now.
 #  V3: Output generates subtracted stack and equivalent unsubtracted stack
-#  V4: Supports parallelism, requires pathos library, writes multiple stacks
-#      to avoid 16-bit overflow in EMAN2.
+#  2016-07-12 Supports parallelism, requires pathos library, writes multiple stacks
+#             to avoid 16-bit overflow in EMAN2.
+#  2016-07-13 Changed argument conventions and help text, fixed relative paths in output.
 import sys
-from os.path import basename
+import os.path
 from pathos.multiprocessing import Pool
 from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform
 from EMAN2star import StarFile
@@ -27,15 +28,21 @@ def main():
     usage = "Not written yet"
     # Initialize EMAN2 Argument Parser
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
-    parser.add_argument("--particlestar", type=str, help="RELION .star file for particle stack")
+    parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
     parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
     parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
-    parser.add_argument("--output", type=str, help="Name of output stack/star")
+    parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
     parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
-    parser.add_argument("--maxpart", type=int, default=65000, help="Maximum particles per MRC file")
+    parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
+    parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
     (options, args) = parser.parse_args()
 
-    star = StarFile(options.particlestar)
+    rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
+    options.output = rchop(options.output, ".star")
+    options.suffix = rchop(options.suffix, ".mrc")
+    options.suffix = rchop(options.suffix, ".mrcs")
+
+    star = StarFile(options.input)
     npart = len(star['rlnImageName'])
 
     dens = EMData(options.wholemap)
@@ -62,14 +69,16 @@ def main():
     # Write subtraction results to .mrcs and .star files.
     i = 0
     nfile = 1
-    fname = options.output
+    mrcsuffix = options.suffix
+    starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
     for r in results:
         ptcl, ptcl_norm_sub = r[0], r[1]
         if i % options.maxpart == 0:
-            fname = options.output + "_%d" % nfile
+            mrcsuffix = options.suffix + "_%d" % nfile
+            starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
             nfile += 1
-        ptcl_norm_sub.write_image("{0}.mrcs".format(fname), -1)
-        ptcl.write_image("{0}_original.mrcs".format(fname), -1)
+        ptcl_norm_sub.write_image("{0}.mrcs".format(mrcsuffix), -1)
+        ptcl.write_image("{0}_original.mrcs".format(mrcsuffix), -1)
         # Output for testing
         #      ptcl_sub_img = ptcl.process("math.sub.optimal", {"ref":ctfproj,
         #                             "actual":ctfproj_sub, "return_subim":True})
@@ -81,7 +90,7 @@ def main():
         #      ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
         #      ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
         # Change image name and write output.star
-        star['rlnImageName'][i] = "{0:06d}@{1}".format(i + 1, "{0}.mrcs".format(basename(fname)))
+        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, "{0}.mrcs".format(starpath))
         line = '  '.join(str(star[key][i]) for key in headings)
         output_star.write("{0}\n".format(line))
         i += 1
