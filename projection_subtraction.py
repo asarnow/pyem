@@ -18,26 +18,14 @@
 #  2016-07-13 Changed argument conventions and help text, fixed relative paths in output.
 import sys
 import os.path
+import logging
 from pathos.multiprocessing import Pool
 from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform
 from EMAN2star import StarFile
 from sparx import generate_ctf, filt_ctf
 
 
-def main():
-    usage = "Not written yet"
-    # Initialize EMAN2 Argument Parser
-    parser = EMArgumentParser(usage=usage, version=EMANVERSION)
-    parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
-    parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
-    parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
-    parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
-    parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
-    parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
-    parser.add_argument("--debug", action="store_true", default=False, help="Write debug images.")
-    parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
-    (options, args) = parser.parse_args()
-
+def main(options):
     rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
     options.output = rchop(options.output, ".star")
     options.suffix = rchop(options.suffix, ".mrc")
@@ -70,46 +58,58 @@ def main():
     # Write subtraction results to .mrcs and .star files.
     i = 0
     nfile = 1
-    mrcsuffix = options.suffix
-    starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
+    starpath = None
+    mrcs = None
+    mrcs_orig = None
     for r in results:
         if i % options.maxpart == 0:
             mrcsuffix = options.suffix + "_%d" % nfile
-            starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
             nfile += 1
-        r.ptcl_norm_sub.write_image("{0}.mrcs".format(mrcsuffix), -1)
-        r.ptcl.write_image("{0}_original.mrcs".format(mrcsuffix), -1)
+            starpath = "{0}.mrcs".format(
+                os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:]))
+            mrcs = "{0}.mrcs".format(mrcsuffix)
+            mrcs_orig = "{0}_original.mrcs".format(mrcsuffix)
+            if os.path.exists(mrcs):
+                os.remove(mrcs)
+            if os.path.exists(mrcs_orig):
+                os.remove(mrcs_orig)
+
+        r.ptcl_norm_sub.append_image(mrcs)
+        r.ptcl.append_image(mrcs_orig)
         # Output for testing.
-        if options.debug:
+        if logger.getEffectiveLevel() == logging.DEBUG:
             ptcl_sub_img = r.ptcl.process("math.sub.optimal",
                                           {"ref": r.ctfproj, "actual": r.ctfproj_sub, "return_subim": True})
             ptcl_lowpass = r.ptcl.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
             ptcl_sub_lowpass = r.ptcl_norm_sub.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
-            ptcl_sub_img = ptcl_sub_img.write_image("poreclass_subimg.mrcs", -1)
+            ptcl_sub_img.write_image("poreclass_subimg.mrcs", -1)
             ptcl_lowpass.write_image("poreclass_lowpass.mrcs", -1)
             ptcl_sub_lowpass.write_image("poreclass_sublowpass.mrcs", -1)
             r.ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
             r.ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
         # Change image name and write output.star
-        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, "{0}.mrcs".format(starpath))
+        assert r.meta.i == i
+        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, starpath)
         line = '  '.join(str(star[key][i]) for key in headings)
         output_star.write("{0}\n".format(line))
         i += 1
+
+    output_star.close()
 
     if pool is not None:
         pool.close()
         pool.join()
 
-    sys.exit(0)
+    return 0
 
 
 def particles(star):
     npart = len(star['rlnImageName'])
-    for N in range(npart):
-        ptcl_n = int(star['rlnImageName'][N].split("@")[0]) - 1
-        ptcl_name = star['rlnImageName'][N].split("@")[1]
+    for i in range(npart):
+        ptcl_n = int(star['rlnImageName'][i].split("@")[0]) - 1
+        ptcl_name = star['rlnImageName'][i].split("@")[1]
         ptcl = EMData(ptcl_name, ptcl_n)
-        meta = MetaData(star, N)
+        meta = MetaData(star, i)
         yield ptcl, meta
 
 
@@ -144,12 +144,13 @@ class Result:
 
 class MetaData:
     def __init__(self, star, i):
+        self.i = i
         self.phi = star['rlnAngleRot'][i]
         self.psi = star['rlnAnglePsi'][i]
         self.theta = star['rlnAngleTilt'][i]
         self.x_origin = star['rlnOriginX'][i]
         self.y_origin = star['rlnOriginY'][i]
-        # CTFFIND4 --> sparx CTF conventions (from CTER paper)
+        # CTFFIND4 --> sparx CTF conventions (from CTER paper).
         self.defocus = (star['rlnDefocusU'][i] + star['rlnDefocusV'][i]) / 20000.0
         self.dfdiff = (star['rlnDefocusU'][i] - star['rlnDefocusV'][i]) / 10000.0
         self.dfang = 90.0 - star['rlnDefocusAngle'][i]
@@ -164,4 +165,20 @@ class MetaData:
 
 
 if __name__ == "__main__":
-    main()
+    usage = "Not written yet"
+    parser = EMArgumentParser(usage=usage, version=EMANVERSION)
+    parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
+    parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
+    parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
+    parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
+    parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
+    parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
+    parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
+    # parser.add_argument("--append", action="store_true", default=False, help="Append")
+    parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
+    (opts, args) = parser.parse_args()
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.getLevelName(opts.loglevel.upper()))
+
+    sys.exit(main(opts))
