@@ -72,7 +72,7 @@ def main():
     mrcsuffix = options.suffix
     starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
     for r in results:
-        ptcl, ptcl_norm_sub = r[0], r[1]
+        ptcl_norm_sub, ptcl_sub, ptcl = r[0], r[1], r[2]
         if i % options.maxpart == 0:
             mrcsuffix = options.suffix + "_%d" % nfile
             starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
@@ -118,7 +118,7 @@ def subtract(particle, dens, sub_dens):
     ctfproj_sub = make_proj(sub_dens, meta)
     ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub})
     ptcl_norm_sub = ptcl_sub.process("normalize")
-    return ptcl_sub, ptcl_norm_sub
+    return ptcl_norm_sub, ptcl_sub, ptcl
 
 
 def make_proj(dens, meta):
