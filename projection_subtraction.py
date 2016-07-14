@@ -143,21 +143,21 @@ class Result:
 
 
 class MetaData:
-    def __init__(self, star, N):
-        self.phi = star['rlnAngleRot'][N]
-        self.psi = star['rlnAnglePsi'][N]
-        self.theta = star['rlnAngleTilt'][N]
-        self.x_origin = star['rlnOriginX'][N]
-        self.y_origin = star['rlnOriginY'][N]
+    def __init__(self, star, i):
+        self.phi = star['rlnAngleRot'][i]
+        self.psi = star['rlnAnglePsi'][i]
+        self.theta = star['rlnAngleTilt'][i]
+        self.x_origin = star['rlnOriginX'][i]
+        self.y_origin = star['rlnOriginY'][i]
         # CTFFIND4 --> sparx CTF conventions (from CTER paper)
-        self.defocus = (star['rlnDefocusU'][N] + star['rlnDefocusV'][N]) / 20000.0
-        self.dfdiff = (star['rlnDefocusU'][N] - star['rlnDefocusV'][N]) / 10000.0
-        self.dfang = 90.0 - star['rlnDefocusAngle'][N]
-        self.apix = ((10000.0 * star['rlnDetectorPixelSize'][N]) /
-                     float(star['rlnMagnification'][N]))
-        self.voltage = star["rlnVoltage"][N]
-        self.cs = star["rlnSphericalAberration"][N]
-        self.ac = star["rlnAmplitudeContrast"][N] * 100.0
+        self.defocus = (star['rlnDefocusU'][i] + star['rlnDefocusV'][i]) / 20000.0
+        self.dfdiff = (star['rlnDefocusU'][i] - star['rlnDefocusV'][i]) / 10000.0
+        self.dfang = 90.0 - star['rlnDefocusAngle'][i]
+        self.apix = ((10000.0 * star['rlnDetectorPixelSize'][i]) /
+                     float(star['rlnMagnification'][i]))
+        self.voltage = star["rlnVoltage"][i]
+        self.cs = star["rlnSphericalAberration"][i]
+        self.ac = star["rlnAmplitudeContrast"][i] * 100.0
         self.bfactor = 0
         self.ctf_params = [self.defocus, self.cs, self.voltage, self.apix, self.bfactor, self.ac, self.dfdiff,
                            self.dfang]
