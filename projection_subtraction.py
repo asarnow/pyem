@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
     parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
     parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
+    parser.add_argument("--debug", action="store_true", default=False, help="Write debug images.")
     parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
     (options, args) = parser.parse_args()
 
@@ -72,23 +73,23 @@ def main():
     mrcsuffix = options.suffix
     starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
     for r in results:
-        ptcl_norm_sub, ptcl_sub, ptcl = r[0], r[1], r[2]
         if i % options.maxpart == 0:
             mrcsuffix = options.suffix + "_%d" % nfile
             starpath = os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:])
             nfile += 1
-        ptcl_norm_sub.write_image("{0}.mrcs".format(mrcsuffix), -1)
-        ptcl.write_image("{0}_original.mrcs".format(mrcsuffix), -1)
-        # Output for testing
-        #      ptcl_sub_img = ptcl.process("math.sub.optimal", {"ref":ctfproj,
-        #                             "actual":ctfproj_sub, "return_subim":True})
-        #      ptcl_lowpass = ptcl.process("filter.lowpass.gauss", {"apix":1.22, "cutoff_freq":0.05})
-        #      ptcl_sub_lowpass = ptcl_norm_sub.process("filter.lowpass.gauss", {"apix":1.22, "cutoff_freq":0.05})
-        #      ptcl_sub_img = ptcl_sub_img.write_image("poreclass_subimg.mrcs", -1)
-        #      ptcl_lowpass.write_image("poreclass_lowpass.mrcs", -1)
-        #      ptcl_sub_lowpass.write_image("poreclass_sublowpass.mrcs", -1)
-        #      ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
-        #      ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
+        r.ptcl_norm_sub.write_image("{0}.mrcs".format(mrcsuffix), -1)
+        r.ptcl.write_image("{0}_original.mrcs".format(mrcsuffix), -1)
+        # Output for testing.
+        if options.debug:
+            ptcl_sub_img = r.ptcl.process("math.sub.optimal",
+                                          {"ref": r.ctfproj, "actual": r.ctfproj_sub, "return_subim": True})
+            ptcl_lowpass = r.ptcl.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
+            ptcl_sub_lowpass = r.ptcl_norm_sub.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
+            ptcl_sub_img = ptcl_sub_img.write_image("poreclass_subimg.mrcs", -1)
+            ptcl_lowpass.write_image("poreclass_lowpass.mrcs", -1)
+            ptcl_sub_lowpass.write_image("poreclass_sublowpass.mrcs", -1)
+            r.ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
+            r.ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
         # Change image name and write output.star
         star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, "{0}.mrcs".format(starpath))
         line = '  '.join(str(star[key][i]) for key in headings)
@@ -118,7 +119,7 @@ def subtract(particle, dens, sub_dens):
     ctfproj_sub = make_proj(sub_dens, meta)
     ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub})
     ptcl_norm_sub = ptcl_sub.process("normalize")
-    return ptcl_norm_sub, ptcl_sub, ptcl
+    return Result(ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub)
 
 
 def make_proj(dens, meta):
@@ -129,6 +130,16 @@ def make_proj(dens, meta):
     ctf = generate_ctf(meta.ctf_params)
     ctf_proj = filt_ctf(proj, ctf)
     return ctf_proj
+
+
+class Result:
+    def __init__(self, ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub):
+        self.ptcl = ptcl
+        self.meta = meta
+        self.ctfproj = ctfproj
+        self.ctfproj_sub = ctfproj_sub
+        self.ptcl_sub = ptcl_sub
+        self.ptcl_norm_sub = ptcl_norm_sub
 
 
 class MetaData:
