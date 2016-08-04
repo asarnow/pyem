@@ -47,8 +47,8 @@ def main(options):
         output_star.write("_{0} #{1}\n".format(heading, i + 1))
 
     if options.recenter:  # Compute difference vector between new and old mass centers.
-        #TODO dens - sub_dens
-        recenter = Vec3f(*sub_dens.phase_cog()[:3]) - Vec3f(*dens.phase_cog()[:3])
+        new_dens = dens - sub_dens
+        recenter = Vec3f(*new_dens.phase_cog()[:3]) - Vec3f(*dens.phase_cog()[:3])
     else:
         recenter = None
 
