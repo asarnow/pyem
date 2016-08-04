@@ -16,6 +16,7 @@
 #  2016-07-12 Supports parallelism, requires pathos library, writes multiple stacks
 #             to avoid 16-bit overflow in EMAN2.
 #  2016-07-13 Changed argument conventions and help text, fixed relative paths in output.
+#  2016-08-03 Supports automatic particle recentering.
 import sys
 import os.path
 import logging
@@ -99,6 +100,7 @@ def main(options):
         # Change image name and write output.star
         assert r.meta.i == i
         star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, starpath)
+        r.meta.update(star)
         line = '  '.join(str(star[key][i]) for key in headings)
         output_star.write("{0}\n".format(line))
         i += 1
@@ -177,6 +179,16 @@ class MetaData:
         self.bfactor = 0
         self.ctf_params = [self.defocus, self.cs, self.voltage, self.apix, self.bfactor, self.ac, self.dfdiff,
                            self.dfang]
+
+    def update(self, star):
+        """
+        Updates StarFile entry to match MetaData instance.
+        Beware: ONLY UPDATES FIELDS MODIFIED ELSEWHERE IN THIS PROGRAM!
+        :param star: StarFile object with matching indices
+        :return: None
+        """
+        star['rlnOriginX'][self.i] = self.x_origin
+        star['rlnOriginY'][self.i] = self.y_origin
 
 
 if __name__ == "__main__":
