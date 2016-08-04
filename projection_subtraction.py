@@ -20,7 +20,7 @@ import sys
 import os.path
 import logging
 from pathos.multiprocessing import Pool
-from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform
+from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform, Vec3f
 from EMAN2star import StarFile
 from sparx import generate_ctf, filt_ctf
 
@@ -46,11 +46,17 @@ def main(options):
     for i, heading in enumerate(headings):
         output_star.write("_{0} #{1}\n".format(heading, i + 1))
 
+    if options.recenter:  # Compute difference vector between new and old mass centers.
+        #TODO dens - sub_dens
+        recenter = Vec3f(*sub_dens.phase_cog()[:3]) - Vec3f(*dens.phase_cog()[:3])
+    else:
+        recenter = None
+
     # Compute subtraction in parallel or using serial generator.
     pool = None
     if options.nproc > 1:
         pool = Pool(processes=options.nproc)
-        results = pool.imap(lambda x: subtract(x, dens, sub_dens), particles(star),
+        results = pool.imap(lambda x: subtract(x, dens, sub_dens, recenter), particles(star),
                             chunksize=min(npart / options.nproc, 1000))
     else:
         results = (subtract(x, dens, sub_dens) for x in particles(star))
@@ -75,7 +81,10 @@ def main(options):
                 os.remove(mrcs_orig)
 
         r.ptcl_norm_sub.append_image(mrcs)
-        r.ptcl.append_image(mrcs_orig)
+
+        if options.original:
+            r.ptcl.append_image(mrcs_orig)
+
         # Output for testing.
         if logger.getEffectiveLevel() == logging.DEBUG:
             ptcl_sub_img = r.ptcl.process("math.sub.optimal",
@@ -113,12 +122,18 @@ def particles(star):
         yield ptcl, meta
 
 
-def subtract(particle, dens, sub_dens):
+def subtract(particle, dens, sub_dens, recenter=None):
     ptcl, meta = particle[0], particle[1]
     ctfproj = make_proj(dens, meta)
     ctfproj_sub = make_proj(sub_dens, meta)
     ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub})
     ptcl_norm_sub = ptcl_sub.process("normalize")
+    if recenter is not None:
+        t = Transform()
+        t.set_rotation({'psi': meta.psi, 'phi': meta.phi, 'theta': meta.theta, 'type': 'spider'})
+        shift = t.transform(recenter)
+        meta.x_origin += shift[0]
+        meta.y_origin += shift[1]
     return Result(ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub)
 
 
@@ -174,6 +189,10 @@ if __name__ == "__main__":
     parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
     parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
     parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
+    parser.add_argument("--recenter", action="store_true", default=False,
+                        help="Shift particle origin to new center of mass")
+    parser.add_argument("--original", action="store_true", default=False,
+                        help="Also write original (not subtracted) particles to new image stack(s)")
     # parser.add_argument("--append", action="store_true", default=False, help="Append")
     parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
     (opts, args) = parser.parse_args()
