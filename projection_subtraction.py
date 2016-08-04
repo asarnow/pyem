@@ -16,6 +16,7 @@
 #  2016-07-12 Supports parallelism, requires pathos library, writes multiple stacks
 #             to avoid 16-bit overflow in EMAN2.
 #  2016-07-13 Changed argument conventions and help text, fixed relative paths in output.
+#  2016-08-03 Supports automatic particle recentering.
 import sys
 import os.path
 import logging
