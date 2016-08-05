@@ -17,6 +17,5 @@ Documentation for the programs can be found in their usage text, comments in cod
  1. `mrc.py` - Simple, standalone MRC I/O functions.
 
 
-(C) 2016 Daniel Asarnow
-
+(C) 2016 Daniel Asarnow  
 University of California, San Francisco
