@@ -257,7 +257,7 @@ class MetaData:
 
 if __name__ == "__main__":
     usage = "projection_subtraction.py [options] output_suffix"
-    parser = EMArgumentParser(usage=usage, version=EMANVERSION)
+    parser = EMArgumentParser(usage=usage, version="projection_subtraction.py 1.0a, " + EMANVERSION)
     parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
     parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
     parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
