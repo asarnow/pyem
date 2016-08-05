@@ -1,22 +1,22 @@
 #! /usr/bin/python2.7
 # Copyright (C) 2015 Eugene Palovcak, Daniel Asarnow
 # University of California, San Francisco
-
-# Projection subtraction program
-# Given a (presumably partial) map, a particle stack, and
-# the RELION star file that generated the map, for each particle, this program:
-#        (1) Computes a projection from the map given the RELION angles
-#        (2) CTF corrects the image given the RELION star file
-#        (3) Appropriately standardizes the projection image (how?)
-#        (4) Subtracts the projected image from the CTF corrected image
-#        (5) Saves the projection-subtracted image
-#  2015-06-23 --particlestack options is replaced by finding the particle files
-#             from various .mrcs stacks. Only requires the .star file now.
-#  V3: Output generates subtracted stack and equivalent unsubtracted stack
-#  2016-07-12 Supports parallelism, requires pathos library, writes multiple stacks
-#             to avoid 16-bit overflow in EMAN2.
-#  2016-07-13 Changed argument conventions and help text, fixed relative paths in output.
-#  2016-08-03 Supports automatic particle recentering.
+#
+# Program for projection subtraction in electron microscopy.
+# See help text and README file for more information.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import os.path
 import logging
@@ -27,6 +27,11 @@ from sparx import generate_ctf, filt_ctf
 
 
 def main(options):
+    """
+    Projection subtraction program entry point.
+    :param options: Command-line arguments parsed by ArgumentParser.parse_args()
+    :return: Exit status
+    """
     rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
     options.output = rchop(options.output, ".star")
     options.suffix = rchop(options.suffix, ".mrc")
@@ -53,14 +58,17 @@ def main(options):
     else:
         recenter = None
 
-    # Compute subtraction in parallel or using serial generator.
     pool = None
-    if options.nproc > 1:
+    if options.nproc > 1:  # Compute subtraction in parallel.
         pool = Pool(processes=options.nproc)
-        results = pool.imap(lambda x: subtract(x, dens, sub_dens, recenter), particles(star),
-                            chunksize=min(npart / options.nproc, 1000))
-    else:
-        results = (subtract(x, dens, sub_dens) for x in particles(star))
+        results = pool.imap(
+            lambda x: subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc,
+                               low_cutoff=options.low_cutoff,
+                               high_cutoff=options.high_cutoff), particles(star),
+            chunksize=min(npart / options.nproc, 1000))
+    else:  # Use serial generator.
+        results = (subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc, low_cutoff=options.low_cutoff,
+                            high_cutoff=options.high_cutoff) for x in particles(star))
 
     # Write subtraction results to .mrcs and .star files.
     i = 0
@@ -86,8 +94,7 @@ def main(options):
         if options.original:
             r.ptcl.append_image(mrcs_orig)
 
-        # Output for testing.
-        if logger.getEffectiveLevel() == logging.DEBUG:
+        if logger.getEffectiveLevel() == logging.DEBUG:  # Write additional debug output.
             ptcl_sub_img = r.ptcl.process("math.sub.optimal",
                                           {"ref": r.ctfproj, "actual": r.ctfproj_sub, "return_subim": True})
             ptcl_lowpass = r.ptcl.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
@@ -97,10 +104,10 @@ def main(options):
             ptcl_sub_lowpass.write_image("poreclass_sublowpass.mrcs", -1)
             r.ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
             r.ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
-        # Change image name and write output.star
-        assert r.meta.i == i
-        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, starpath)
-        r.meta.update(star)
+
+        assert r.meta.i == i  # Assert particle order is preserved.
+        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, starpath)  # Set new image name.
+        r.meta.update(star)  # Update StarFile with altered fields.
         line = '  '.join(str(star[key][i]) for key in headings)
         output_star.write("{0}\n".format(line))
         i += 1
@@ -115,6 +122,11 @@ def main(options):
 
 
 def particles(star):
+    """
+    Generator function using StarFile object to produce particle EMData and MetaData objects.
+    :param star: StarFile object
+    :return: Tuple holding (particle EMData, particle MetaData)
+    """
     npart = len(star['rlnImageName'])
     for i in range(npart):
         ptcl_n = int(star['rlnImageName'][i].split("@")[0]) - 1
@@ -124,22 +136,50 @@ def particles(star):
         yield ptcl, meta
 
 
-def subtract(particle, dens, sub_dens, recenter=None):
+def subtract(particle, dens, sub_dens, recenter=None, no_frc=False, low_cutoff=0.0, high_cutoff=0.7071):
+    """
+    Perform projection subtraction on one particle image.
+    :param particle: Tuple holding original (particle EMData, particle MetaData)
+    :param dens: Whole density map
+    :param sub_dens: Subtraction density map
+    :param recenter: Vector between CoM before and after subtraction, or None to skip recenter operation (default None)
+    :param no_frc: Skip FRC normalization (default False)
+    :param low_cutoff: Low cutoff frequency in FRC normalization (default 0.0)
+    :param high_cutoff: High cutoff frequency in FRC normalization (default 0.7071)
+    :return: Result object
+    """
     ptcl, meta = particle[0], particle[1]
     ctfproj = make_proj(dens, meta)
     ctfproj_sub = make_proj(sub_dens, meta)
-    ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub})
+
+    if no_frc:  # Direct subtraction only.
+        ptcl_sub = ptcl - ctfproj_sub
+    else:  # Per-particle FRC normalization.
+        ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub,
+                                                     "low_cutoff_frequency": low_cutoff,
+                                                     "high_cutoff_frequency": high_cutoff})
+
     ptcl_norm_sub = ptcl_sub.process("normalize")
+
     if recenter is not None:
+        # Rotate the coordinate frame of the CoM difference vector by the Euler angles.
         t = Transform()
         t.set_rotation({'psi': meta.psi, 'phi': meta.phi, 'theta': meta.theta, 'type': 'spider'})
         shift = t.transform(recenter)
+        # The change in the origin is the projection of the transformed difference vector on the new xy plane.
         meta.x_origin += shift[0]
         meta.y_origin += shift[1]
+
     return Result(ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub)
 
 
 def make_proj(dens, meta):
+    """
+    Project and CTF filter density according to particle metadata.
+    :param dens: EMData density
+    :param meta: Particle metadata (Euler angles and CTF parameters)
+    :return: CTF-filtered projection
+    """
     t = Transform()
     t.set_rotation({'psi': meta.psi, 'phi': meta.phi, 'theta': meta.theta, 'type': 'spider'})
     t.set_trans(-meta.x_origin, -meta.y_origin)
@@ -150,7 +190,20 @@ def make_proj(dens, meta):
 
 
 class Result:
+    """
+    Class representing the metadata, intermediate calculation and final result of a subtraction operation.
+    """
+
     def __init__(self, ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub):
+        """
+        Instantiate Result object.
+        :param ptcl: Original particle EMData object
+        :param meta: Original particle MetaData object
+        :param ctfproj: CTF-filtered projection of whole map
+        :param ctfproj_sub: CTF-filtered projection of subtraction map
+        :param ptcl_sub: Subtracted particle EMData object
+        :param ptcl_norm_sub: Normalized, subtracted particle EMData object
+        """
         self.ptcl = ptcl
         self.meta = meta
         self.ctfproj = ctfproj
@@ -160,7 +213,17 @@ class Result:
 
 
 class MetaData:
+    """
+    Class representing particle metadata (from .star file).
+    Includes Euler angles, particle origin, and CTF parameters.
+    """
+
     def __init__(self, star, i):
+        """
+        Instantiate MetaData object for i'th particle in StarFile object.
+        :param star: StarFile object
+        :param i: Index of desired particle
+        """
         self.i = i
         self.phi = star['rlnAngleRot'][i]
         self.psi = star['rlnAnglePsi'][i]
@@ -192,7 +255,7 @@ class MetaData:
 
 
 if __name__ == "__main__":
-    usage = "Not written yet"
+    usage = "projection_subtraction.py [options] output_suffix"
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
     parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
     parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
@@ -205,6 +268,10 @@ if __name__ == "__main__":
                         help="Shift particle origin to new center of mass")
     parser.add_argument("--original", action="store_true", default=False,
                         help="Also write original (not subtracted) particles to new image stack(s)")
+    parser.add_argument("--low-cutoff", type=float, default=0.0, help="Low cutoff frequency in FRC normalization")
+    parser.add_argument("--high-cutoff", type=float, default=0.7071, help="High cutoff frequency in FRC normalization")
+    parser.add_argument("--no-frc", action="store_true", default=False,
+                        help="Perform direct subtraction without FRC normalization")
     # parser.add_argument("--append", action="store_true", default=False, help="Append")
     parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
     (opts, args) = parser.parse_args()
