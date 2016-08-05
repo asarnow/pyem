@@ -54,6 +54,7 @@ def main(options):
 
     if options.recenter:  # Compute difference vector between new and old mass centers.
         new_dens = dens - sub_dens
+        # Note the sign of the shift in coordinate frame is opposite the shift in the CoM.
         recenter = Vec3f(*dens.phase_cog()[:3]) - Vec3f(*new_dens.phase_cog()[:3])
     else:
         recenter = None
