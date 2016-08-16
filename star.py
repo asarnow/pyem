@@ -73,7 +73,7 @@ def write_star(starfile, star, reindex=True):
         f.write('\n')
         f.write("data_images" + '\n')
         f.write('\n')
-        f.write("_loop" + '\n')
+        f.write("loop_" + '\n')
         for i in range(len(star.columns)):
             if reindex and not indexed:  # No index present, append new, consecutive indices to each header line.
                 f.write(star.columns[i] + " #%d \n" % (i + 1))
