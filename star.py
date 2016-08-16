@@ -21,6 +21,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
+import re
 import pandas as pd
 
 
@@ -62,14 +63,20 @@ def parse_star(starfile, keep_index=True):
     return star
 
 
-def write_star(starfile, star):
+def write_star(starfile, star, reindex=True):
+    indexed = re.search("#\d+$", star.columns[0]) is not None  # Check first column for '#N' index.
     with open(starfile, 'w') as f:
         f.write('\n')
         f.write("data_images" + '\n')
         f.write('\n')
         f.write("_loop" + '\n')
         for i in range(len(star.columns)):
-            f.write(star.columns[i] + " #%d \n" % (i + 1))
+            if reindex and not indexed:  # No index present, append new, consecutive indices to each header line.
+                f.write(star.columns[i] + " #%d \n" % (i + 1))
+            elif reindex and indexed:  # Replace existing indices with new, consecutive indices.
+                f.write(star.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1))
+            else:  # Use DataFrame column labels literally.
+                f.write(star.columns[i] + " \n")
     star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
