@@ -36,6 +36,10 @@ def main(args):
         containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
+    if args.offset_group is not None:
+        groupnum_fields = [f for f in star.columns if "GroupNumber" in f]
+        star[groupnum_fields] += args.offset_group
+
     write_star(args.output, star)
     return 0
 
@@ -82,13 +86,14 @@ def write_star(starfile, star, reindex=True):
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
                         help="Drop fields containing string from output, may be passed multiple times",
                         action="append")
+    parser.add_argument("--offset-group", help="Add fixed offset to group number",
+                        type=int)
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
