@@ -11,10 +11,13 @@ Documentation for the programs can be found in their usage text, comments in cod
 
 ## Programs
  1. `projection_subtraction.py` - Perform projection subtraction using per-particle FRC normalization.
- +  `recenter.py` - Recenter particles on the center-of-mass of corresponding 2D class-averages.
+ + `recenter.py` - Recenter particles on the center-of-mass of corresponding 2D class-averages.
+ + `angdist.py` - Graph angular distributions on polar scatter plots. Supports particle subset selection.
+ + `star.py` - Alter .star files. Supports dropping arbitrary fields, Euler angles, etc.
 
 ## Library modules
  1. `mrc.py` - Simple, standalone MRC I/O functions.
+ + `star.py` - Parse and write .star files. Uses pandas.DataFrame as a backend.
 
 
 (C) 2016 Daniel Asarnow  
