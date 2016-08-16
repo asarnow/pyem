@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -24,17 +25,21 @@ import pandas as pd
 
 
 def main(args):
-    star = parse_star(args.input)
+    star = parse_star(args.input, keep_index=False)
 
     if args.drop_angles:
         ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
         star.drop(ang_fields, axis=1, inplace=True, errors="ignore")
 
+    if args.drop_containing is not None:
+        containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
+        star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
+
     write_star(args.output, star)
     return 0
 
 
-def parse_star(starfile):
+def parse_star(starfile, keep_index=True):
     headers = []
     foundheader = False
     ln = 0
@@ -43,7 +48,10 @@ def parse_star(starfile):
             if l.startswith('_rln'):
                 foundheader = True
                 lastheader = True
-                headers.append(l.rstrip())
+                if keep_index:
+                    headers.append(l.rstrip())
+                else:
+                    headers.append(l.split("#")[0].rstrip())
             else:
                 lastheader = False
             if foundheader and not lastheader:
@@ -55,13 +63,25 @@ def parse_star(starfile):
 
 
 def write_star(starfile, star):
-    return None
+    with open(starfile, 'w') as f:
+        f.write('\n')
+        f.write("data_images" + '\n')
+        f.write('\n')
+        f.write("_loop" + '\n')
+        for i in range(len(star.columns)):
+            f.write(star.columns[i] + " #%d \n" % (i + 1))
+    star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--drop-angles", help="Tilt, psi and rot angles will be dropped from output")
+    parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
+                        action="store_true")
+    parser.add_argument("--drop-containing",
+                        help="Drop fields containing string from output, may be passed multiple times",
+                        action="append")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))

@@ -98,8 +98,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--psi", help="Plot tilt and psi instead of tilt and rot",
                         action="store_true")
-    parser.add_argument("--rmax", help="Upper limit of radial axis (probably ~45 or 180)",
-                        default=None)
+    parser.add_argument("--rmax", help="Upper limit of radial axis (probably ~45 or 180)")
     parser.add_argument("--samples", help="Number of angular samples in [0, pi] (e.g. 36 for 5 deg. steps)",
                         type=int, default=36)
     parser.add_argument("--transparent", help="Use transparent background in output figure",
