@@ -65,7 +65,7 @@ def main(args):
     c = plt.scatter(theta, r, c=colors, s=area, cmap=args.cmap)
     c.set_alpha(args.alpha)
     if args.full_circle:
-        c = plt.scatter(theta, r, c=colors, s=area, cmap=args.cmap)
+        c = plt.scatter(theta + np.pi, r, c=colors, s=area, cmap=args.cmap)
         c.set_alpha(args.alpha)
 
     # plt.xlim((0, 180))
