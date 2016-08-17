@@ -86,13 +86,29 @@ def main(args):
     colors = h.flat
 
     if args.rmax is None:
-        if np.max(r) < 50:
-            args.rmax = 50
+        if np.max(r) <= 45:
+            args.rmax = 45
         else:
             args.rmax = 180
 
     fig = plt.figure(figsize=(args.figsize, args.figsize), dpi=args.dpi)
     ax, aux_ax = setup_axes(fig, 111, args.rmax)
+
+    if args.psi:
+        ax.axis["left"].label.set_text("Psi Angle")
+    else:
+        ax.axis["left"].label.set_text("Rotation Angle")
+
+    # if args.title is not None:
+    #     # ax.axis["top"].title.set_text(args.title)
+    #     ax.set_title(args.title)
+    # elif args.cls is not None and args.cls > 0:
+    #     # ax.axis["top"].title.set_text("Angular Distribution within Class %d" % args.cls)
+    #     ax.set_title("Angular Distribution within Class %d" % args.cls)
+    # else:
+    #     # ax.axis["top"].title.set_text("Angular Distribution")
+    #     ax.set_title("Angular Distribution")
+
     c = aux_ax.scatter(theta, r, c=colors, s=area, cmap=args.cmap, zorder=3)
     c.set_alpha(args.alpha)
     fig.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
@@ -124,8 +140,7 @@ def setup_axes(fig, rect, rmax):
     ax1.axis["top"].toggle(ticklabels=True, label=True)
     ax1.axis["top"].major_ticklabels.set_axis_direction("top")
     ax1.axis["top"].label.set_axis_direction("top")
-    ax1.axis["left"].label.set_text("Rotation")
-    ax1.axis["top"].label.set_text("Tilt")
+    ax1.axis["top"].label.set_text("Tilt Angle")
     aux_ax = ax1.get_aux_axes(tr)
     aux_ax.patch = ax1.patch
     ax1.patch.zorder = 0.9
@@ -156,6 +171,7 @@ if __name__ == "__main__":
     parser.add_argument("--scale", help="Size of largest scatter point",
                         type=float, default=20)
     parser.add_argument("--subplot", help="Draw multiple plots as subplots of a single figure")
+    parser.add_argument("--title", help="Custom figure title")
     parser.add_argument("--transparent", help="Use transparent background in output figure",
                         action="store_true")
     parser.add_argument("input", help="Input .star file")
