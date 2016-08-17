@@ -51,13 +51,34 @@ def main(args):
             print("No rot angle found")
             return 1
 
-    h, x, y = np.histogram2d(star[xfields[0]], star[yfields[0]], bins=args.samples)
+    if args.cls is not None:
+        clsfields = [f for f in star.columns if "ClassNumber" in f]
+        if len(clsfields) == 0:
+            print("No class labels found")
+            return 1
+        if args.cls > 0:
+            ind = star[clsfields[0]] == args.cls
+            if not np.any(ind):
+                print("Specified class has no members")
+                return 1
+            xdata = star.loc[ind][xfields[0]]
+            ydata = star.loc[ind][yfields[0]]
+        else:
+            raise NotImplementedError("Class ranges are not yet supported")
+    else:
+        xdata = star[xfields[0]]
+        ydata = star[yfields[0]]
+
+    if args.subplot is not None:
+        raise NotImplementedError("Sublots are not yet supported")
+
+    h, x, y = np.histogram2d(xdata, ydata, bins=args.samples, normed=True)
     xc = (x[:-1] + x[1:]) / 2
     yc = (y[:-1] + y[1:]) / 2
     coords = np.array([(xi, yi) for xi in xc for yi in yc])
     theta = np.deg2rad(coords[:, 0])
     r = coords[:, 1]
-    area = h.flat
+    area = h.flat / np.max(h) * args.scale
     colors = h.flat
 
     plt.figure(figsize=(args.figsize, args.figsize), dpi=args.dpi)
@@ -78,7 +99,7 @@ def main(args):
 
     plt.ylim((0, args.rmax))
 
-    plt.savefig(args.output, bbox_inches="tight", dpi="figure", transparent=args.transparent)
+    plt.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
 
     return 0
 
@@ -90,17 +111,24 @@ if __name__ == "__main__":
                         type=float, default=0.75)
     parser.add_argument("--cmap", help="Colormap for matplotlib",
                         default="magma")
+    parser.add_argument("--class", help="Breakdown angular distribution by class",
+                        type=int, dest="cls", nargs="?", const=0)
     parser.add_argument("--dpi", help="DPI of output",
                         type=int, default=300)
     parser.add_argument("--figsize", help="Figure size for matplotlib",
                         type=int, default=10)
-    parser.add_argument("--full-circle", help="Extend domain from [0, pi] to [0, 2pi]",
+    parser.add_argument("--format", help="Output image format",
+                        default="png", choices=["png", "pdf", "ps", "eps", "svg"])
+    parser.add_argument("--full-circle", help="Extend domain from [0, pi] to [0, 2*pi]",
                         action="store_true")
     parser.add_argument("--psi", help="Plot tilt and psi instead of tilt and rot",
                         action="store_true")
     parser.add_argument("--rmax", help="Upper limit of radial axis (probably ~45 or 180)")
     parser.add_argument("--samples", help="Number of angular samples in [0, pi] (e.g. 36 for 5 deg. steps)",
                         type=int, default=36)
+    parser.add_argument("--scale", help="Size of largest scatter point",
+                        type=float, default=20)
+    parser.add_argument("--subplot", help="Draw multiple plots as subplots of a single figure")
     parser.add_argument("--transparent", help="Use transparent background in output figure",
                         action="store_true")
     parser.add_argument("input", help="Input .star file")
