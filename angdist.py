@@ -26,6 +26,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from star import parse_star
+from matplotlib.transforms import Affine2D
+from mpl_toolkits.axisartist import floating_axes
+from mpl_toolkits.axisartist import angle_helper
+from matplotlib.projections.polar import PolarTransform
 
 
 def main(args):
@@ -76,20 +80,10 @@ def main(args):
     xc = (x[:-1] + x[1:]) / 2
     yc = (y[:-1] + y[1:]) / 2
     coords = np.array([(xi, yi) for xi in xc for yi in yc])
-    theta = np.deg2rad(coords[:, 0])
+    theta = coords[:, 0]
     r = coords[:, 1]
     area = h.flat / np.max(h) * args.scale
     colors = h.flat
-
-    plt.figure(figsize=(args.figsize, args.figsize), dpi=args.dpi)
-    plt.subplot(111, polar=True)
-    c = plt.scatter(theta, r, c=colors, s=area, cmap=args.cmap)
-    c.set_alpha(args.alpha)
-    if args.full_circle:
-        c = plt.scatter(theta + np.pi, r, c=colors, s=area, cmap=args.cmap)
-        c.set_alpha(args.alpha)
-
-    # plt.xlim((0, 180))
 
     if args.rmax is None:
         if np.max(r) < 50:
@@ -97,11 +91,45 @@ def main(args):
         else:
             args.rmax = 180
 
-    plt.ylim((0, args.rmax))
-
-    plt.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
-
+    fig = plt.figure(figsize=(args.figsize, args.figsize), dpi=args.dpi)
+    ax, aux_ax = setup_axes(fig, 111, args.rmax)
+    c = aux_ax.scatter(theta, r, c=colors, s=area, cmap=args.cmap, zorder=3)
+    c.set_alpha(args.alpha)
+    fig.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
     return 0
+
+
+def setup_axes(fig, rect, rmax):
+    tr_rotate = Affine2D().translate(0, 0)
+    tr_scale = Affine2D().scale(np.pi/180, 1)
+    tr = tr_rotate + tr_scale + PolarTransform()
+    grid_locator1 = angle_helper.LocatorDMS(12)
+    grid_locator2 = angle_helper.LocatorDMS(3)
+    tick_formatter1 = angle_helper.FormatterDMS()
+    tick_formatter2 = angle_helper.FormatterDMS()
+    ra0, ra1 = 0, 180
+    cz0, cz1 = 0, rmax
+    grid_helper = floating_axes.GridHelperCurveLinear(
+        tr, extremes=(ra0, ra1, cz0, cz1),
+        grid_locator1=grid_locator1,
+        grid_locator2=grid_locator2,
+        tick_formatter1=tick_formatter1,
+        tick_formatter2=tick_formatter2)
+    ax1 = floating_axes.FloatingSubplot(fig, rect, grid_helper=grid_helper)
+    fig.add_subplot(ax1)
+    ax1.axis["left"].set_axis_direction("bottom")
+    ax1.axis["right"].set_axis_direction("top")
+    ax1.axis["bottom"].set_visible(False)
+    ax1.axis["top"].set_axis_direction("bottom")
+    ax1.axis["top"].toggle(ticklabels=True, label=True)
+    ax1.axis["top"].major_ticklabels.set_axis_direction("top")
+    ax1.axis["top"].label.set_axis_direction("top")
+    ax1.axis["left"].label.set_text("Rotation")
+    ax1.axis["top"].label.set_text("Tilt")
+    aux_ax = ax1.get_aux_axes(tr)
+    aux_ax.patch = ax1.patch
+    ax1.patch.zorder = 0.9
+    return ax1, aux_ax
 
 
 if __name__ == "__main__":
@@ -119,11 +147,10 @@ if __name__ == "__main__":
                         type=int, default=10)
     parser.add_argument("--format", help="Output image format",
                         default="png", choices=["png", "pdf", "ps", "eps", "svg"])
-    parser.add_argument("--full-circle", help="Extend domain from [0, pi] to [0, 2*pi]",
-                        action="store_true")
     parser.add_argument("--psi", help="Plot tilt and psi instead of tilt and rot",
                         action="store_true")
-    parser.add_argument("--rmax", help="Upper limit of radial axis (probably ~45 or 180)")
+    parser.add_argument("--rmax", help="Upper limit of radial axis (probably ~45 or 180)",
+                        type=int)
     parser.add_argument("--samples", help="Number of angular samples in [0, pi] (e.g. 36 for 5 deg. steps)",
                         type=int, default=36)
     parser.add_argument("--scale", help="Size of largest scatter point",
