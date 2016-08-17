@@ -22,11 +22,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import re
+import numpy as np
 import pandas as pd
 
 
 def main(args):
     star = parse_star(args.input, keep_index=False)
+
+    if args.cls is not None:
+        clsfields = [f for f in star.columns if "ClassNumber" in f]
+        if len(clsfields) == 0:
+            print("No class labels found")
+            return 1
+        ind = star[clsfields[0]] == args.cls
+        if not np.any(ind):
+            print("Specified class has no members")
+            return 1
+        star = star.loc[ind]
 
     if args.drop_angles:
         ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
@@ -87,6 +99,8 @@ def write_star(starfile, star, reindex=True):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument("--class", help="Keep only this class in output",
+                        type=int, dest="cls")
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
