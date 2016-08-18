@@ -44,6 +44,8 @@ def main(args):
     if len(xfields) == 0:
         print("No tilt angle found")
         return 1
+    xfield = xfields[0]
+
     if args.psi:
         yfields = [f for f in star.columns if "Psi" in f]
         if len(yfields) == 0:
@@ -54,50 +56,66 @@ def main(args):
         if len(yfields) == 0:
             print("No rot angle found")
             return 1
+    yfield = yfields[0]
 
     if args.cls is not None:
         clsfields = [f for f in star.columns if "ClassNumber" in f]
         if len(clsfields) == 0:
             print("No class labels found")
             return 1
+        clsfield = clsfields[0]
         if args.cls > 0:
-            ind = star[clsfields[0]] == args.cls
+            ind = star[clsfield] == args.cls
             if not np.any(ind):
                 print("Specified class has no members")
                 return 1
-            xdata = star.loc[ind][xfields[0]]
-            ydata = star.loc[ind][yfields[0]]
+            data = star.loc[ind][[xfield, yfield]]
         else:
-            raise NotImplementedError("Class ranges are not yet supported")
+            classes = np.unique(star[clsfield])
+            ind = (star[clsfields[0]] == cls for cls in classes)
+            data = [star.loc[i][[xfield, yfield]] for i in ind]
     else:
-        xdata = star[xfields[0]]
-        ydata = star[yfields[0]]
+        data = star[[xfield, yfield]]
 
     if args.subplot is not None:
-        raise NotImplementedError("Sublots are not yet supported")
+        raise NotImplementedError("Subplots are not yet supported")
 
-    h, x, y = np.histogram2d(xdata, ydata, bins=args.samples, normed=True)
-    xc = (x[:-1] + x[1:]) / 2
-    yc = (y[:-1] + y[1:]) / 2
-    coords = np.array([(xi, yi) for xi in xc for yi in yc])
-    theta = coords[:, 0]
-    r = coords[:, 1]
-    area = h.flat / np.max(h) * args.scale
-    colors = h.flat
+    h, theta, r = compute_histogram(data, args.samples)
 
-    if args.rmax is None:
-        if np.max(r) <= 45:
-            args.rmax = 45
-        else:
-            args.rmax = 180
-
-    fig = plt.figure(figsize=(args.figsize, args.figsize), dpi=args.dpi)
-    ax, aux_ax = setup_axes(fig, 111, args.rmax)
+    fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi, scale=args.scale, cmap=args.cmap, alpha=args.alpha)
 
     if args.psi:
         ax.axis["left"].label.set_text("Psi Angle")
     else:
         ax.axis["left"].label.set_text("Rotation Angle")
+
+    fig.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
+
+    return 0
+
+
+def compute_histogram(data, bins=36):
+    h, x, y = np.histogram2d(data[data.columns[0]], data[data.columns[1]], bins=bins, normed=True)
+    xc = (x[:-1] + x[1:]) / 2
+    yc = (y[:-1] + y[1:]) / 2
+    coords = np.array([(xi, yi) for xi in xc for yi in yc])
+    theta = coords[:, 0]
+    r = coords[:, 1]
+    return h.flatten(), theta, r
+
+
+def make_figure(h, theta, r, rmax=None, figsize=10, dpi=300, scale=500, cmap="magma", alpha=0.75):
+    area = h / np.max(h) * scale
+    colors = h
+
+    if rmax is None:
+        if np.max(r) <= 45:
+            rmax = 45
+        else:
+            rmax = 180
+
+    fig = plt.figure(figsize=(figsize, figsize), dpi=dpi)
+    ax, aux_ax = setup_axes(fig, 111, rmax)
 
     # if args.title is not None:
     #     # ax.axis["top"].title.set_text(args.title)
@@ -109,10 +127,9 @@ def main(args):
     #     # ax.axis["top"].title.set_text("Angular Distribution")
     #     ax.set_title("Angular Distribution")
 
-    c = aux_ax.scatter(theta, r, c=colors, s=area, cmap=args.cmap, zorder=3)
-    c.set_alpha(args.alpha)
-    fig.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
-    return 0
+    c = aux_ax.scatter(theta, r, c=colors, s=area, cmap=cmap, zorder=3)
+    c.set_alpha(alpha)
+    return fig, ax, aux_ax
 
 
 def setup_axes(fig, rect, rmax):
