@@ -74,6 +74,19 @@ def main(args):
             classes = np.unique(star[clsfield])
             ind = (star[clsfields[0]] == cls for cls in classes)
             data = [star.loc[i][[xfield, yfield]] for i in ind]
+            for d, cls in zip(data, classes):
+                h, theta, r = compute_histogram(d, args.samples)
+                fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi,
+                                              scale=args.scale, cmap=args.cmap, alpha=args.alpha)
+                if args.psi:
+                    ax.axis["left"].label.set_text("Psi Angle")
+                else:
+                    ax.axis["left"].label.set_text("Rotation Angle")
+
+                fig.savefig(args.output + "_class%d." % cls + args.format, format=args.format, bbox_inches="tight",
+                            dpi="figure",
+                            transparent=args.transparent)
+            return 0
     else:
         data = star[[xfield, yfield]]
 
@@ -81,16 +94,13 @@ def main(args):
         raise NotImplementedError("Subplots are not yet supported")
 
     h, theta, r = compute_histogram(data, args.samples)
-
-    fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi, scale=args.scale, cmap=args.cmap, alpha=args.alpha)
-
+    fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi, scale=args.scale,
+                                  cmap=args.cmap, alpha=args.alpha)
     if args.psi:
         ax.axis["left"].label.set_text("Psi Angle")
     else:
         ax.axis["left"].label.set_text("Rotation Angle")
-
     fig.savefig(args.output, format=args.format, bbox_inches="tight", dpi="figure", transparent=args.transparent)
-
     return 0
 
 
@@ -134,7 +144,7 @@ def make_figure(h, theta, r, rmax=None, figsize=10, dpi=300, scale=500, cmap="ma
 
 def setup_axes(fig, rect, rmax):
     tr_rotate = Affine2D().translate(0, 0)
-    tr_scale = Affine2D().scale(np.pi/180, 1)
+    tr_scale = Affine2D().scale(np.pi / 180, 1)
     tr = tr_rotate + tr_scale + PolarTransform()
     grid_locator1 = angle_helper.LocatorDMS(12)
     grid_locator2 = angle_helper.LocatorDMS(3)
@@ -166,6 +176,7 @@ def setup_axes(fig, rect, rmax):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--alpha", help="Scatter plot alpha value",
                         type=float, default=0.75)
