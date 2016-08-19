@@ -51,13 +51,13 @@ def read_imgs(fname, idx, num=None):
     nz = hdr['nz']
     datatype = hdr['datatype']
     assert (idx < nz)
-    if num == None:
+    if num is None:
         num = nz - idx
     assert (idx + num <= nz)
     assert (num > 0)
     datasizes = {1: 2, 2: 4}
     with open(fname) as f:
-        f.seek(1024 + idx * datasizes[datatype] * nx * ny);  # seek to start of img idx
+        f.seek(1024 + idx * datasizes[datatype] * nx * ny)  # Seek to start of img idx.
         if datatype == 1:
             return n.reshape(n.fromfile(f, dtype='int16', count=nx * ny * num), (nx, ny, num), order='F')
         if datatype == 2:
@@ -65,7 +65,6 @@ def read_imgs(fname, idx, num=None):
 
 
 def read_header(fname):
-    hdr = None
     with open(fname) as f:
         hdr = {}
         header = n.fromfile(f, dtype=n.int32, count=256)
