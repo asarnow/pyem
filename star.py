@@ -5,9 +5,6 @@
 # Simple program for parsing and altering Relion .star files.
 # See help text and README file for more information.
 #
-# Program for projection subtraction in electron microscopy.
-# See help text and README file for more information.
-#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -62,13 +59,14 @@ def parse_star(starfile, keep_index=True):
     ln = 0
     with open(starfile, 'rU') as f:
         for l in f:
-            if l.startswith('_rln'):
+            if l.startswith("_rln"):
                 foundheader = True
                 lastheader = True
                 if keep_index:
-                    headers.append(l.rstrip())
+                    head = l.rstrip()
                 else:
-                    headers.append(l.split("#")[0].rstrip())
+                    head = l.split('#')[0].rstrip().lstrip('_')
+                headers.append(head)
             else:
                 lastheader = False
             if foundheader and not lastheader:
@@ -88,11 +86,13 @@ def write_star(starfile, star, reindex=True):
         f.write("loop_" + '\n')
         for i in range(len(star.columns)):
             if reindex and not indexed:  # No index present, append new, consecutive indices to each header line.
-                f.write(star.columns[i] + " #%d \n" % (i + 1))
+                line = star.columns[i] + " #%d \n" % (i + 1)
             elif reindex and indexed:  # Replace existing indices with new, consecutive indices.
-                f.write(star.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1))
+                line = star.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1)
             else:  # Use DataFrame column labels literally.
-                f.write(star.columns[i] + " \n")
+                line = star.columns[i] + " \n"
+            line = line if line.startswith('_') else '_' + line
+            f.write(line)
     star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
