@@ -23,7 +23,7 @@ import logging
 from pathos.multiprocessing import Pool
 from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform, Vec3f
 from EMAN2star import StarFile
-from sparx import generate_ctf, filt_ctf
+from pyem.particle import particles, make_proj, MetaData
 
 
 def main(options):
@@ -122,21 +122,6 @@ def main(options):
     return 0
 
 
-def particles(star):
-    """
-    Generator function using StarFile object to produce particle EMData and MetaData objects.
-    :param star: StarFile object
-    :return: Tuple holding (particle EMData, particle MetaData)
-    """
-    npart = len(star['rlnImageName'])
-    for i in range(npart):
-        ptcl_n = int(star['rlnImageName'][i].split("@")[0]) - 1
-        ptcl_name = star['rlnImageName'][i].split("@")[1]
-        ptcl = EMData(ptcl_name, ptcl_n)
-        meta = MetaData(star, i)
-        yield ptcl, meta
-
-
 def subtract(particle, dens, sub_dens, recenter=None, no_frc=False, low_cutoff=0.0, high_cutoff=0.7071):
     """
     Perform projection subtraction on one particle image.
@@ -174,22 +159,6 @@ def subtract(particle, dens, sub_dens, recenter=None, no_frc=False, low_cutoff=0
     return Result(ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub)
 
 
-def make_proj(dens, meta):
-    """
-    Project and CTF filter density according to particle metadata.
-    :param dens: EMData density
-    :param meta: Particle metadata (Euler angles and CTF parameters)
-    :return: CTF-filtered projection
-    """
-    t = Transform()
-    t.set_rotation({'psi': meta.psi, 'phi': meta.phi, 'theta': meta.theta, 'type': 'spider'})
-    t.set_trans(-meta.x_origin, -meta.y_origin)
-    proj = dens.project("standard", t)
-    ctf = generate_ctf(meta.ctf_params)
-    ctf_proj = filt_ctf(proj, ctf)
-    return ctf_proj
-
-
 class Result:
     """
     Class representing the metadata, intermediate calculation and final result of a subtraction operation.
@@ -213,46 +182,17 @@ class Result:
         self.ptcl_norm_sub = ptcl_norm_sub
 
 
-class MetaData:
+def update(self, star):
     """
-    Class representing particle metadata (from .star file).
-    Includes Euler angles, particle origin, and CTF parameters.
+    Updates StarFile entry to match MetaData instance.
+    Beware: ONLY UPDATES FIELDS MODIFIED ELSEWHERE IN THIS PROGRAM!
+    :param self: The MetaData object.
+    :param star: StarFile object with matching indices
+    :return: None
     """
-
-    def __init__(self, star, i):
-        """
-        Instantiate MetaData object for i'th particle in StarFile object.
-        :param star: StarFile object
-        :param i: Index of desired particle
-        """
-        self.i = i
-        self.phi = star['rlnAngleRot'][i]
-        self.psi = star['rlnAnglePsi'][i]
-        self.theta = star['rlnAngleTilt'][i]
-        self.x_origin = star['rlnOriginX'][i]
-        self.y_origin = star['rlnOriginY'][i]
-        # CTFFIND4 --> sparx CTF conventions (from CTER paper).
-        self.defocus = (star['rlnDefocusU'][i] + star['rlnDefocusV'][i]) / 20000.0
-        self.dfdiff = (star['rlnDefocusU'][i] - star['rlnDefocusV'][i]) / 10000.0
-        self.dfang = 90.0 - star['rlnDefocusAngle'][i]
-        self.apix = ((10000.0 * star['rlnDetectorPixelSize'][i]) /
-                     float(star['rlnMagnification'][i]))
-        self.voltage = star["rlnVoltage"][i]
-        self.cs = star["rlnSphericalAberration"][i]
-        self.ac = star["rlnAmplitudeContrast"][i] * 100.0
-        self.bfactor = 0
-        self.ctf_params = [self.defocus, self.cs, self.voltage, self.apix, self.bfactor, self.ac, self.dfdiff,
-                           self.dfang]
-
-    def update(self, star):
-        """
-        Updates StarFile entry to match MetaData instance.
-        Beware: ONLY UPDATES FIELDS MODIFIED ELSEWHERE IN THIS PROGRAM!
-        :param star: StarFile object with matching indices
-        :return: None
-        """
-        star['rlnOriginX'][self.i] = self.x_origin
-        star['rlnOriginY'][self.i] = self.y_origin
+    star['rlnOriginX'][self.i] = self.x_origin
+    star['rlnOriginY'][self.i] = self.y_origin
+MetaData.update = update  # Monkey patch the MetaData class.
 
 
 if __name__ == "__main__":
