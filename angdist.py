@@ -22,14 +22,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import sys
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
-from star import parse_star
-from matplotlib.transforms import Affine2D
-from mpl_toolkits.axisartist import floating_axes
-from mpl_toolkits.axisartist import angle_helper
 from matplotlib.projections.polar import PolarTransform
+from matplotlib.transforms import Affine2D
+from mpl_toolkits.axisartist import angle_helper
+from mpl_toolkits.axisartist import floating_axes
+from pyem.star import parse_star
 
 
 def main(args):

@@ -1,13 +1,12 @@
 #! /usr/bin/python2.7
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
-import sys
-import mrc
 import glob
 import logging
+import sys
 import numpy as np
-from scipy.ndimage.interpolation import affine_transform
 from pathos.multiprocessing import Pool
+from scipy.ndimage.interpolation import affine_transform
 
 
 def main(args):
