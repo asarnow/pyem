@@ -1,3 +1,5 @@
+# Copyright (C) 2016 Daniel Asarnow
+# University of California, San Francisco
 from distutils.core import setup
 
 setup(
