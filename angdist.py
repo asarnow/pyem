@@ -76,7 +76,7 @@ def main(args):
             data = [star.loc[i][[xfield, yfield]] for i in ind]
             for d, cls in zip(data, classes):
                 h, theta, r = compute_histogram(d, args.samples)
-                fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi,
+                fig, ax, aux_ax = make_figure(h, theta, r, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi,
                                               scale=args.scale, cmap=args.cmap, alpha=args.alpha)
                 if args.psi:
                     ax.axis["left"].label.set_text("Psi Angle")
@@ -86,6 +86,7 @@ def main(args):
                 fig.savefig(args.output + "_class%d." % cls + args.format, format=args.format, bbox_inches="tight",
                             dpi="figure",
                             transparent=args.transparent)
+                plt.close(fig)
             return 0
     else:
         data = star[[xfield, yfield]]
@@ -94,7 +95,7 @@ def main(args):
         raise NotImplementedError("Subplots are not yet supported")
 
     h, theta, r = compute_histogram(data, args.samples)
-    fig, ax, aux_ax = make_figure(h, theta, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi, scale=args.scale,
+    fig, ax, aux_ax = make_figure(h, theta, r, rmax=args.rmax, figsize=args.figsize, dpi=args.dpi, scale=args.scale,
                                   cmap=args.cmap, alpha=args.alpha)
     if args.psi:
         ax.axis["left"].label.set_text("Psi Angle")
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     parser.add_argument("--cmap", help="Colormap for matplotlib",
                         default="magma")
     parser.add_argument("--class", help="Breakdown angular distribution by class",
-                        type=int, dest="cls", nargs="?", const=0)
+                        type=int, dest="cls")
     parser.add_argument("--dpi", help="DPI of output",
                         type=int, default=300)
     parser.add_argument("--figsize", help="Figure size for matplotlib",
