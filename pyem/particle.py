@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from EMAN2 import EMData, Transform
 from sparx import generate_ctf, filt_ctf
+from pandas import DataFrame
 
 
 def particles(star):
@@ -27,6 +28,8 @@ def particles(star):
     :param star: StarFile object
     :return: Tuple holding (particle EMData, particle MetaData)
     """
+    if isinstance(star, DataFrame):
+        star = star.to_dict(orient="list")
     npart = len(star['rlnImageName'])
     for i in range(npart):
         meta = MetaData(star, i)
