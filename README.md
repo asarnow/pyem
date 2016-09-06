@@ -13,11 +13,15 @@ Documentation for the programs can be found in their usage text, comments in cod
  1. `projection_subtraction.py` - Perform projection subtraction using per-particle FRC normalization.
  + `recenter.py` - Recenter particles on the center-of-mass of corresponding 2D class-averages.
  + `angdist.py` - Graph angular distributions on polar scatter plots. Supports particle subset selection.
- + `star.py` - Alter .star files. Supports dropping arbitrary fields, Euler angles, etc.
+ + `pyem/star.py` - Alter .star files. Supports dropping arbitrary fields, Euler angles, etc.
+ + `project.py` - Project a map according to .star file entries (angles, CTF, etc.).
 
 ## Library modules
- 1. `mrc.py` - Simple, standalone MRC I/O functions.
- + `star.py` - Parse and write .star files. Uses pandas.DataFrame as a backend.
+ 1. `pyem/mrc.py` - Simple, standalone MRC I/O functions.
+ + `pyem/star.py` - Parse and write .star files. Uses pandas.DataFrame as a backend.
+
+## Other files
+ 1. `activate` - Place in `EMAN2/bin` to turn EMAN2 into a Python virtual environment.
 
 
 (C) 2016 Daniel Asarnow  
