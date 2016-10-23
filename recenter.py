@@ -7,10 +7,10 @@ import sys
 import numpy as np
 from pathos.multiprocessing import Pool
 from scipy.ndimage.interpolation import affine_transform
+from EMAN2 import EMData, Vec3f
 
 
 def main(args):
-
     inp = glob.glob(args.input)
 
     pool = None
@@ -23,6 +23,14 @@ def main(args):
     return 0
 
 
+def recenter(inp, tr=None):
+    if "mrc" in inp[-4:]:
+        im = EMData(inp)
+        if im.get_ndim() == 3:
+            com = Vec3f(*im.phase_cog()[:3])
+            im.set_translation(-com)
+
+
 def find_cm(im):
     l = np.floor(im.shape[0] / 2)
     x, y = np.meshgrid(np.arange(-l, l, dtype=np.double), np.arange(-l, l, dtype=np.double))
@@ -31,7 +39,7 @@ def find_cm(im):
     return mu_x, mu_y
 
 
-def recenter(im, cm, y=None):
+def recenter2d(im, cm, y=None):
     if len(cm) == 1 and y is None:
         t = np.array([[1, 0, cm], [0, 1, cm]])
     elif len(cm) == 1 and len(y) == 1:
