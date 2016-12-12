@@ -15,6 +15,7 @@ Documentation for the programs can be found in their usage text, comments in cod
  + `angdist.py` - Graph angular distributions on polar scatter plots. Supports particle subset selection.
  + `pyem/star.py` - Alter .star files. Supports dropping arbitrary fields, Euler angles, etc.
  + `project.py` - Project a map according to .star file entries (angles, CTF, etc.).
+ + `csparc2star.py` - Convert Cryosparc metadata files to Relion .star format.
 
 ## Library modules
  1. `pyem/mrc.py` - Simple, standalone MRC I/O functions.
