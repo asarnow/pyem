@@ -23,7 +23,7 @@ import pandas as pd
 from pyem.star import write_star
 
 
-convert = {u'uid': "",
+convert = {u'uid': None,
            u'ctf_params.akv': "_rlnVoltage",
            u'ctf_params.angast_deg': "_rlnDefocusAngle",
            u'ctf_params.angast_rad': None,
@@ -34,7 +34,7 @@ convert = {u'uid': "",
            u'ctf_params.mag': "_rlnMagnification",
            u'ctf_params.psize': None,
            u'ctf_params.wgh': "_rlnAmplitudeContrast",
-           u'data_input_relpath': None,
+           u'data_input_relpath': "_rlnImageName",
            u'data_input_idx': None,
            u'alignments.model.U': None,
            u'alignments.model.dr': None,
@@ -51,9 +51,12 @@ convert = {u'uid': "",
 
 def main(args):
     meta = parse_metadata(args.input)
-    headers = [convert[h] for h in meta.columns]
-    meta.columns = headers
-    write_star(args.output, meta, reindex=True)
+    meta["data_input_idx"] = ["%.6d" % i for i in meta["data_input_idx"]]
+    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")
+    rlnheaders = [convert[h] for h in meta.columns if convert[h] is not None]
+    star = meta[[h for h in meta.columns if convert[h] is not None]]
+    star.columns = rlnheaders
+    write_star(args.output, star, reindex=True)
     return 0
 
 
