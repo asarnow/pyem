@@ -66,7 +66,7 @@ def main(options):
             lambda x: subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc,
                                low_cutoff=options.low_cutoff,
                                high_cutoff=options.high_cutoff), particles(star),
-            chunksize=min(npart / options.nproc, 1000))
+            chunksize=min(npart / options.nproc, options.maxchunk))
     else:  # Use serial generator.
         results = (subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc, low_cutoff=options.low_cutoff,
                             high_cutoff=options.high_cutoff) for x in particles(star))
@@ -203,6 +203,7 @@ if __name__ == "__main__":
     parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
     parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
     parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
+    parser.add_argument("--maxchunk", type=int, default=1000, help="Maximum task chunk size")
     parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
     parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--recenter", action="store_true", default=False,
