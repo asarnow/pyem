@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import argparse
 import sys
+import numpy as np
 import pandas as pd
 from pyem.star import write_star
 
@@ -50,12 +51,27 @@ convert = {u'uid': None,
 
 
 def main(args):
-    meta = parse_metadata(args.input)
-    meta["data_input_idx"] = ["%.6d" % i for i in meta["data_input_idx"]]
-    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")
-    rlnheaders = [convert[h] for h in meta.columns if convert[h] is not None]
-    star = meta[[h for h in meta.columns if convert[h] is not None]]
+    meta = parse_metadata(args.input)  # Read cryosparc metadata file.
+    meta["data_input_idx"] = ["%.6d" % i for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
+    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")  # Construct _rlnImageName field.
+    # Take care of trivial mappings.
+    rlnheaders = [convert[h] for h in meta.columns if h in convert and convert[h] is not None]
+    star = meta[[h for h in meta.columns if h in convert and convert[h] is not None]].copy()
     star.columns = rlnheaders
+
+    # Convert class assignments.
+    phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
+    if len(phic.columns) > 0:  # Check class assignments exist in input.
+        phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
+        star["_rlnClassNumber"] = phic.idxmax(axis=1) + 1  # Compute most probable classes and add one for Relion indexing.
+        if args.minphic is not None:
+            mask = np.all(phic < args.minphic, axis=1)
+            if args.drop_bad:
+                star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
+            else:
+                star.loc[mask, "_rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
+
+    # Write Relion .star file with correct headers.
     write_star(args.output, star, reindex=True)
     return 0
 
@@ -85,4 +101,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Cryosparc metadata .csv file")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
+    parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     sys.exit(main(parser.parse_args()))
