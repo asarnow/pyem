@@ -39,9 +39,14 @@ def main(options):
 
     star = StarFile(options.input)
     npart = len(star['rlnImageName'])
-
-    dens = EMData(options.wholemap)
+    
     sub_dens = EMData(options.submap)
+
+    if options.wholemap is not None:
+        dens = EMData(options.wholemap)
+    else:
+        print "Reference map is required."
+        return 1
 
     # Write star header for output.star.
     top_header = "\ndata_\n\nloop_\n"
@@ -53,6 +58,10 @@ def main(options):
         output_star.write("_{0} #{1}\n".format(heading, i + 1))
 
     if options.recenter:  # Compute difference vector between new and old mass centers.
+        if options.wholemap is None:
+            print "Reference map required for recentering."
+            return 1
+
         new_dens = dens - sub_dens
         # Note the sign of the shift in coordinate frame is opposite the shift in the CoM.
         recenter = Vec3f(*dens.phase_cog()[:3]) - Vec3f(*new_dens.phase_cog()[:3])
