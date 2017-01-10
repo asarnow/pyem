@@ -52,7 +52,7 @@ convert = {u'uid': None,
 
 def main(args):
     meta = parse_metadata(args.input)  # Read cryosparc metadata file.
-    meta["data_input_idx"] = ["%.6d" % i for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
+    meta["data_input_idx"] = ["%.6d" % (i+1) for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
     meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")  # Construct _rlnImageName field.
     # Take care of trivial mappings.
     rlnheaders = [convert[h] for h in meta.columns if h in convert and convert[h] is not None]
