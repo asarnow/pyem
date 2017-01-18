@@ -32,7 +32,7 @@ def main(args):
         if len(clsfields) == 0:
             print("No class labels found")
             return 1
-        ind = star[clsfields[0]] == args.cls
+        ind = star[clsfields[0]].isin(args.cls)
         if not np.any(ind):
             print("Specified class has no members")
             return 1
@@ -116,8 +116,8 @@ def write_star(starfile, star, reindex=True):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--class", help="Keep only this class in output",
-                        type=int, dest="cls")
+    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
