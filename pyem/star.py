@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import re
+import os.path
 import numpy as np
 import pandas as pd
 
@@ -43,11 +44,27 @@ def main(args):
 
     if args.drop_containing is not None:
         containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
+        if args.invert:
+            containing_fields = list(set(star.columns) - set(containing_fields))
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
     if args.offset_group is not None:
         groupnum_fields = [f for f in star.columns if "GroupNumber" in f]
         star[groupnum_fields] += args.offset_group
+
+    if args.pick:
+        fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
+        containing_fields = [f for q in fields for f in star.columns if q in f]
+        containing_fields = list(set(star.columns) - set(containing_fields))
+        star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
+
+    if args.split_micrographs:
+        gb = star.groupby("rlnMicrographName")
+        for g in gb:
+            g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
+            write_star(os.path.join(args.output, os.path.basename(g[0])[:-4]) + args.suffix, g[1])
+        return 0
+        
 
     write_star(args.output, star)
     return 0
@@ -106,8 +123,16 @@ if __name__ == "__main__":
     parser.add_argument("--drop-containing",
                         help="Drop fields containing string from output, may be passed multiple times",
                         action="append")
+    parser.add_argument("--invert", help="Invert field match conditions",
+                        action="store_true")
+    parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
+                        action="store_true")
     parser.add_argument("--offset-group", help="Add fixed offset to group number",
                         type=int)
+    parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
+                        action="store_true")
+    parser.add_argument("--suffix", help="Suffix for multiple output files",
+                        type=str, default="")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
