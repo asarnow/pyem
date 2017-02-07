@@ -63,6 +63,13 @@ def main(args):
         groupnum_fields = [f for f in star.columns if "GroupNumber" in f]
         star[groupnum_fields] += args.offset_group
 
+    if args.subsample_micrographs is not None:
+        mgraphs = star["rlnMicrographName"].unique()
+        if args.subsample_micrographs < 1:
+            args.subsample_micrographs = max(np.round(args.subsample_micrographs * len(mgraphs)), 1)
+        ind = np.random.randint(0, len(mgraphs), args.subsample_micrographs)
+        star = star[star["rlnMicrographName"].isin(mgraphs[ind])]
+
     if args.subsample is not None:
         if args.subsample < 1:
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
@@ -151,8 +158,10 @@ if __name__ == "__main__":
                         type=int)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
-    parser.add_argument("--subsample", help="Randomly subsample particles",
-                        type=float, metavar="N")
+    parser.add_argument("--subsample", help="Randomly subsample remaining particles",
+                        type=float, metavar="N") 
+    parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
+                        type=float)
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
     parser.add_argument("input", help="Input .star file")
