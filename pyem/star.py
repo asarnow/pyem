@@ -42,9 +42,10 @@ def main(args):
 
     if args.info:
         if "rlnClassNumber" in star.columns:
-            clshist = np.histogram(star["rlnClassNumber"], bins=cent2edge(np.array(sorted(star["rlnClassNumber"].unique()))))[0]
+            clsuniq = star["rlnClassNumber"].unique()
+            clshist = np.histogram(star["rlnClassNumber"], bins=cent2edge(np.array(sorted(clsuniq))))[0]
             print("%d particles, %d classes, %.3f +/- %.3f particles per class" %
-                    (star.shape[0], len(star["rlnClassNumber"]), np.mean(clshist), np.std(clshist)))
+                    (star.shape[0], len(clsuniq), np.mean(clshist), np.std(clshist)))
         else:
             print("%d particles" % star.shape[0])
 
