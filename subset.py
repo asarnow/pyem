@@ -48,6 +48,11 @@ def main(args):
         ind = star["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
         star = star.loc[ind]
 
+    if args.subsample is not None:
+        if args.subsample < 1:
+            args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
+        star = star.sample(np.int(args.subsample), random_state=args.seed)
+
     write_star(args.output, star)
     return 0
 
@@ -63,6 +68,10 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--min-ctf-fom", help="Minimum CTF figure-of-merit",
                         type=float)
+    parser.add_argument("--seed", help="Seed for random number generators",
+                        type=int)
+    parser.add_argument("--subsample", help="Randomly subsample particles",
+                        type=float, metavar="N")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))

@@ -17,11 +17,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
 import sys
 import re
 import os.path
 import numpy as np
 import pandas as pd
+from util import cent2edge
 
 
 def main(args):
@@ -38,6 +40,14 @@ def main(args):
             return 1
         star = star.loc[ind]
 
+    if args.info:
+        if "rlnClassNumber" in star.columns:
+            clshist = np.histogram(star["rlnClassNumber"], bins=cent2edge(np.array(sorted(star["rlnClassNumber"].unique()))))[0]
+            print("%d particles, %d classes, %.3f +/- %.3f particles per class" %
+                    (star.shape[0], len(star["rlnClassNumber"]), np.mean(clshist), np.std(clshist)))
+        else:
+            print("%d particles" % star.shape[0])
+
     if args.drop_angles:
         ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
         star.drop(ang_fields, axis=1, inplace=True, errors="ignore")
@@ -52,6 +62,11 @@ def main(args):
         groupnum_fields = [f for f in star.columns if "GroupNumber" in f]
         star[groupnum_fields] += args.offset_group
 
+    if args.subsample is not None:
+        if args.subsample < 1:
+            args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
+        star = star.sample(np.int(args.subsample), random_state=args.seed)
+
     if args.pick:
         fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
         containing_fields = [f for q in fields for f in star.columns if q in f]
@@ -65,8 +80,8 @@ def main(args):
             write_star(os.path.join(args.output, os.path.basename(g[0])[:-4]) + args.suffix, g[1])
         return 0
         
-
-    write_star(args.output, star)
+    if args.output is not None:
+        write_star(args.output, star)
     return 0
 
 
@@ -123,16 +138,24 @@ if __name__ == "__main__":
     parser.add_argument("--drop-containing",
                         help="Drop fields containing string from output, may be passed multiple times",
                         action="append")
+    parser.add_argument("--info", help="Print information about initial file",
+                        action="store_true")
     parser.add_argument("--invert", help="Invert field match conditions",
                         action="store_true")
     parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
                         action="store_true")
     parser.add_argument("--offset-group", help="Add fixed offset to group number",
                         type=int)
+    parser.add_argument("--seed", help="Seed for random number generators",
+                        type=int)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
+    parser.add_argument("--subsample", help="Randomly subsample particles",
+                        type=float, metavar="N")
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
     parser.add_argument("input", help="Input .star file")
-    parser.add_argument("output", help="Output .star file")
+    parser.add_argument("output", help="Output .star file",
+                        default=None, nargs="?")
     sys.exit(main(parser.parse_args()))
+
