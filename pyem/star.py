@@ -65,7 +65,7 @@ def main(args):
 
     if args.subsample is not None:
         if args.subsample < 1:
-            args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
+            args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
         star = star.sample(np.int(args.subsample), random_state=args.seed)
 
     if args.pick:
