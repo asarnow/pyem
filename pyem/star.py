@@ -41,13 +41,15 @@ def main(args):
         star = star.loc[ind]
 
     if args.info:
+        print("%d particles" % star.shape[0])
+        if "rlnMicrographName" in star.columns:
+            mgraphcnt = star["rlnMicrographName"].value_counts()
+            print("%d micrographs, %.3f +/- %.3f particles per micrograph" % 
+                    (len(mgraphcnt), np.mean(mgraphcnt), np.std(mgraphcnt)))
         if "rlnClassNumber" in star.columns:
-            clsuniq = star["rlnClassNumber"].unique()
-            clshist = np.histogram(star["rlnClassNumber"], bins=cent2edge(np.array(sorted(clsuniq))))[0]
-            print("%d particles, %d classes, %.3f +/- %.3f particles per class" %
-                    (star.shape[0], len(clsuniq), np.mean(clshist), np.std(clshist)))
-        else:
-            print("%d particles" % star.shape[0])
+            clscnt = star["rlnClassNumber"].value_counts()
+            print("%d classes, %.3f +/- %.3f particles per class" %
+                    (len(clscnt), np.mean(clscnt), np.std(clscnt)))
 
     if args.drop_angles:
         ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
