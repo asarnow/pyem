@@ -77,6 +77,12 @@ def main(args):
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
         star = star.sample(np.int(args.subsample), random_state=args.seed)
 
+    if args.recenter:
+        star["rlnCoordinateX"] = star["rlnCoordinateX"] - star["rlnOriginX"]
+        star["rlnCoordinateY"] = star["rlnCoordinateY"] - star["rlnOriginY"]
+        star["rlnOriginX"] = 0
+        star["rlnOriginY"] = 0
+
     if args.pick:
         fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
         containing_fields = [f for q in fields for f in star.columns if q in f]
@@ -152,10 +158,12 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--invert", help="Invert field match conditions",
                         action="store_true")
-    parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
-                        action="store_true")
     parser.add_argument("--offset-group", help="Add fixed offset to group number",
                         type=int)
+    parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
+                        action="store_true")
+    parser.add_argument("--recenter", help="Subtract origin from coordinates",
+                        action="store_true")
     parser.add_argument("--seed", help="Seed for random number generators",
                         type=int)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
