@@ -23,7 +23,6 @@ import re
 import os.path
 import numpy as np
 import pandas as pd
-from util import cent2edge
 
 
 def main(args):
@@ -84,7 +83,7 @@ def main(args):
         star["rlnOriginY"] = 0
 
     if args.copy_paths is not None:
-        path_star = read_star(args.copy_paths, keep_index=False)
+        path_star = parse_star(args.copy_paths, keep_index=False)
         star["rlnImageName"] = path_star["rlnImageName"]
 
 
