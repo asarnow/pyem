@@ -69,7 +69,7 @@ def main(args):
 
     # Convert class assignments.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
-    if len(phic.columns) > 0:  # Check class assignments exist in input.
+    if len(phic.columns) > 1:  # Check class assignments exist in input.
         phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
         star["_rlnClassNumber"] = phic.idxmax(axis=1) + 1  # Compute most probable classes and add one for Relion indexing.
         if args.minphic is not None:
