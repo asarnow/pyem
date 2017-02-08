@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
 import argparse
 import sys
 import numpy as np
@@ -53,6 +54,13 @@ convert = {u'uid': None,
 def main(args):
     meta = parse_metadata(args.input)  # Read cryosparc metadata file.
     meta["data_input_idx"] = ["%.6d" % (i+1) for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
+
+    if "data_input_relpath" not in meta.columns:
+        if args.data_path is None:
+            print("Data path missing, use --data-path to specify particle stack path")
+            return 1
+        meta["data_input_relpath"] = args.data_path
+
     meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")  # Construct _rlnImageName field.
     # Take care of trivial mappings.
     rlnheaders = [convert[h] for h in meta.columns if h in convert and convert[h] is not None]
@@ -103,4 +111,5 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output .star file")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
+    parser.add_argument("--data-path", help="Path to single particle stack", type=str)
     sys.exit(main(parser.parse_args()))
