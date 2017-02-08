@@ -83,6 +83,11 @@ def main(args):
         star["rlnOriginX"] = 0
         star["rlnOriginY"] = 0
 
+    if args.copy_paths is not None:
+        path_star = read_star(args.copy_paths, keep_index=False)
+        star["rlnImageName"] = path_star["rlnImageName"]
+
+
     if args.pick:
         fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
         containing_fields = [f for q in fields for f in star.columns if q in f]
@@ -149,6 +154,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
+    parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
+                        type=str)
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
