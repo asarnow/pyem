@@ -47,8 +47,8 @@ convert = {u'uid': None,
            u'alignments.model.r.0': "_rlnAngleRot",
            u'alignments.model.r.1': "_rlnAngleTilt",
            u'alignments.model.r.2': "_rlnAnglePsi",
-           u'alignments.model.t.0': "_rlnCoordinateX",
-           u'alignments.model.t.1': "_rlnCoordinateY"}
+           u'alignments.model.t.0': "_rlnOriginX",
+           u'alignments.model.t.1': "_rlnOriginY"}
 
 
 def main(args):
