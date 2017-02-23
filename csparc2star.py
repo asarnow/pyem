@@ -25,30 +25,31 @@ import pandas as pd
 from pyem.star import write_star
 
 
-convert = {u'uid': None,
-           u'ctf_params.akv': "_rlnVoltage",
-           u'ctf_params.angast_deg': "_rlnDefocusAngle",
+general = {u'uid': None,
+           u'ctf_params.akv': "rlnVoltage",
+           u'ctf_params.angast_deg': "rlnDefocusAngle",
            u'ctf_params.angast_rad': None,
-           u'ctf_params.cs': "_rlnSphericalAberration",
-           u'ctf_params.detector_psize': "_rlnDetectorPixelSize",
-           u'ctf_params.df1': "_rlnDefocusU",
-           u'ctf_params.df2': "_rlnDefocusV",
-           u'ctf_params.mag': "_rlnMagnification",
+           u'ctf_params.cs': "rlnSphericalAberration",
+           u'ctf_params.detector_psize': "rlnDetectorPixelSize",
+           u'ctf_params.df1': "rlnDefocusU",
+           u'ctf_params.df2': "rlnDefocusV",
+           u'ctf_params.mag': "rlnMagnification",
            u'ctf_params.psize': None,
-           u'ctf_params.wgh': "_rlnAmplitudeContrast",
-           u'data_input_relpath': "_rlnImageName",
-           u'data_input_idx': None,
-           u'alignments.model.U': None,
-           u'alignments.model.dr': None,
-           u'alignments.model.dt': None,
-           u'alignments.model.ess_R': None,
-           u'alignments.model.ess_S': None,
-           u'alignments.model.phiC': None,
-           u'alignments.model.r.0': "_rlnAngleRot",
-           u'alignments.model.r.1': "_rlnAngleTilt",
-           u'alignments.model.r.2': "_rlnAnglePsi",
-           u'alignments.model.t.0': "_rlnOriginX",
-           u'alignments.model.t.1': "_rlnOriginY"}
+           u'ctf_params.wgh': "rlnAmplitudeContrast",
+           u'data_input_relpath': "rlnImageName",
+           u'data_input_idx': None}
+
+model = { u'alignments.model.U': None,
+          u'alignments.model.dr': None,
+          u'alignments.model.dt': None,
+          u'alignments.model.ess_R': None,
+          u'alignments.model.ess_S': None,
+          u'alignments.model.phiC': None,
+          u'alignments.model.r.0': "rlnAngleRot",
+          u'alignments.model.r.1': "rlnAngleTilt",
+          u'alignments.model.r.2': "rlnAnglePsi",
+          u'alignments.model.t.0': "rlnOriginX",
+          u'alignments.model.t.1': "rlnOriginY"}
 
 
 def main(args):
@@ -63,21 +64,35 @@ def main(args):
 
     meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")  # Construct _rlnImageName field.
     # Take care of trivial mappings.
-    rlnheaders = [convert[h] for h in meta.columns if h in convert and convert[h] is not None]
-    star = meta[[h for h in meta.columns if h in convert and convert[h] is not None]].copy()
+    rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
+    star = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
     star.columns = rlnheaders
 
-    # Convert class assignments.
+    # general class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
     if len(phic.columns) > 1:  # Check class assignments exist in input.
-        phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
-        star["_rlnClassNumber"] = phic.idxmax(axis=1) + 1  # Compute most probable classes and add one for Relion indexing.
-        if args.minphic is not None:
-            mask = np.all(phic < args.minphic, axis=1)
-            if args.drop_bad:
-                star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
-            else:
-                star.loc[mask, "_rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
+        # phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
+        phic.columns = range(len(phic.columns))
+        cls = phic.idxmax(axis=1)
+        for p in model:
+            if model[p] is not None:
+                pspec = p.split("model")[1]
+                param = meta[[h for h in meta.columns if pspec in h]]
+                param.columns = phic.columns
+                star[model[p]] = param.lookup(param.index, cls)
+        star["rlnClassNumber"] = cls + 1  # Compute most probable classes and add one for Relion indexing.
+    else:
+        for p in model:
+            if model[p] is not None and p in meta.columns:
+                star[model[p]] = meta[p]
+        star["rlnClassNumber"] = 1
+
+    if args.minphic is not None:
+        mask = np.all(phic < args.minphic, axis=1)
+        if args.drop_bad:
+           star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
+        else:
+           star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
 
     # Write Relion .star file with correct headers.
     write_star(args.output, star, reindex=True)
