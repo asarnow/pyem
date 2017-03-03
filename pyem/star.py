@@ -27,6 +27,8 @@ import pandas as pd
 
 def main(args):
     star = parse_star(args.input, keep_index=False)
+    
+    otherstar = None
 
     if args.cls is not None:
         clsfields = [f for f in star.columns if "ClassNumber" in f]
@@ -69,12 +71,19 @@ def main(args):
         if args.subsample_micrographs < 1:
             args.subsample_micrographs = max(np.round(args.subsample_micrographs * len(mgraphs)), 1)
         ind = np.random.randint(0, len(mgraphs), args.subsample_micrographs)
-        star = star[star["rlnMicrographName"].isin(mgraphs[ind])]
+        mask = star["rlnMicrographName"].isin(mgraphs[ind])
+        if args.auxout is not None:
+            otherstar = star.loc[~mask]
+        star = star.loc[mask]
 
     if args.subsample is not None:
         if args.subsample < 1:
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
-        star = star.sample(np.int(args.subsample), random_state=args.seed)
+        ind = np.random.randint(0, star.shape[0], args.subsample)
+        mask = star.index.isin(ind)
+        if args.auxout is not None:
+            otherstar = star.loc[~mask]
+        star = star.loc[mask]
 
     if args.recenter:
         star["rlnCoordinateX"] = star["rlnCoordinateX"] - star["rlnOriginX"]
@@ -99,6 +108,9 @@ def main(args):
             g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
             write_star(os.path.join(args.output, os.path.basename(g[0])[:-4]) + args.suffix, g[1])
         return 0
+
+    if args.auxout is not None and otherstar is not None:
+        write_star(args.auxout, otherstar)
         
     if args.output is not None:
         write_star(args.output, star)
@@ -151,6 +163,8 @@ def write_star(starfile, star, reindex=True):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
+                        type=str)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
@@ -170,8 +184,8 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--recenter", help="Subtract origin from coordinates",
                         action="store_true")
-    parser.add_argument("--seed", help="Seed for random number generators",
-                        type=int)
+#    parser.add_argument("--seed", help="Seed for random number generators",
+#                        type=int)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
     parser.add_argument("--subsample", help="Randomly subsample remaining particles",
