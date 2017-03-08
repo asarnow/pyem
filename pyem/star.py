@@ -23,6 +23,8 @@ import re
 import os.path
 import numpy as np
 import pandas as pd
+import json
+from util import rot2euler
 
 
 def main(args):
@@ -85,6 +87,10 @@ def main(args):
             otherstar = star.loc[~mask]
         star = star.loc[mask]
 
+    if args.transform is not None:
+        r = np.array(json.loads(args.transform))
+        star = transform_star(star, r, inplace=True)
+
     if args.recenter:
         star["rlnCoordinateX"] = star["rlnCoordinateX"] - star["rlnOriginX"]
         star["rlnCoordinateY"] = star["rlnCoordinateY"] - star["rlnOriginY"]
@@ -94,7 +100,6 @@ def main(args):
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
         star["rlnImageName"] = path_star["rlnImageName"]
-
 
     if args.pick:
         fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
@@ -160,6 +165,39 @@ def write_star(starfile, star, reindex=True):
     star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
+def transform_star(star, r, t=None, inplace=False):
+    """
+    Transform particle angles and origins according to a rotation
+    matrix (in radians) and an optional translation vector.
+    The translation may also be given as the 4th column of a 3x4 matrix.
+    """
+    assert(r.shape[0] == 3)
+    if r.shape[1] == 4 and t is None:
+        t = r[:,-1]
+        r = r[:,:3]
+    else:
+        assert(r.shape == (3,3))
+
+    psi, theta, phi = rot2euler(r)
+
+    if inplace:
+        newstar = star
+    else:
+        newstar = star.copy()
+
+    newstar["rlnAngleRot"] += np.rad2deg(phi)
+    newstar["rlnAngleTilt"] += np.rad2deg(theta)
+    newstar["rlnAnglePsi"] += np.rad2deg(psi)
+
+    if t is not None:
+        assert(len(t) == 3)
+        tt = r.dot(t)
+        newstar["rlnOriginX"] += tt[0]
+        newstar["rlnOriginY"] += tt[1]
+
+    return newstar
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -194,6 +232,8 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
+    parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
+                        type=str)
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file",
                         default=None, nargs="?")
