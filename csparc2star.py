@@ -20,9 +20,11 @@
 from __future__ import print_function
 import argparse
 import sys
+import json
 import numpy as np
 import pandas as pd
 from pyem.star import write_star
+from pyem.star import transform_star
 
 
 general = {u'uid': None,
@@ -94,6 +96,10 @@ def main(args):
         else:
            star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
 
+    if args.transform is not None:
+        r = np.array(json.loads(args.transform))
+        star = transform_star(star, r, inplace=True)
+
     # Write Relion .star file with correct headers.
     write_star(args.output, star, reindex=True)
     return 0
@@ -127,4 +133,5 @@ if __name__ == "__main__":
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
+    parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)", type=str)
     sys.exit(main(parser.parse_args()))
