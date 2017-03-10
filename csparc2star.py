@@ -119,7 +119,7 @@ def parse_metadata(csvfile):
                 dtypes = dtypes.rstrip().split(",")
                 idx = _i + 1
                 break
-    meta = pd.read_csv(csvfile, skiprows=idx, header=None)
+    meta = pd.read_csv(csvfile, skiprows=idx, header=None, skip_blank_lines=True)
     if headers is None:
         return None
     meta.columns = headers
