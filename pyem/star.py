@@ -72,7 +72,7 @@ def main(args):
         mgraphs = star["rlnMicrographName"].unique()
         if args.subsample_micrographs < 1:
             args.subsample_micrographs = max(np.round(args.subsample_micrographs * len(mgraphs)), 1)
-        ind = np.random.randint(0, len(mgraphs), args.subsample_micrographs)
+        ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
         mask = star["rlnMicrographName"].isin(mgraphs[ind])
         if args.auxout is not None:
             otherstar = star.loc[~mask]
@@ -81,7 +81,7 @@ def main(args):
     if args.subsample is not None:
         if args.subsample < 1:
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
-        ind = np.random.randint(0, star.shape[0], args.subsample)
+        ind = np.random.choice(star.shape[0], size=args.subsample, replace=False)
         mask = star.index.isin(ind)
         if args.auxout is not None:
             otherstar = star.loc[~mask]
