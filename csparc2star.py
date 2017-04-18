@@ -96,6 +96,11 @@ def main(args):
         else:
            star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
 
+    if args.rad2deg:
+        angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+        for a in angles:
+            star[a] = np.rad2deg(star[a])
+
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         star = transform_star(star, r, inplace=True)
@@ -133,5 +138,6 @@ if __name__ == "__main__":
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
+    parser.add_argument("--rad2deg", help="Convert angles from radians to degrees", action="store_true")
     parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)", type=str)
     sys.exit(main(parser.parse_args()))
