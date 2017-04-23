@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 from pyem.star import write_star
 from pyem.star import transform_star
+from pyem.util import rot2euler
 
 
 general = {u'uid': None,
@@ -89,6 +90,19 @@ def main(args):
                 star[model[p]] = meta[p]
         star["rlnClassNumber"] = 1
 
+    # at this point, all the particles have rlnAngleRot, rlnAngleTilt, rlnAnglePsi set from the cryosparc model with maximum posterior
+    # but the angles are actually axis angle coordinates. So loop over images and convert:
+    all_rs = star[['rlnAngleRot', 'rlnAngleTilt', 'rlnAnglePsi']].as_matrix()
+    all_eas = np.empty_like(all_rs)
+    for idx in range(len(all_rs)):
+        R = expmap(all_rs[idx])
+        psi, theta, phi = rot2euler(R)
+        all_eas[idx] = np.array([phi, theta, psi])
+    # save and convert to degrees
+    star['rlnAngleRot'] = all_eas[:,0]  * 180.0 / np.pi
+    star['rlnAngleTilt'] = all_eas[:,1] * 180.0 / np.pi
+    star['rlnAnglePsi'] = all_eas[:,2]  * 180.0 / np.pi
+
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
         if args.drop_bad:
@@ -104,6 +118,16 @@ def main(args):
     write_star(args.output, star, reindex=True)
     return 0
 
+def expmap(e):
+    " Convert axis-angle vector e into 3D rotation matrix "
+    theta = np.linalg.norm(e)
+    if theta < 1e-16:
+        return np.identity(3, dtype=e.dtype)
+    k = e/theta
+    K = np.array([[    0,-k[2], k[1]],\
+                 [ k[2],    0,-k[0]],\
+                 [-k[1], k[0],   0]],dtype=e.dtype)
+    return np.identity(3, dtype=e.dtype) + np.sin(theta)*K + (1-np.cos(theta))*np.dot(K,K)
 
 def parse_metadata(csvfile):
     with open(csvfile, 'rU') as f:
