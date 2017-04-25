@@ -34,23 +34,52 @@ def isrotation(r, tol=1e-4):
 
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
-    assert(isrotation(r))
+#    assert(isrotation(r))
 
-    if np.abs(r[2,0]) != 1:
-        theta = -np.arcsin(r[2,0])
-        # theta2 = pi - theta
-        psi = np.arctan2(r[2,1] / np.cos(theta), r[2,2] / np.cos(theta));
-        # psi2 = np.arctan2(r[2,1] / np.cos(theta2), r[2,2] / np.cos(theta2));
+#    if np.abs(r[2,0]) != 1:
+#        theta = -np.arcsin(r[2,0])
+#        # theta2 = pi - theta
+#        psi = np.arctan2(r[2,1] / np.cos(theta), r[2,2] / np.cos(theta));
+#        # psi2 = np.arctan2(r[2,1] / np.cos(theta2), r[2,2] / np.cos(theta2));
+#
+#        phi = np.arctan2(r[1,0] / np.cos(theta), r[0,0] / np.cos(theta));
+#        # phi2 = np.arctan2(r[1,0] / np.cos(theta2), r[0,0] / np.cos(theta2));
+#    else:
+#        phi = 0
+#        if r[2,0] == -1:
+#            theta = pi/2
+#            psi = phi + np.arctan2(r[0,1], r[0,2])
+#        else:
+#            theta = -pi/2
+#            psi = -phi + np.arctan2(-r[0,1], -r[0,2])
 
-        phi = np.arctan2(r[1,0] / np.cos(theta), r[0,0] / np.cos(theta));
-        # phi2 = np.arctan2(r[1,0] / np.cos(theta2), r[0,0] / np.cos(theta2));
-    else:
-        phi = 0
-        if r[2,0] == -1:
-            theta = pi/2
-            psi = phi + np.arctan2(r[0,1], r[0,2])
+    r = r.T
+#    psi = np.arctan2(r[1,2], r[2,2])
+#    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
+#    theta = np.arctan2(-r[0,2], c2)
+#    s1 = np.sin(psi)
+#    c1 = np.cos(psi)
+#    phi = np.arctan2(s1*r[2,0] - c1*r[1,0], c1*r[1,1] - s1*r[2,1])
+    epsilon = np.finfo(np.double).eps
+    abs_sb = np.sqrt(r[0,2]**2 + r[1,2]**2)
+    if abs_sb > 16 * epsilon:
+        gamma = np.arctan2(r[1, 2], -r[0, 2])
+        alpha = np.arctan2(r[2, 1], r[2, 0])
+        if np.abs(np.sin(gamma)) < epsilon:
+            sign_sb = np.sign(-r[0, 2]) / np.cos(gamma)
         else:
-            theta = -pi/2
-            psi = -phi + np.arctan2(-r[0,1], -r[0,2])
-    return psi, theta, phi
+            sign_sb = np.sign(r[1, 2]) if np.sin(gamma) > 0 else -np.sign(r[1, 2])
+        beta = np.arctan2(sign_sb * abs_sb, r[2, 2])
+    else:
+        if np.sign(r[2,2]) > 0:
+            alpha = 0
+            beta = 0
+            gamma = np.arctan2(-r[1, 0], r[0, 0])
+        else:
+            alpha = 0
+            beta = np.pi
+            gamma = np.arctan2(r[1, 0], -r[0, 0])
+
+#    return psi, theta, phi
+    return alpha, beta, gamma
 

@@ -92,16 +92,18 @@ def main(args):
 
     # at this point, all the particles have rlnAngleRot, rlnAngleTilt, rlnAnglePsi set from the cryosparc model with maximum posterior
     # but the angles are actually axis angle coordinates. So loop over images and convert:
-    all_rs = star[['rlnAngleRot', 'rlnAngleTilt', 'rlnAnglePsi']].as_matrix()
-    all_eas = np.empty_like(all_rs)
-    for idx in range(len(all_rs)):
-        R = expmap(all_rs[idx])
-        psi, theta, phi = rot2euler(R)
-        all_eas[idx] = np.array([phi, theta, psi])
-    # save and convert to degrees
-    star['rlnAngleRot'] = all_eas[:,0]  * 180.0 / np.pi
-    star['rlnAngleTilt'] = all_eas[:,1] * 180.0 / np.pi
-    star['rlnAnglePsi'] = all_eas[:,2]  * 180.0 / np.pi
+    angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+    star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+#    all_rs = star[angles].as_matrix()
+#    all_eas = np.empty_like(all_rs)
+#    for idx in range(len(all_rs)):
+#        R = expmap(all_rs[idx])
+#        psi, theta, phi = rot2euler(R)
+#        all_eas[idx] = np.array([phi, theta, psi])
+#    # save and convert to degrees
+#    star['rlnAngleRot'] = all_eas[:,0]  * 180.0 / np.pi
+#    star['rlnAngleTilt'] = all_eas[:,1] * 180.0 / np.pi
+#    star['rlnAnglePsi'] = all_eas[:,2]  * 180.0 / np.pi
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
@@ -109,11 +111,6 @@ def main(args):
            star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
         else:
            star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
-
-    if args.rad2deg:
-        angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
-        for a in angles:
-            star[a] = np.rad2deg(star[a])
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
@@ -162,6 +159,5 @@ if __name__ == "__main__":
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
-    parser.add_argument("--rad2deg", help="Convert angles from radians to degrees", action="store_true")
     parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)", type=str)
     sys.exit(main(parser.parse_args()))
