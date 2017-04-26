@@ -35,24 +35,6 @@ def isrotation(r, tol=1e-4):
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
 #    assert(isrotation(r))
-
-#    if np.abs(r[2,0]) != 1:
-#        theta = -np.arcsin(r[2,0])
-#        # theta2 = pi - theta
-#        psi = np.arctan2(r[2,1] / np.cos(theta), r[2,2] / np.cos(theta));
-#        # psi2 = np.arctan2(r[2,1] / np.cos(theta2), r[2,2] / np.cos(theta2));
-#
-#        phi = np.arctan2(r[1,0] / np.cos(theta), r[0,0] / np.cos(theta));
-#        # phi2 = np.arctan2(r[1,0] / np.cos(theta2), r[0,0] / np.cos(theta2));
-#    else:
-#        phi = 0
-#        if r[2,0] == -1:
-#            theta = pi/2
-#            psi = phi + np.arctan2(r[0,1], r[0,2])
-#        else:
-#            theta = -pi/2
-#            psi = -phi + np.arctan2(-r[0,1], -r[0,2])
-
     r = r.T
 #    psi = np.arctan2(r[1,2], r[2,2])
 #    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
@@ -60,6 +42,8 @@ def rot2euler(r):
 #    s1 = np.sin(psi)
 #    c1 = np.cos(psi)
 #    phi = np.arctan2(s1*r[2,0] - c1*r[1,0], c1*r[1,1] - s1*r[2,1])
+
+    # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
     epsilon = np.finfo(np.double).eps
     abs_sb = np.sqrt(r[0,2]**2 + r[1,2]**2)
     if abs_sb > 16 * epsilon:
@@ -79,7 +63,17 @@ def rot2euler(r):
             alpha = 0
             beta = np.pi
             gamma = np.arctan2(r[1, 0], -r[0, 0])
-
-#    return psi, theta, phi
     return alpha, beta, gamma
+
+
+def expmap(e):
+    """Convert axis-angle vector into 3D rotation matrix"""
+    theta = np.linalg.norm(e)
+    if theta < 1e-16:
+        return np.identity(3, dtype=e.dtype)
+    k = e/theta
+    K = np.array([[   0, -k[2],  k[1] ], \
+                 [ k[2],     0, -k[0] ], \
+                 [-k[1],  k[0],    0] ], dtype=e.dtype)
+    return np.identity(3, dtype=e.dtype) + np.sin(theta)*K + (1-np.cos(theta))*np.dot(K,K)
 

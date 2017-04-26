@@ -26,6 +26,7 @@ import pandas as pd
 from pyem.star import write_star
 from pyem.star import transform_star
 from pyem.util import rot2euler
+from pyem.util import expmap
 
 
 general = {u'uid': None,
@@ -53,6 +54,8 @@ model = { u'alignments.model.U': None,
           u'alignments.model.r.2': "rlnAnglePsi",
           u'alignments.model.t.0': "rlnOriginX",
           u'alignments.model.t.1': "rlnOriginY"}
+
+angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
 
 
 def main(args):
@@ -90,20 +93,8 @@ def main(args):
                 star[model[p]] = meta[p]
         star["rlnClassNumber"] = 1
 
-    # at this point, all the particles have rlnAngleRot, rlnAngleTilt, rlnAnglePsi set from the cryosparc model with maximum posterior
-    # but the angles are actually axis angle coordinates. So loop over images and convert:
-    angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+    # Convert axis-angle representation to Euler angles (degrees).
     star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
-#    all_rs = star[angles].as_matrix()
-#    all_eas = np.empty_like(all_rs)
-#    for idx in range(len(all_rs)):
-#        R = expmap(all_rs[idx])
-#        psi, theta, phi = rot2euler(R)
-#        all_eas[idx] = np.array([phi, theta, psi])
-#    # save and convert to degrees
-#    star['rlnAngleRot'] = all_eas[:,0]  * 180.0 / np.pi
-#    star['rlnAngleTilt'] = all_eas[:,1] * 180.0 / np.pi
-#    star['rlnAnglePsi'] = all_eas[:,2]  * 180.0 / np.pi
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
@@ -120,16 +111,6 @@ def main(args):
     write_star(args.output, star, reindex=True)
     return 0
 
-def expmap(e):
-    " Convert axis-angle vector e into 3D rotation matrix "
-    theta = np.linalg.norm(e)
-    if theta < 1e-16:
-        return np.identity(3, dtype=e.dtype)
-    k = e/theta
-    K = np.array([[    0,-k[2], k[1]],\
-                 [ k[2],    0,-k[0]],\
-                 [-k[1], k[0],   0]],dtype=e.dtype)
-    return np.identity(3, dtype=e.dtype) + np.sin(theta)*K + (1-np.cos(theta))*np.dot(K,K)
 
 def parse_metadata(csvfile):
     with open(csvfile, 'rU') as f:
