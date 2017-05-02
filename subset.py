@@ -41,7 +41,13 @@ def main(args):
         star = star.loc[ind]
 
     if args.max_resolution is not None:
-        ind = star["rlnFinalResolution"] <= args.max_resolution
+        if "rlnFinalResolution" in star.columns:
+            ind = star["rlnFinalResolution"] <= args.max_resolution
+        elif "rlnCtfMaxResolution" in star.columns:
+            ind = star["rlnCtfMaxResolution"] <= args.max_resolution
+        else:
+            print("No CTF resolution field found in input")
+            return 1
         star = star.loc[ind]
 
     if args.min_ctf_fom is not None:
