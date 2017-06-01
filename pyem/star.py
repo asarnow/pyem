@@ -154,7 +154,7 @@ def parse_star(starfile, keep_index=True):
 
 
 def write_star(starfile, star, reindex=True):
-    if not starfile.endswith(".star")
+    if not starfile.endswith(".star"):
         starfile += ".star"
     indexed = re.search("#\d+$", star.columns[0]) is not None  # Check first column for '#N' index.
     with open(starfile, 'w') as f:
