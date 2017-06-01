@@ -78,7 +78,7 @@ def main(args):
             otherstar = star.loc[~mask]
         star = star.loc[mask]
 
-    if args.subsample is not None:
+    if args.subsample is not None and args.suffix is None:
         if args.subsample < 1:
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
         ind = np.random.choice(star.shape[0], size=args.subsample, replace=False)
@@ -106,6 +106,13 @@ def main(args):
         containing_fields = [f for q in fields for f in star.columns if q in f]
         containing_fields = list(set(star.columns) - set(containing_fields))
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
+
+    if args.subsample is not None and args.suffix is not None:
+        if args.subsample < 1:
+            print("Not Yet")
+        inds = np.random.choice(star.shape[0], size=(star.shape[0]/args.subsample, args.subsample), replace=False)
+        for i, ind in enumerate(inds):
+            write_star(os.path.join(args.output, os.path.basename(args.input)[:-4] + args.suffix +  "_%d" % i), star.iloc[ind])
 
     if args.split_micrographs:
         gb = star.groupby("rlnMicrographName")
@@ -147,6 +154,8 @@ def parse_star(starfile, keep_index=True):
 
 
 def write_star(starfile, star, reindex=True):
+    if not starfile.endswith(".star")
+        starfile += ".star"
     indexed = re.search("#\d+$", star.columns[0]) is not None  # Check first column for '#N' index.
     with open(starfile, 'w') as f:
         f.write('\n')
