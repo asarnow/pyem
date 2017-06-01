@@ -110,7 +110,7 @@ def main(args):
     if args.subsample is not None and args.suffix is not None:
         if args.subsample < 1:
             print("Not Yet")
-        inds = np.random.choice(star.shape[0], size=(star.shape[0]/np.int(args.subsample), np.int(args.subsample)), replace=False)
+        inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=False)
         for i, ind in enumerate(inds):
             write_star(os.path.join(args.output, os.path.basename(args.input)[:-4] + args.suffix +  "_%d" % i), star.iloc[ind])
 
