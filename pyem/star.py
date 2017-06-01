@@ -112,7 +112,7 @@ def main(args):
             print("Not Yet")
         inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=False)
         for i, ind in enumerate(inds):
-            write_star(os.path.join(args.output, os.path.basename(args.input)[:-4] + args.suffix +  "_%d" % i), star.iloc[ind])
+            write_star(os.path.join(args.output, os.path.basename(args.input)[:-5] + args.suffix +  "_%d" % i), star.iloc[ind])
 
     if args.split_micrographs:
         gb = star.groupby("rlnMicrographName")
