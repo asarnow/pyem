@@ -66,6 +66,23 @@ def rot2euler(r):
     return alpha, beta, gamma
 
 
+def euler2rot(alpha, beta, gamma):
+    ca = np.cos(alpha)
+    cb = np.cos(beta)
+    cg = np.cos(gamma)
+    sa = np.sin(alpha)
+    sb = np.sin(beta)
+    sg = np.sin(gamma)
+    cc = cb * ca
+    cs = cb * sa
+    sc = sb * ca
+    ss = sb * sa
+    r = np.array([[cg * cc - sg * sa, cg * cs + sg * ca, -cg * sb],
+                  [-sg * cc - cg * sa, -sg * cs + cg * ca, sg * sb],
+                  [sc, ss, cb]]).T
+    return r
+
+
 def expmap(e):
     """Convert axis-angle vector into 3D rotation matrix"""
     theta = np.linalg.norm(e)
