@@ -87,6 +87,11 @@ def main(args):
             otherstar = star.loc[~mask]
         star = star.loc[mask]
 
+    if args.copy_angles is not None:
+        angle_star = parse_star(args.copy_angles, keep_index=False)
+        ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
+        star[ang_fields] = angle_star[ang_fields]
+
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         star = transform_star(star, r, inplace=True)
@@ -214,6 +219,8 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
+    parser.add_argument("--copy-angles", help="Source for particle Euler angles (must align exactly with input .star file)",
+                        type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
                         type=str)
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
