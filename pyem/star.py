@@ -78,7 +78,7 @@ def main(args):
             otherstar = star.loc[~mask]
         star = star.loc[mask]
 
-    if args.subsample is not None and args.suffix is None:
+    if args.subsample is not None and args.suffix == "":
         if args.subsample < 1:
             args.subsample = max(np.round(args.subsample * star.shape[0]), 1)
         ind = np.random.choice(star.shape[0], size=args.subsample, replace=False)
