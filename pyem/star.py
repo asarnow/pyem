@@ -112,7 +112,7 @@ def main(args):
         containing_fields = list(set(star.columns) - set(containing_fields))
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
-    if args.subsample is not None and args.suffix is not None:
+    if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
             print("Not Yet")
         inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=False)
