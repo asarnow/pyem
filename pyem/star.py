@@ -115,7 +115,7 @@ def main(args):
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
             print("Not Yet")
-        inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=False)
+        inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=args.bootstrap)
         for i, ind in enumerate(inds):
             write_star(os.path.join(args.output, os.path.basename(args.input)[:-5] + args.suffix +  "_%d" % i), star.iloc[ind])
 
@@ -217,6 +217,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
                         type=str)
+    parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
+                        action="store_true", default=False)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--copy-angles", help="Source for particle Euler angles (must align exactly with input .star file)",
