@@ -57,7 +57,10 @@ def main(args):
     if args.subsample is not None:
         if args.subsample < 1:
             args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
-        star = star.sample(np.int(args.subsample), random_state=args.seed)
+        if args.bootstrap > 1:
+            inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=True)
+        else:
+            star = star.sample(np.int(args.subsample), random_state=args.seed)
 
     write_star(args.output, star)
     return 0
@@ -78,6 +81,8 @@ if __name__ == "__main__":
                         type=int)
     parser.add_argument("--subsample", help="Randomly subsample particles",
                         type=float, metavar="N")
+    parser.add_argument("--bootstrap", help="Sample --subsample particles N times, with replacement",
+                        type=int, metavar="N")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
