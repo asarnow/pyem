@@ -57,7 +57,9 @@ def main(args):
     if args.subsample is not None:
         if args.subsample < 1:
             args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
-        if args.bootstrap > 1:
+        if args.bootstrap is not None:
+            print("Not implemented yet")
+            return 1
             inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=True)
         else:
             star = star.sample(np.int(args.subsample), random_state=args.seed)
@@ -82,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--subsample", help="Randomly subsample particles",
                         type=float, metavar="N")
     parser.add_argument("--bootstrap", help="Sample --subsample particles N times, with replacement",
-                        type=int, metavar="N")
+                        type=int, default=None, metavar="N")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
