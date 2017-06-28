@@ -1,4 +1,4 @@
-#! /usr/bin/python2.7
+#!/usr/bin/env python2.7
 # Copyright (C) 2015 Eugene Palovcak, Daniel Asarnow
 # University of California, San Francisco
 #
