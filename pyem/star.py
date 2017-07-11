@@ -139,6 +139,16 @@ def main(args):
     return 0
 
 
+def select_classes(star, classes):
+    clsfields = [f for f in star.columns if "ClassNumber" in f]
+    if len(clsfields) == 0:
+        raise RuntimeError("No class labels found")
+    ind = star[clsfields[0]].isin(classes)
+    if not np.any(ind):
+        raise RuntimeError("Specified classes have no members")
+    return star.loc[ind]
+
+
 def parse_star(starfile, keep_index=True):
     headers = []
     foundheader = False

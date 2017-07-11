@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 from pyem.star import write_star
 from pyem.star import transform_star
+from pyem.star import select_classes
 from pyem.util import rot2euler
 from pyem.util import expmap
 
@@ -93,6 +94,9 @@ def main(args):
                 star[model[p]] = meta[p]
         star["rlnClassNumber"] = 1
 
+    if args.cls is not None:
+        star = select_classes(star, args.cls)
+
     # Convert axis-angle representation to Euler angles (degrees).
     star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
 
@@ -137,6 +141,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Cryosparc metadata .csv file")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
