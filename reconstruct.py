@@ -45,7 +45,7 @@ def main(args):
             print("Wrote mosked map  %s" % masked_mrc)
         if args.mask is not None and args.delete_unmasked:
             delete_unmasked(mrc, masked_mrc)
-            print("Overwrote %s with %s" % (mrc, masked_mrc)
+            print("Overwrote %s with %s" % (mrc, masked_mrc))
 
     pool = Pool(processes=args.nproc)
 
