@@ -42,7 +42,7 @@ def main(args):
         if args.mask is not None:
             masked_mrc = mrc.replace(".mrc", "_masked.mrc")
             do_mask(mrc, masked_mrc, args.mask)
-            print("Wrote masked map  %s" % masked_mrc)
+            print("Wrote masked map %s" % masked_mrc)
         if args.mask is not None and args.delete_unmasked:
             delete_unmasked(mrc, masked_mrc)
             print("Overwrote %s with %s" % (mrc, masked_mrc))
