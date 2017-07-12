@@ -64,7 +64,10 @@ def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reco
             " --angpix %f --sym %s --ctf %s --i %s --o %s" % \
             (apix, sym, str(ctf).lower(), star, mrc)
     #os.system(com)
-    output = subprocess.check_output(shlex.split(com))
+    try:
+        output = subprocess.check_output(shlex.split(com))
+    except subprocess.CalledProcessError as cpe:
+        raise Exception(str(cpe))
     # print(com)
 
 
@@ -72,7 +75,10 @@ def do_mask(mrc, masked_mrc, mask, eman2_path="e2proc3d.py"):
     com = eman2_path + \
             " --multfile=%s %s %s" % \
             (mask, mrc, masked_mrc)
-    output = subprocess.check_output(shlex.split(com))
+    try:
+        output = subprocess.check_output(shlex.split(com))
+    except subprocess.CalledProcessError as cpe:
+        raise Exception(str(cpe))
     # print(com)
 
 
