@@ -42,7 +42,7 @@ def main(args):
         if args.mask is not None:
             masked_mrc = mrc.replace(".mrc", "_masked.mrc")
             do_mask(mrc, masked_mrc, args.mask)
-            print("Wrote mosked map  %s" % masked_mrc)
+            print("Wrote masked map  %s" % masked_mrc)
         if args.mask is not None and args.delete_unmasked:
             delete_unmasked(mrc, masked_mrc)
             print("Overwrote %s with %s" % (mrc, masked_mrc))
@@ -65,7 +65,7 @@ def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reco
             (apix, sym, str(ctf).lower(), star, mrc)
     #os.system(com)
     try:
-        output = subprocess.check_output(shlex.split(com))
+        output = subprocess.check_output(shlex.split(com), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as cpe:
         raise Exception(str(cpe))
     # print(com)
@@ -76,7 +76,7 @@ def do_mask(mrc, masked_mrc, mask, eman2_path="e2proc3d.py"):
             " --multfile=%s %s %s" % \
             (mask, mrc, masked_mrc)
     try:
-        output = subprocess.check_output(shlex.split(com))
+        output = subprocess.check_output(shlex.split(com), stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as cpe:
         raise Exception(str(cpe))
     # print(com)
