@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import os.path
+import shlex
 import subprocess
 import sys
 from pathos.multiprocessing import Pool
@@ -64,7 +65,7 @@ def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reco
             " --angpix %f --sym %s --ctf %s --i %s --o %s" % \
             (apix, sym, str(ctf).lower(), star, mrc)
     #os.system(com)
-    output = subprocess.check_output(com)
+    output = subprocess.check_output(shlex.split(com))
     # print(com)
 
 
