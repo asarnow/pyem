@@ -63,7 +63,8 @@ def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reco
     com = relion_path + \
             " --angpix %f --sym %s --ctf %s --i %s --o %s" % \
             (apix, sym, str(ctf).lower(), star, mrc)
-    os.system(com)
+    #os.system(com)
+    output = subprocess.check_output(com)
     # print(com)
 
 
