@@ -38,15 +38,14 @@ def main(args):
         mrc = os.path.join(args.output, os.path.basename(star).replace(".star", ".mrc"))
         print("Starting reconstruction of %s" % star)
         do_reconstruct(star, mrc, args.apix, args.sym, args.ctf)
-        print("Wrote reconstruction to %s" % mrc)
+        print("Wrote %s reconstruction to %s" % (star, mrc))
         if args.mask is not None:
             masked_mrc = mrc.replace(".mrc", "_masked.mrc")
-            print("Applying mask %s" % args.mask)
             do_mask(mrc, masked_mrc, args.mask)
-            print("Wrote masked map")
+            print("Wrote mosked map  %s" % masked_mrc)
         if args.mask is not None and args.delete_unmasked:
-            delete_unmasked(mrc, masked_mrc) 
-            print("Deleted unmasked map")
+            delete_unmasked(mrc, masked_mrc)
+            print("Overwrote %s with %s" % (mrc, masked_mrc)
 
     pool = Pool(processes=args.nproc)
 
@@ -73,7 +72,7 @@ def do_mask(mrc, masked_mrc, mask, eman2_path="e2proc3d.py"):
     com = eman2_path + \
             " --multfile=%s %s %s" % \
             (mask, mrc, masked_mrc)
-    os.system(com)
+    output = subprocess.check_output(shlex.split(com))
     # print(com)
 
 
