@@ -1,60 +1,113 @@
+#!/usr/bin/env python2.7
+# Copyright (C) 2017 Daniel Asarnow
+# University of California, San Francisco
+#
+# Generate subparticles for "local reconstruction" methods.
+# See help text and README file for more information.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import print_function
+import argparse
+import glob
+import numpy as np
 import os
 import os.path
-import numpy as np
 import pandas as pd
+import sys
 import xml.etree.cElementTree as etree
 from math import modf
+from pyem.star import calculate_apix
 from pyem.star import parse_star
 from pyem.star import write_star
 from pyem.star import transform_star
 from pyem.star import select_classes
+from pyem.star import recenter
+from pyem.star import ANGLES
+from pyem.star import COORDS
+from pyem.star import ORIGINS
 from pyem.util import euler2rot
 from pyem.util import rot2euler
 from pyem.util import expmap
-#from pyem.util import logmap
+from pyem.util import relion_symmetry_group
 
-from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform, Vec3f
 
-angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
-origins = ["rlnOriginX", "rlnOriginY"]
-coords = ["rlnCoordinateX", "rlnCoordinateY"]
+def main(args):
+    if args.markers is None and args.sym is None:
+        print("Either markers or a symmetry group must be provided")
+        return 1
 
-def recenter_row(row):
-        remx, offsetx = modf(row["rlnOriginX"])
-        remy, offsety = modf(row["rlnOriginY"])
-        offsetx = row["rlnCoordinateX"] - offsetx
-        offsety = row["rlnCoordinateY"] - offsety
-        return pd.Series({"rlnCoordinateX": offsetx, "rlnCoordinateY": offsety,
-                "rlnOriginX": remx, "rlnOriginY": remy})
+    star = parse_star(args.input, keep_index=False)
 
-refine = parse_star("Class3D/3dr1_best2dr1_I4_3.7deg/run_it025_data.star", keep_index=False)
-star = select_classes(refine, [4])
-apix = 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
-starbk = star.copy()
+    if args.apix is None:
+        args.apix = calculate_apix(star)
 
-cmm_dir = "cmm_markers"
-cmms = os.listdir(cmm_dir)
+    if args.cls is not None:
+        star = select_classes(star, args.cls)
 
-rots = [euler2rot(*np.deg2rad(r[1])) for r in star[angles].iterrows()]
+    if args.markers is not None:
+        cmmfiles = glob.glob(args.markers)
+        markers = []
+        for cmmfile in cmmfiles:
+            cmms = parse_cmm(cmmfile) / args.apix
+            markers.append(cmms[1:] - cmms[0])
+        markers = np.vstack(markers)
 
-shifts = star[origins].copy()
+    if args.sym is not None:
+        args.sym = relion_symmetry_group(args.sym)
 
-stars = []
-for cmm in cmms:
-    cmm = cmms[0]
+    rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
+    shifts = star[ORIGINS].copy()
+    
+    stars = []
+    for cm in markers:
+        cm_ax = cm / np.linalg.norm(cm)
+        cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
+        angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
+        star[ANGLES] = angles
+        newshifts = shifts + np.array([r.dot(cm)[:-1] for r in rots])
+        star[ORIGINS] = newshifts
+        star = recenter(star, inplace=True)
+        stars.append(star.copy())
+    
+    if args.suffix is None and not args.skip_join:
+        bigstar = pd.concat(stars)
+        write_star(args.output, bigstar)
+    else:
+        for i, star in enumerate(stars):
+            write_star(os.path.join(args.output, args.suffix + "_%d" % i), star)
+    return 0
+
+
+def parse_cmm(cmmfile):
     tree = etree.parse(os.path.join(cmm_dir, cmm))
-    cm = np.array([np.double(tree.findall("marker")[1].get(ax)) - 
-          np.double(tree.findall("marker")[0].get(ax)) for ax in ['x', 'y', 'z']]) / apix
-    cm_ax = cm / np.linalg.norm(cm)
-    r2 = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-    newangles = [np.rad2deg(rot2euler(r1.dot(r2.T))) for r1 in rots]
-    star[angles] = newangles
-    newshifts = shifts + np.array([r1.dot(cm)[:-1] for r1 in rots])
-    star[origins] = newshifts
-    newcoords = star.apply(recenter_row, axis=1)
-    star[coords] = newcoords[coords]
-    star[origins] = newcoords[origins]
-    stars.append(star.copy())
+    cmms = np.array([[np.double(cm.get(ax)) for ax in ['x', 'y', 'z']] for cm in tree.findall("marker")]])
+    return cmms
 
-bigstar = pd.concat(stars)
-write_startar("LocalRec/bigstar.star", bigstar)
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", help="STAR file with source particles")
+    parser.add_argument("output", help="Output file path (and prefix for output files)")
+    parser.add_argument("--apix", "--angpix", help="Angstroms per pixel (calculate from STAR by default)")
+    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
+    parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
+    parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
+                        action="store_true", default=False)
+    parser.add_argument("--suffix", help="Suffix for multiple output files")
+    parser.add_argument("--sym", help="Symmetry group for symmetry expansion or symmetry-derived subparticles (Relion conventions)")
+
+    sys.exit(main(parser.parse_args()))
+

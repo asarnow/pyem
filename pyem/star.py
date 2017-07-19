@@ -26,6 +26,10 @@ import pandas as pd
 import json
 from util import rot2euler
 
+COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
+ORIGINS = ["rlnOriginX", "rlnOriginY"]
+ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+
 
 def main(args):
     star = parse_star(args.input, keep_index=False)
@@ -33,15 +37,7 @@ def main(args):
     otherstar = None
 
     if args.cls is not None:
-        clsfields = [f for f in star.columns if "ClassNumber" in f]
-        if len(clsfields) == 0:
-            print("No class labels found")
-            return 1
-        ind = star[clsfields[0]].isin(args.cls)
-        if not np.any(ind):
-            print("Specified class has no members")
-            return 1
-        star = star.loc[ind]
+        star = select_classes(star, args.cls)
 
     if args.info:
         print("%d particles" % star.shape[0])
@@ -139,6 +135,10 @@ def main(args):
     return 0
 
 
+def calculate_apix(star):
+    return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
+
+
 def select_classes(star, classes):
     clsfields = [f for f in star.columns if "ClassNumber" in f]
     if len(clsfields) == 0:
@@ -147,6 +147,25 @@ def select_classes(star, classes):
     if not np.any(ind):
         raise RuntimeError("Specified classes have no members")
     return star.loc[ind]
+
+
+def recenter_row(row):
+    remx, offsetx = modf(row["rlnOriginX"])
+    remy, offsety = modf(row["rlnOriginY"])
+    offsetx = row["rlnCoordinateX"] - offsetx
+    offsety = row["rlnCoordinateY"] - offsety
+    return pd.Series({"rlnCoordinateX": offsetx, "rlnCoordinateY": offsety,
+                "rlnOriginX": remx, "rlnOriginY": remy})
+
+
+def recenter(star, inplace=False):
+    if inplace:
+        newstar = star
+    else:
+        newstar = star.copy()
+    newvals = star.apply(recenter_row, axis=1)
+    newstar[coords + origins] = newvals[coords + origins]
+    return newstar
 
 
 def parse_star(starfile, keep_index=True):

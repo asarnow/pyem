@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+import subprocess
+from distutils.spawn import find_executable as which
 
 def cent2edge(bins):
     """Convert bin centers to bin edges"""
@@ -93,4 +95,13 @@ def expmap(e):
                  [ k[2],     0, -k[0] ], \
                  [-k[1],  k[0],    0] ], dtype=e.dtype)
     return np.identity(3, dtype=e.dtype) + np.sin(theta)*K + (1-np.cos(theta))*np.dot(K,K)
+
+
+def relion_symmetry_group(sym):
+    relion = which("relion_refine")
+    if relion is None:
+        raise RuntimeError("Need relion_refine on PATH to obtain symmetry operators")
+    stdout = subprocess.check_output(("%s --sym %s --o /dev/null --print_symmetry_ops" % (relion, sym)).split())
+    lines = stdout.split("\n")[2:-1]
+    return [np.array([[np.double(val) for val in l.split()] for l in lines[i:i+3]]) for i in range(1,len(lines),4)]
 
