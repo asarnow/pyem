@@ -26,7 +26,6 @@ import os.path
 import pandas as pd
 import sys
 import xml.etree.cElementTree as etree
-from math import modf
 from pyem.star import calculate_apix
 from pyem.star import parse_star
 from pyem.star import write_star
@@ -90,8 +89,8 @@ def main(args):
 
 
 def parse_cmm(cmmfile):
-    tree = etree.parse(os.path.join(cmm_dir, cmm))
-    cmms = np.array([[np.double(cm.get(ax)) for ax in ['x', 'y', 'z']] for cm in tree.findall("marker")]])
+    tree = etree.parse(cmmfile)
+    cmms = np.array([[np.double(cm.get(ax)) for ax in ['x', 'y', 'z']] for cm in tree.findall("marker")])
     return cmms
 
 

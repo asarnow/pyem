@@ -24,6 +24,7 @@ import os.path
 import numpy as np
 import pandas as pd
 import json
+from math import modf
 from util import rot2euler
 
 COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
@@ -41,6 +42,7 @@ def main(args):
 
     if args.info:
         print("%d particles" % star.shape[0])
+        print("%f A/px" % calculate_apix(star))
         if "rlnMicrographName" in star.columns:
             mgraphcnt = star["rlnMicrographName"].value_counts()
             print("%d micrographs, %.3f +/- %.3f particles per micrograph" % 
@@ -49,6 +51,7 @@ def main(args):
             clscnt = star["rlnClassNumber"].value_counts()
             print("%d classes, %.3f +/- %.3f particles per class" %
                     (len(clscnt), np.mean(clscnt), np.std(clscnt)))
+        return 0
 
     if args.drop_angles:
         ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
@@ -164,7 +167,7 @@ def recenter(star, inplace=False):
     else:
         newstar = star.copy()
     newvals = star.apply(recenter_row, axis=1)
-    newstar[coords + origins] = newvals[coords + origins]
+    newstar[COORDS + ORIGINS] = newvals[COORDS + ORIGINS]
     return newstar
 
 
