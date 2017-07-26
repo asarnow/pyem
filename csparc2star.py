@@ -31,6 +31,7 @@ from pyem.util import expmap
 
 
 general = {u'uid': None,
+           u'split': "rlnRandomSubset",
            u'ctf_params.akv': "rlnVoltage",
            u'ctf_params.angast_deg': "rlnDefocusAngle",
            u'ctf_params.angast_rad': None,
@@ -74,6 +75,9 @@ def main(args):
     rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
     star = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
     star.columns = rlnheaders
+
+    if "rlnRandomSubset" in star.columns:
+        star["rlnRandomSubset"] = star["rlnRandomSubset"].apply(lambda x: ord(x) - 64)
 
     # general class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
