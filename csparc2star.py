@@ -40,6 +40,7 @@ general = {u'uid': None,
            u'ctf_params.df1': "rlnDefocusU",
            u'ctf_params.df2': "rlnDefocusV",
            u'ctf_params.mag': "rlnMagnification",
+           u'ctf_params.phase_shift': "rlnPhaseShift",
            u'ctf_params.psize': None,
            u'ctf_params.wgh': "rlnAmplitudeContrast",
            u'data_input_relpath': "rlnImageName",
@@ -78,6 +79,9 @@ def main(args):
 
     if "rlnRandomSubset" in star.columns:
         star["rlnRandomSubset"] = star["rlnRandomSubset"].apply(lambda x: ord(x) - 64)
+
+    if "rlnPhaseShift" in star.columns:
+        star["rlnPhaseShift"] = np.rad2deg(star["rlnPhaseShift"])
 
     # general class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
