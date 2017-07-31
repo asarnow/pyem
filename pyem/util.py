@@ -105,3 +105,14 @@ def relion_symmetry_group(sym):
     lines = stdout.split("\n")[2:-1]
     return [np.array([[np.double(val) for val in l.split()] for l in lines[i:i+3]]) for i in range(1,len(lines),4)]
 
+
+def aligndf(df1, df2, fields=None):
+    ww = df1.set_index(fields)
+    dd = df2.set_index(fields)
+    i1 = set(tuple(f) for f in df1[fields].values)
+    i2 = set(tuple(f) for f in df2[fields].values)
+    iboth = list(i1.intersection(i2))
+    df1a = ww.loc[iboth].copy()
+    df2a = dd.loc[iboth].copy()
+    return df1a, df2a
+

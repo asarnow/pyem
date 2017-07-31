@@ -30,6 +30,7 @@ from util import rot2euler
 COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
 ORIGINS = ["rlnOriginX", "rlnOriginY"]
 ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+MICROGRAPH_COORDS = ["rlnMicrographName"] + COORDS
 
 
 def main(args):
@@ -107,6 +108,11 @@ def main(args):
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
         star["rlnImageName"] = path_star["rlnImageName"]
+
+    if args.copy_micrograph_coordinates is not None:
+        coord_star = parse_star(args.copy_micrograph_coordinates, keep_index=False)
+        coord_star.set_index("rlnImageName", inplace=True)
+        star[MICROGRAPH_COORDS] = coord_star.loc[star["rlnImageName"]][MICROGRAPH_COORDS].set_index(star.index)
 
     if args.pick:
         fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
@@ -259,6 +265,8 @@ if __name__ == "__main__":
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--copy-angles", help="Source for particle Euler angles (must align exactly with input .star file)",
+                        type=str)
+    parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates",
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
                         type=str)
