@@ -27,15 +27,22 @@ import json
 from math import modf
 from util import rot2euler
 
+MICROGRAPH_NAME = ["rlnMicrographName"]
+IMAGE_NAME = ["rlnImageName"]
 COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
 ORIGINS = ["rlnOriginX", "rlnOriginY"]
 ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
 MICROGRAPH_COORDS = ["rlnMicrographName"] + COORDS
+PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit"]
+CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle", "rlnSphericalAberration", "rlnCtfBFactor",
+              "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast", "rlnCtfMaxResolution",
+              "rlnCtfFigureOfMerit"]
+MICROSCOPE_PARMS = ["rlnVoltage", "rlnMagnification", "rlnDetectorPixelSize"]
 
 
 def main(args):
     star = parse_star(args.input, keep_index=False)
-    
+
     otherstar = None
 
     if args.cls is not None:
@@ -46,17 +53,16 @@ def main(args):
         print("%f A/px" % calculate_apix(star))
         if "rlnMicrographName" in star.columns:
             mgraphcnt = star["rlnMicrographName"].value_counts()
-            print("%d micrographs, %.3f +/- %.3f particles per micrograph" % 
-                    (len(mgraphcnt), np.mean(mgraphcnt), np.std(mgraphcnt)))
+            print("%d micrographs, %.3f +/- %.3f particles per micrograph" %
+                  (len(mgraphcnt), np.mean(mgraphcnt), np.std(mgraphcnt)))
         if "rlnClassNumber" in star.columns:
             clscnt = star["rlnClassNumber"].value_counts()
             print("%d classes, %.3f +/- %.3f particles per class" %
-                    (len(clscnt), np.mean(clscnt), np.std(clscnt)))
+                  (len(clscnt), np.mean(clscnt), np.std(clscnt)))
         return 0
 
     if args.drop_angles:
-        ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
-        star.drop(ang_fields, axis=1, inplace=True, errors="ignore")
+        star.drop(ANGLES, axis=1, inplace=True, errors="ignore")
 
     if args.drop_containing is not None:
         containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
@@ -92,30 +98,36 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = parse_star(args.copy_angles, keep_index=False)
-        ang_fields = [f for f in star.columns if "Tilt" in f or "Psi" in f or "Rot" in f]
-        star[ang_fields] = angle_star[ang_fields]
+        star = star.merge(angle_star[IMAGE_NAME + ANGLES], on=IMAGE_NAME)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         star = transform_star(star, r, inplace=True)
 
     if args.recenter:
-        star["rlnCoordinateX"] = star["rlnCoordinateX"] - star["rlnOriginX"]
-        star["rlnCoordinateY"] = star["rlnCoordinateY"] - star["rlnOriginY"]
-        star["rlnOriginX"] = 0
-        star["rlnOriginY"] = 0
+        star = recenter(star, inplace=True)
+
+    if args.zero_origins:
+        star = zero_origins(star, inplace=True)
 
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
         star["rlnImageName"] = path_star["rlnImageName"]
 
+    if args.copy_ctf is not None:
+        ctf_star = parse_star(args.copy_ctf, keep_index=False)
+        if IMAGE_NAME in ctf_star.columns:
+            star = star.merge(ctf_star[IMAGE_NAME + CTF_PARAMS], on=IMAGE_NAME)
+        else:
+            star = star.merge(ctf_star[MICROGRAPH_NAME + CTF_PARAMS], on=MICROGRAPH_NAME)
+
     if args.copy_micrograph_coordinates is not None:
         coord_star = parse_star(args.copy_micrograph_coordinates, keep_index=False)
-        coord_star.set_index("rlnImageName", inplace=True)
-        star[MICROGRAPH_COORDS] = coord_star.loc[star["rlnImageName"]][MICROGRAPH_COORDS].set_index(star.index)
+        star = star.merge(coord_star[IMAGE_NAME + MICROGRAPH_COORDS], on=IMAGE_NAME)
 
     if args.pick:
-        fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit", "rlnMicrographName"]
+        fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit",
+                  "rlnMicrographName"]
         containing_fields = [f for q in fields for f in star.columns if q in f]
         containing_fields = list(set(star.columns) - set(containing_fields))
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
@@ -124,21 +136,22 @@ def main(args):
         if args.subsample < 1:
             print("Specific integer sample size")
             return 1
-        nsamplings = args.bootstrap if args.bootstrap is not None else star.shape[0]/np.int(args.subsample)
-        inds = np.random.choice(star.shape[0], size=(nsamplings, np.int(args.subsample)), replace=args.bootstrap is not None)
+        nsamplings = args.bootstrap if args.bootstrap is not None else star.shape[0] / np.int(args.subsample)
+        inds = np.random.choice(star.shape[0], size=(nsamplings, np.int(args.subsample)),
+                                replace=args.bootstrap is not None)
         for i, ind in enumerate(inds):
-            write_star(os.path.join(args.output, os.path.basename(args.input)[:-5] + args.suffix +  "_%d" % (i+1)), star.iloc[ind])
+            write_star(os.path.join(args.output, os.path.basename(args.input)[:-5] + args.suffix + "_%d" % (i + 1)),
+                       star.iloc[ind])
 
     if args.split_micrographs:
-        gb = star.groupby("rlnMicrographName")
-        for g in gb:
-            g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
-            write_star(os.path.join(args.output, os.path.basename(g[0])[:-4]) + args.suffix, g[1])
+        stars = split_micrographs(star)
+        for mg in stars:
+            write_star(os.path.join(args.output, os.path.basename(mg)[:-4]) + args.suffix, stars[mg])
         return 0
 
     if args.auxout is not None and otherstar is not None:
         write_star(args.auxout, otherstar)
-        
+
     if args.output is not None:
         write_star(args.output, star)
     return 0
@@ -158,13 +171,22 @@ def select_classes(star, classes):
     return star.loc[ind]
 
 
+def split_micrographs(star):
+    gb = star.groupby("rlnMicrographName")
+    stars = {}
+    for g in gb:
+        g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
+        stars[g[0]] = g[1]
+    return stars
+
+
 def recenter_row(row):
     remx, offsetx = modf(row["rlnOriginX"])
     remy, offsety = modf(row["rlnOriginY"])
     offsetx = row["rlnCoordinateX"] - offsetx
     offsety = row["rlnCoordinateY"] - offsety
     return pd.Series({"rlnCoordinateX": offsetx, "rlnCoordinateY": offsety,
-                "rlnOriginX": remx, "rlnOriginY": remy})
+                      "rlnOriginX": remx, "rlnOriginY": remy})
 
 
 def recenter(star, inplace=False):
@@ -174,6 +196,18 @@ def recenter(star, inplace=False):
         newstar = star.copy()
     newvals = star.apply(recenter_row, axis=1)
     newstar[COORDS + ORIGINS] = newvals[COORDS + ORIGINS]
+    return newstar
+
+
+def zero_origins(star, inplace=False):
+    if inplace:
+        newstar = star
+    else:
+        newstar = star.copy()
+    newstar["rlnCoordinateX"] = newstar["rlnCoordinateX"] - newstar["rlnOriginX"]
+    newstar["rlnCoordinateY"] = newstar["rlnCoordinateY"] - newstar["rlnOriginY"]
+    newstar["rlnOriginX"] = 0
+    newstar["rlnOriginY"] = 0
     return newstar
 
 
@@ -228,12 +262,12 @@ def transform_star(star, r, t=None, inplace=False):
     matrix (in radians) and an optional translation vector.
     The translation may also be given as the 4th column of a 3x4 matrix.
     """
-    assert(r.shape[0] == 3)
+    assert (r.shape[0] == 3)
     if r.shape[1] == 4 and t is None:
-        t = r[:,-1]
-        r = r[:,:3]
+        t = r[:, -1]
+        r = r[:, :3]
     else:
-        assert(r.shape == (3,3))
+        assert (r.shape == (3, 3))
 
     psi, theta, phi = rot2euler(r)
 
@@ -247,7 +281,7 @@ def transform_star(star, r, t=None, inplace=False):
     newstar["rlnAnglePsi"] += np.rad2deg(psi)
 
     if t is not None:
-        assert(len(t) == 3)
+        assert (len(t) == 3)
         tt = r.dot(t)
         newstar["rlnOriginX"] += tt[0]
         newstar["rlnOriginY"] += tt[1]
@@ -257,6 +291,7 @@ def transform_star(star, r, t=None, inplace=False):
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
                         type=str)
@@ -264,8 +299,10 @@ if __name__ == "__main__":
                         type=int, default=None)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
-    parser.add_argument("--copy-angles", help="Source for particle Euler angles (must align exactly with input .star file)",
+    parser.add_argument("--copy-angles",
+                        help="Source for particle Euler angles (must align exactly with input .star file)",
                         type=str)
+    parser.add_argument("--copy-ctf", help="Source for CTF parameters")
     parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates",
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
@@ -283,22 +320,24 @@ if __name__ == "__main__":
                         type=int)
     parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
                         action="store_true")
-    parser.add_argument("--recenter", help="Subtract origin from coordinates",
+    parser.add_argument("--recenter", help="Subtract origin from coordinates, leaving subpixel information in origin",
                         action="store_true")
-#    parser.add_argument("--seed", help="Seed for random number generators",
-#                        type=int)
+    parser.add_argument("--zero-origins", help="Subtract origin from coordinates and set origin to zero",
+                        action="store_true")
+    #    parser.add_argument("--seed", help="Seed for random number generators",
+    #                        type=int)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
     parser.add_argument("--subsample", help="Randomly subsample remaining particles",
-                        type=float, metavar="N") 
+                        type=float, metavar="N")
     parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
                         type=float)
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
-    parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
+    parser.add_argument("--transform",
+                        help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file",
                         default=None, nargs="?")
     sys.exit(main(parser.parse_args()))
-
