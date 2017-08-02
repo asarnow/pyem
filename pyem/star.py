@@ -338,8 +338,8 @@ if __name__ == "__main__":
     parser.add_argument("--copy-angles",
                         help="Source for particle Euler angles (must align exactly with input .star file)",
                         type=str)
-    parser.add_argument("--copy-ctf", help="Source for CTF parameters")
-    parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates",
+    parser.add_argument("--copy-ctf", help="Source for CTF parameters (file or quoted glob)")
+    parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
                         type=str)
@@ -373,6 +373,6 @@ if __name__ == "__main__":
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
-    parser.add_argument("input", help="Input .star file(s)", nargs="*")
+    parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
