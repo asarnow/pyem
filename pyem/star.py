@@ -103,7 +103,7 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = parse_star(args.copy_angles, keep_index=False)
-        star = smart_merge(star, angle_star, fields=ANGLES, inplace=True)
+        star = smart_merge(star, angle_star, fields=ANGLES)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
@@ -121,12 +121,12 @@ def main(args):
 
     if args.copy_ctf is not None:
         ctf_star = pd.concat((parse_star(inp, keep_index=False) for inp in glob(args.copy_ctf)), join="inner")
-        star = smart_merge(star, ctf_star, CTF_PARAMS, inplace=True)
+        star = smart_merge(star, ctf_star, CTF_PARAMS)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
-        star = smart_merge(star, coord_star, fields=MICROGRAPH_COORDS, inplace=True)
+        star = smart_merge(star, coord_star, fields=MICROGRAPH_COORDS)
 
     if args.pick:
         star.drop(star.columns.difference(PICK_PARAMS), axis=1, inplace=True, errors="ignore")
