@@ -21,27 +21,33 @@ from __future__ import print_function
 import sys
 import re
 import os.path
+from collections import Counter
+
 import numpy as np
 import pandas as pd
 import json
+from glob import glob
 from math import modf
 from util import rot2euler
 
-MICROGRAPH_NAME = ["rlnMicrographName"]
-IMAGE_NAME = ["rlnImageName"]
+MICROGRAPH_NAME = "rlnMicrographName"
+IMAGE_NAME = "rlnImageName"
 COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
 ORIGINS = ["rlnOriginX", "rlnOriginY"]
 ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
-MICROGRAPH_COORDS = ["rlnMicrographName"] + COORDS
-PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit"]
-CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle", "rlnSphericalAberration", "rlnCtfBFactor",
+CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle", "rlnSphericalAberration", "rlnCtfBfactor",
               "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast", "rlnCtfMaxResolution",
               "rlnCtfFigureOfMerit"]
 MICROSCOPE_PARMS = ["rlnVoltage", "rlnMagnification", "rlnDetectorPixelSize"]
+MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
+PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit"]
 
 
 def main(args):
-    star = parse_star(args.input, keep_index=False)
+    if args.info:
+        args.input.append(args.output)
+
+    star = pd.concat((parse_star(inp, keep_index=False) for inp in args.input), join="inner")
 
     otherstar = None
 
@@ -67,12 +73,11 @@ def main(args):
     if args.drop_containing is not None:
         containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
         if args.invert:
-            containing_fields = list(set(star.columns) - set(containing_fields))
+            containing_fields = star.columns.difference(containing_fields)
         star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
     if args.offset_group is not None:
-        groupnum_fields = [f for f in star.columns if "GroupNumber" in f]
-        star[groupnum_fields] += args.offset_group
+        star["rlnGroupNumber"] += args.offset_group
 
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
@@ -98,7 +103,7 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = parse_star(args.copy_angles, keep_index=False)
-        star = star.merge(angle_star[IMAGE_NAME + ANGLES], on=IMAGE_NAME)
+        star = smart_merge(star, angle_star, fields=ANGLES, inplace=True)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
@@ -112,25 +117,19 @@ def main(args):
 
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
-        star["rlnImageName"] = path_star["rlnImageName"]
+        star[IMAGE_NAME] = path_star[IMAGE_NAME]
 
     if args.copy_ctf is not None:
-        ctf_star = parse_star(args.copy_ctf, keep_index=False)
-        if IMAGE_NAME in ctf_star.columns:
-            star = star.merge(ctf_star[IMAGE_NAME + CTF_PARAMS], on=IMAGE_NAME)
-        else:
-            star = star.merge(ctf_star[MICROGRAPH_NAME + CTF_PARAMS], on=MICROGRAPH_NAME)
+        ctf_star = pd.concat((parse_star(inp, keep_index=False) for inp in glob(args.copy_ctf)), join="inner")
+        star = smart_merge(star, ctf_star, CTF_PARAMS, inplace=True)
 
     if args.copy_micrograph_coordinates is not None:
-        coord_star = parse_star(args.copy_micrograph_coordinates, keep_index=False)
-        star = star.merge(coord_star[IMAGE_NAME + MICROGRAPH_COORDS], on=IMAGE_NAME)
+        coord_star = pd.concat(
+            (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
+        star = smart_merge(star, coord_star, fields=MICROGRAPH_COORDS, inplace=True)
 
     if args.pick:
-        fields = ["rlnCoordinateX", "rlnCoordinateY", "rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit",
-                  "rlnMicrographName"]
-        containing_fields = [f for q in fields for f in star.columns if q in f]
-        containing_fields = list(set(star.columns) - set(containing_fields))
-        star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
+        star.drop(star.columns.difference(PICK_PARAMS), axis=1, inplace=True, errors="ignore")
 
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
@@ -140,7 +139,7 @@ def main(args):
         inds = np.random.choice(star.shape[0], size=(nsamplings, np.int(args.subsample)),
                                 replace=args.bootstrap is not None)
         for i, ind in enumerate(inds):
-            write_star(os.path.join(args.output, os.path.basename(args.input)[:-5] + args.suffix + "_%d" % (i + 1)),
+            write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),
                        star.iloc[ind])
 
     if args.split_micrographs:
@@ -155,6 +154,43 @@ def main(args):
     if args.output is not None:
         write_star(args.output, star)
     return 0
+
+
+def smart_merge(s1, s2, fields):
+    key = merge_key(s1, s2)
+    s2 = s2.set_index(key, drop=False)
+    s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=key, right_index=True, suffixes=["_x", ""])
+    x = [c for c in s1.columns if "_x" in c]
+    if len(x) > 0:
+        y = [c.split("_")[0] for c in s1.columns if c in x]
+        s1[y] = s1[y].fillna(s1[x])
+        s1 = s1.drop(x, axis=1)
+    return s1.reset_index(drop=True)
+
+
+def merge_key(s1, s2):
+    inter = s1.columns.intersection(s2.columns)
+    if inter.empty:
+        return None
+    if IMAGE_NAME in inter:
+        c = Counter(s1[IMAGE_NAME])
+        shared = sum(c[i] for i in set(s2[IMAGE_NAME]))
+        if shared > s1.shape[0] * 0.5:
+            return IMAGE_NAME
+    mgraph_coords = inter.intersection(MICROGRAPH_COORDS)
+    if MICROGRAPH_NAME in mgraph_coords:
+        c = Counter(s1[MICROGRAPH_NAME])
+        shared = sum(c[i] for i in set(s2[MICROGRAPH_NAME]))
+        can_merge_mgraph_name = MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
+        if can_merge_mgraph_name and not mgraph_coords.intersection(COORDS).empty:
+            return MICROGRAPH_COORDS
+        elif can_merge_mgraph_name:
+            return MICROGRAPH_NAME
+    return None
+
+
+def is_particle_star(star):
+    return not star.columns.intersection([IMAGE_NAME] + COORDS).empty
 
 
 def calculate_apix(star):
@@ -337,7 +373,6 @@ if __name__ == "__main__":
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
-    parser.add_argument("input", help="Input .star file")
-    parser.add_argument("output", help="Output .star file",
-                        default=None, nargs="?")
+    parser.add_argument("input", help="Input .star file(s)", nargs="*")
+    parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
