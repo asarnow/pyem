@@ -106,7 +106,8 @@ def main(args):
         star = select_classes(star, args.cls)
 
     # Convert axis-angle representation to Euler angles (degrees).
-    star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+    if not star.columns.intersection(angles).size == len(angles):
+        star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
