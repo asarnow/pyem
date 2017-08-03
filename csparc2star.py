@@ -29,7 +29,6 @@ from pyem.star import select_classes
 from pyem.util import rot2euler
 from pyem.util import expmap
 
-
 general = {u'uid': None,
            u'split': "rlnRandomSubset",
            u'ctf_params.akv': "rlnVoltage",
@@ -46,24 +45,24 @@ general = {u'uid': None,
            u'data_input_relpath': "rlnImageName",
            u'data_input_idx': None}
 
-model = { u'alignments.model.U': None,
-          u'alignments.model.dr': None,
-          u'alignments.model.dt': None,
-          u'alignments.model.ess_R': None,
-          u'alignments.model.ess_S': None,
-          u'alignments.model.phiC': None,
-          u'alignments.model.r.0': "rlnAngleRot",
-          u'alignments.model.r.1': "rlnAngleTilt",
-          u'alignments.model.r.2': "rlnAnglePsi",
-          u'alignments.model.t.0': "rlnOriginX",
-          u'alignments.model.t.1': "rlnOriginY"}
+model = {u'alignments.model.U': None,
+         u'alignments.model.dr': None,
+         u'alignments.model.dt': None,
+         u'alignments.model.ess_R': None,
+         u'alignments.model.ess_S': None,
+         u'alignments.model.phiC': None,
+         u'alignments.model.r.0': "rlnAngleRot",
+         u'alignments.model.r.1': "rlnAngleTilt",
+         u'alignments.model.r.2': "rlnAnglePsi",
+         u'alignments.model.t.0': "rlnOriginX",
+         u'alignments.model.t.1': "rlnOriginY"}
 
 angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
 
 
 def main(args):
     meta = parse_metadata(args.input)  # Read cryosparc metadata file.
-    meta["data_input_idx"] = ["%.6d" % (i+1) for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
+    meta["data_input_idx"] = ["%.6d" % (i + 1) for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
 
     if "data_input_relpath" not in meta.columns:
         if args.data_path is None:
@@ -71,7 +70,8 @@ def main(args):
             return 1
         meta["data_input_relpath"] = args.data_path
 
-    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"], sep="@")  # Construct _rlnImageName field.
+    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"],
+                                                                sep="@")  # Construct _rlnImageName field.
     # Take care of trivial mappings.
     rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
     star = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
@@ -111,9 +111,9 @@ def main(args):
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
         if args.drop_bad:
-           star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
+            star.drop(star[mask].index, inplace=True)  # Delete low-confidence particles.
         else:
-           star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
+            star.loc[mask, "rlnClassNumber"] = 0  # Set low-confidence particles to dummy class.
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
@@ -154,5 +154,7 @@ if __name__ == "__main__":
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--drop-bad", help="Drop particles instead of assigning dummy class", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
-    parser.add_argument("--transform", help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)", type=str)
+    parser.add_argument("--transform",
+                        help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
+                        type=str)
     sys.exit(main(parser.parse_args()))

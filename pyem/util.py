@@ -21,6 +21,7 @@ import numpy as np
 import subprocess
 from distutils.spawn import find_executable as which
 
+
 def cent2edge(bins):
     """Convert bin centers to bin edges"""
     return np.r_[-np.Inf, 0.5 * (bins[:-1] + bins[1:]), np.Inf]
@@ -36,18 +37,18 @@ def isrotation(r, tol=1e-4):
 
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
-#    assert(isrotation(r))
+    #    assert(isrotation(r))
     r = r.T
-#    psi = np.arctan2(r[1,2], r[2,2])
-#    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
-#    theta = np.arctan2(-r[0,2], c2)
-#    s1 = np.sin(psi)
-#    c1 = np.cos(psi)
-#    phi = np.arctan2(s1*r[2,0] - c1*r[1,0], c1*r[1,1] - s1*r[2,1])
+    #    psi = np.arctan2(r[1,2], r[2,2])
+    #    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
+    #    theta = np.arctan2(-r[0,2], c2)
+    #    s1 = np.sin(psi)
+    #    c1 = np.cos(psi)
+    #    phi = np.arctan2(s1*r[2,0] - c1*r[1,0], c1*r[1,1] - s1*r[2,1])
 
     # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
     epsilon = np.finfo(np.double).eps
-    abs_sb = np.sqrt(r[0,2]**2 + r[1,2]**2)
+    abs_sb = np.sqrt(r[0, 2] ** 2 + r[1, 2] ** 2)
     if abs_sb > 16 * epsilon:
         gamma = np.arctan2(r[1, 2], -r[0, 2])
         alpha = np.arctan2(r[2, 1], r[2, 0])
@@ -57,7 +58,7 @@ def rot2euler(r):
             sign_sb = np.sign(r[1, 2]) if np.sin(gamma) > 0 else -np.sign(r[1, 2])
         beta = np.arctan2(sign_sb * abs_sb, r[2, 2])
     else:
-        if np.sign(r[2,2]) > 0:
+        if np.sign(r[2, 2]) > 0:
             alpha = 0
             beta = 0
             gamma = np.arctan2(-r[1, 0], r[0, 0])
@@ -90,11 +91,11 @@ def expmap(e):
     theta = np.linalg.norm(e)
     if theta < 1e-16:
         return np.identity(3, dtype=e.dtype)
-    k = e/theta
-    K = np.array([[   0, -k[2],  k[1] ], \
-                 [ k[2],     0, -k[0] ], \
-                 [-k[1],  k[0],    0] ], dtype=e.dtype)
-    return np.identity(3, dtype=e.dtype) + np.sin(theta)*K + (1-np.cos(theta))*np.dot(K,K)
+    w = e / theta
+    k = np.array([[0, -w[2], w[1]],
+                  [w[2], 0, -w[0]],
+                  [-w[1], w[0], 0]], dtype=e.dtype)
+    return np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
 
 
 def relion_symmetry_group(sym):
@@ -103,7 +104,7 @@ def relion_symmetry_group(sym):
         raise RuntimeError("Need relion_refine on PATH to obtain symmetry operators")
     stdout = subprocess.check_output(("%s --sym %s --o /dev/null --print_symmetry_ops" % (relion, sym)).split())
     lines = stdout.split("\n")[2:-1]
-    return [np.array([[np.double(val) for val in l.split()] for l in lines[i:i+3]]) for i in range(1,len(lines),4)]
+    return [np.array([[np.double(val) for val in l.split()] for l in lines[i:i + 3]]) for i in range(1, len(lines), 4)]
 
 
 def aligndf(df1, df2, fields=None):
@@ -115,4 +116,3 @@ def aligndf(df1, df2, fields=None):
     df1a = ww.loc[iboth].copy()
     df2a = dd.loc[iboth].copy()
     return df1a, df2a
-
