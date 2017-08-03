@@ -128,6 +128,9 @@ def main(args):
             (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
         star = smart_merge(star, coord_star, fields=MICROGRAPH_COORDS)
 
+    if args.scale_coordinates is not None:
+        star[COORDS] = star[COORDS] * args.scale_coordinates
+
     if args.pick:
         star.drop(star.columns.difference(PICK_PARAMS), axis=1, inplace=True, errors="ignore")
 
@@ -362,6 +365,8 @@ if __name__ == "__main__":
                         action="store_true")
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
+    parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
+                        type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
     parser.add_argument("--subsample", help="Randomly subsample remaining particles",
