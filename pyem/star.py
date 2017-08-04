@@ -55,16 +55,17 @@ def main(args):
         star = select_classes(star, args.cls)
 
     if args.info:
-        print("%d particles" % star.shape[0])
+        if "rlnClassNumber" in star.columns:
+            c = star["rlnClassNumber"].value_counts()
+            print("%s particles in %d classes" % ("{:,}".format(star.shape[0]), len(c)))
+            print("Class distribution:  " + "\t".join(['%s (%.2f %%)' % ("{:,}".format(i), 100.*i/c.sum()) for i in c]))
+        else:
+            print("%s particles" % "{:,}".format(star.shape[0]))
         print("%f A/px" % calculate_apix(star))
         if "rlnMicrographName" in star.columns:
             mgraphcnt = star["rlnMicrographName"].value_counts()
             print("%d micrographs, %.3f +/- %.3f particles per micrograph" %
                   (len(mgraphcnt), np.mean(mgraphcnt), np.std(mgraphcnt)))
-        if "rlnClassNumber" in star.columns:
-            clscnt = star["rlnClassNumber"].value_counts()
-            print("%d classes, %.3f +/- %.3f particles per class" %
-                  (len(clscnt), np.mean(clscnt), np.std(clscnt)))
         return 0
 
     if args.drop_angles:
