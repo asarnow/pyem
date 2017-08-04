@@ -22,7 +22,6 @@ import sys
 import re
 import os.path
 from collections import Counter
-
 import numpy as np
 import pandas as pd
 import json
@@ -58,7 +57,7 @@ def main(args):
         if "rlnClassNumber" in star.columns:
             c = star["rlnClassNumber"].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(star.shape[0]), len(c)))
-            print("Class distribution:  " + ", ".join(['%s (%.2f %%)' % ("{:,}".format(i), 100.*i/c.sum()) for i in c]))
+            print("Class distribution:  " + ",    ".join(['%s (%.2f %%)' % ("{:,}".format(i), 100.*i/c.sum()) for i in c]))
         else:
             print("%s particles" % "{:,}".format(star.shape[0]))
         print("%f A/px" % calculate_apix(star))
