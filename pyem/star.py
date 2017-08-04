@@ -57,8 +57,8 @@ def main(args):
         if is_particle_star(star) and "rlnClassNumber" in star.columns:
             c = star["rlnClassNumber"].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(star.shape[0]), len(c)))
-            print("Class distribution:  " + \
-                    ",    ".join(['%s (%.2f %%)' % ("{:,}".format(i), 100.*i/c.sum()) for i in c.sort_index()]))
+            print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100.*s/c.sum())
+                for i,s in c.sort_index().iteritems()]))
         elif is_particle_star(star):
             print("%s particles" % "{:,}".format(star.shape[0]))
         if "rlnMicrographName" in star.columns:
