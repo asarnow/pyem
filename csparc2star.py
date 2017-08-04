@@ -85,7 +85,7 @@ def main(args):
 
     # general class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
-    if len(phic.columns) > 1:  # Check class assignments exist in input.
+    if len(phic.columns) > 0:  # Check class assignments exist in input.
         # phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
         phic.columns = range(len(phic.columns))
         cls = phic.idxmax(axis=1)
@@ -93,8 +93,9 @@ def main(args):
             if model[p] is not None:
                 pspec = p.split("model")[1]
                 param = meta[[h for h in meta.columns if pspec in h]]
-                param.columns = phic.columns
-                star[model[p]] = param.lookup(param.index, cls)
+                if len(param.columns) > 0:
+                    param.columns = phic.columns
+                    star[model[p]] = param.lookup(param.index, cls)
         star["rlnClassNumber"] = cls + 1  # Compute most probable classes and add one for Relion indexing.
     else:
         for p in model:
@@ -106,7 +107,8 @@ def main(args):
         star = select_classes(star, args.cls)
 
     # Convert axis-angle representation to Euler angles (degrees).
-    star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+    if star.columns.intersection(angles).size == len(angles):
+        star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)

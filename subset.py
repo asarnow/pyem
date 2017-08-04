@@ -50,6 +50,10 @@ def main(args):
             return 1
         star = star.loc[ind]
 
+    if args.max_ctf_fom is not None:
+        ind = star["rlnCtfFigureOfMerit"] <= args.max_ctf_fom
+        star = star.loc[ind]
+
     if args.min_ctf_fom is not None:
         ind = star["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
         star = star.loc[ind]
@@ -76,6 +80,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-astigmatism", help="Maximum astigmatism (defocus difference) in Angstroms",
                         type=float)
     parser.add_argument("--max-resolution", help="Maximum CTF resolution in Angstroms",
+                        type=float)
+    parser.add_argument("--max-ctf-fom", help="Maximum CTF figure-of-merit (useful for removing ice)",
                         type=float)
     parser.add_argument("--min-ctf-fom", help="Minimum CTF figure-of-merit",
                         type=float)
