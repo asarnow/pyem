@@ -54,17 +54,20 @@ def main(args):
         star = select_classes(star, args.cls)
 
     if args.info:
-        if "rlnClassNumber" in star.columns:
+        if is_particle_star(star) and "rlnClassNumber" in star.columns:
             c = star["rlnClassNumber"].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(star.shape[0]), len(c)))
             print("Class distribution:  " + ",    ".join(['%s (%.2f %%)' % ("{:,}".format(i), 100.*i/c.sum()) for i in c]))
-        else:
+        elif is_particle_star(star):
             print("%s particles" % "{:,}".format(star.shape[0]))
-        print("%f A/px" % calculate_apix(star))
         if "rlnMicrographName" in star.columns:
             mgraphcnt = star["rlnMicrographName"].value_counts()
-            print("%d micrographs, %.3f +/- %.3f particles per micrograph" %
-                  (len(mgraphcnt), np.mean(mgraphcnt), np.std(mgraphcnt)))
+            print("%s micrographs, %s +/- %s particles per micrograph" %
+                    ("{:,}".format(len(mgraphcnt)), "{:,.3f}".format(np.mean(mgraphcnt)), "{:,.3f}".format(np.std(mgraphcnt))))
+        try:
+            print("%f A/px (%sX magnification)" % (calculate_apix(star), "{:,.0f}".format(star["rlnMagnification"][0])))
+        except KeyError:
+            pass
         return 0
 
     if args.drop_angles:
