@@ -173,7 +173,7 @@ def smart_merge(s1, s2, fields):
 
 def merge_key(s1, s2):
     inter = s1.columns.intersection(s2.columns)
-    if inter.size == 0:
+    if not inter.size:
         return None
     if IMAGE_NAME in inter:
         c = Counter(s1[IMAGE_NAME])
@@ -185,7 +185,7 @@ def merge_key(s1, s2):
         c = Counter(s1[MICROGRAPH_NAME])
         shared = sum(c[i] for i in set(s2[MICROGRAPH_NAME]))
         can_merge_mgraph_name = MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
-        if can_merge_mgraph_name and not mgraph_coords.intersection(COORDS).size == 0:
+        if can_merge_mgraph_name and mgraph_coords.intersection(COORDS).size:
             return MICROGRAPH_COORDS
         elif can_merge_mgraph_name:
             return MICROGRAPH_NAME
@@ -193,7 +193,7 @@ def merge_key(s1, s2):
 
 
 def is_particle_star(star):
-    return not star.columns.intersection([IMAGE_NAME] + COORDS).size == 0
+    return star.columns.intersection([IMAGE_NAME] + COORDS).size
 
 
 def calculate_apix(star):
