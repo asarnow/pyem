@@ -28,6 +28,7 @@ import json
 from glob import glob
 from math import modf
 from util import rot2euler
+from util import euler2rot
 
 MICROGRAPH_NAME = "rlnMicrographName"
 IMAGE_NAME = "rlnImageName"
@@ -312,22 +313,21 @@ def transform_star(star, r, t=None, inplace=False):
     else:
         assert (r.shape == (3, 3))
 
-    psi, theta, phi = rot2euler(r)
-
     if inplace:
         newstar = star
     else:
         newstar = star.copy()
 
-    newstar["rlnAngleRot"] += np.rad2deg(phi)
-    newstar["rlnAngleTilt"] += np.rad2deg(theta)
-    newstar["rlnAnglePsi"] += np.rad2deg(psi)
+    rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
+    angles = [np.rad2deg(rot2euler(r.dot(ptcl.T))) for ptcl in rots]
+    star[ANGLES] = angles
 
     if t is not None:
         assert (len(t) == 3)
         tt = r.dot(t)
-        newstar["rlnOriginX"] += tt[0]
-        newstar["rlnOriginY"] += tt[1]
+        shifts = star[ORIGINS].copy()
+        newshifts = shifts + tt
+        newstar[ORIGINS] = newshifts
 
     return newstar
 

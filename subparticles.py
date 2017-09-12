@@ -43,7 +43,7 @@ from pyem.util import relion_symmetry_group
 
 def main(args):
     if args.markers is None and args.sym is None:
-        print("Either markers or a symmetry group must be provided")
+        print("Markers and/or a symmetry group must be provided")
         return 1
 
     star = parse_star(args.input, keep_index=False)
@@ -54,6 +54,9 @@ def main(args):
     if args.cls is not None:
         star = select_classes(star, args.cls)
 
+    if args.sym is not None:
+        args.sym = relion_symmetry_group(args.sym)
+
     if args.markers is not None:
         cmmfiles = glob.glob(args.markers)
         markers = []
@@ -61,23 +64,20 @@ def main(args):
             cmms = parse_cmm(cmmfile) / args.apix
             markers.append(cmms[1:] - cmms[0])
         markers = np.vstack(markers)
-
-    if args.sym is not None:
-        args.sym = relion_symmetry_group(args.sym)
-
-    rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
-    shifts = star[ORIGINS].copy()
-    
-    stars = []
-    for cm in markers:
-        cm_ax = cm / np.linalg.norm(cm)
-        cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-        angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
-        star[ANGLES] = angles
-        newshifts = shifts + np.array([r.dot(cm)[:-1] for r in rots])
-        star[ORIGINS] = newshifts
-        star = recenter(star, inplace=True)
-        stars.append(star.copy())
+        stars = []
+        rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
+        shifts = star[ORIGINS].copy()
+        for cm in markers:
+            cm_ax = cm / np.linalg.norm(cm)
+            cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
+            angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
+            star[ANGLES] = angles
+            newshifts = shifts + np.array([r.dot(cm)[:-1] for r in rots])
+            star[ORIGINS] = newshifts
+            star = recenter(star, inplace=True)
+            stars.append(star.copy())
+    else:
+        stars = symmetry_expansion(star, args.sym)
     
     if args.suffix is None and not args.skip_join:
         bigstar = pd.concat(stars)
@@ -92,6 +92,11 @@ def parse_cmm(cmmfile):
     tree = etree.parse(cmmfile)
     cmms = np.array([[np.double(cm.get(ax)) for ax in ['x', 'y', 'z']] for cm in tree.findall("marker")])
     return cmms
+
+
+def symmetry_expansion(s, ops=[np.eye(3)]):
+    for op in ops:
+        yield transform_star(s, op)
 
 
 if __name__ == "__main__":
