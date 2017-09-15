@@ -319,8 +319,8 @@ def transform_star(star, r, t=None, inplace=False):
         newstar = star.copy()
 
     rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
-    angles = [np.rad2deg(rot2euler(r.dot(ptcl.T))) for ptcl in rots]
-    star[ANGLES] = angles
+    angles = [np.rad2deg(rot2euler(r.T.dot(ptcl))) for ptcl in rots]
+    newstar[ANGLES] = angles
 
     if t is not None:
         assert (len(t) == 3)
