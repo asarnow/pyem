@@ -1,0 +1,7 @@
+future
+numpy
+scipy
+matplotlib
+seaborn
+pandas
+pathos
