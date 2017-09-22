@@ -43,7 +43,7 @@ from pyem.util import relion_symmetry_group
 
 def main(args):
     if args.markers is None and args.sym is None:
-        print("Markers and/or a symmetry group must be provided")
+        print("At least one marker or a symmetry group must be provided")
         return 1
 
     star = parse_star(args.input, keep_index=False)
@@ -57,31 +57,52 @@ def main(args):
     if args.sym is not None:
         args.sym = relion_symmetry_group(args.sym)
 
+    if args.marker_sym is not None:
+        args.marker_sym = relion_symmetry_group(args.marker_sym)
+
     if args.markers is not None:
         cmmfiles = glob.glob(args.markers)
         markers = []
         for cmmfile in cmmfiles:
             cmms = parse_cmm(cmmfile) / args.apix
-            markers.append(cmms[1:] - cmms[0])
-        markers = np.vstack(markers)
+            markers.append(cmms[1:] - cmms[0:])
+        if args.marker_sym is not None and len(markers) == 1:
+            markers = np.vstack([op.dot(markers[0][0]) for op in args.marker_sym])
+        elif args.marker_sym is not None:
+                print("Exactly one marker is required for symmetry-derived subparticles")
+                return 1
+        else:
+            markers = np.vstack(markers)
         stars = []
         rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
-        shifts = star[ORIGINS].copy()
-        for cm in markers:
+        origins = star[ORIGINS].copy()
+        #for cm in markers:
+        for i in range(len(markers)):
+            cm = markers[i]
+            op = args.marker_sym[i]
             cm_ax = cm / np.linalg.norm(cm)
-            cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
+            #cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
+            cmr = op
             angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
             star[ANGLES] = angles
-            newshifts = shifts + np.array([r.dot(cm)[:-1] for r in rots])
-            star[ORIGINS] = newshifts
-            star = recenter(star, inplace=True)
-            stars.append(star.copy())
+            if not args.skip_origins:
+                neworigins = origins + np.array([r.dot(op.T)[:-1,2] for r in rots]) * -np.linalg.norm(cm)
+                star[ORIGINS] = neworigins
+            if args.recenter:
+                star = recenter(star, inplace=True)
+            if args.sym is not None:
+                stars.append(pd.concat(symmetry_expansion(star.copy(), args.sym, inplace=True)))
+            else:
+                stars.append(star.copy())
     else:
         stars = symmetry_expansion(star, args.sym)
     
     if args.suffix is None and not args.skip_join:
-        bigstar = pd.concat(stars)
-        write_star(args.output, bigstar)
+        if len(stars) > 1:
+            star = pd.concat(stars)
+        else:
+            star = stars[0]
+        write_star(args.output, stars)
     else:
         for i, star in enumerate(stars):
             write_star(os.path.join(args.output, args.suffix + "_%d" % i), star)
@@ -108,10 +129,15 @@ if __name__ == "__main__":
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
+    parser.add_argument("--marker-sym", help="Symmetry group for symmetry-derived subparticles (Relion conventions)")
+    parser.add_argument("--recenter", help="Recenter subparticle coordinates",
+                        action="store_true")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
+    parser.add_argument("--skip-origins", help="Skip update of particle origins.",
+                        action="store_true")
     parser.add_argument("--suffix", help="Suffix for multiple output files")
-    parser.add_argument("--sym", help="Symmetry group for symmetry expansion or symmetry-derived subparticles (Relion conventions)")
+    parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles (Relion conventions)")
 
     sys.exit(main(parser.parse_args()))
 
