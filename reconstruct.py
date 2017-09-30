@@ -22,7 +22,7 @@ import os.path
 import shlex
 import subprocess
 import sys
-from pathos.multiprocessing import Pool
+from pathos.multiprocessing import ProcessPool as Pool
 
 
 def main(args):
@@ -35,26 +35,32 @@ def main(args):
         return 1
     
     def do_job(star):
-        mrc = os.path.join(args.output, os.path.basename(star).replace(".star", ".mrc"))
-        print("Starting reconstruction of %s" % star)
-        do_reconstruct(star, mrc, args.apix, args.sym, args.ctf)
-        print("Wrote %s reconstruction to %s" % (star, mrc))
-        if args.mask is not None:
-            masked_mrc = mrc.replace(".mrc", "_masked.mrc")
-            do_mask(mrc, masked_mrc, args.mask)
-            print("Wrote masked map %s" % masked_mrc)
-        if args.mask is not None and args.delete_unmasked:
-            delete_unmasked(mrc, masked_mrc)
-            print("Overwrote %s with %s" % (mrc, masked_mrc))
+        try:
+            mrc = os.path.join(args.output, os.path.basename(star).replace(".star", ".mrc"))
+            print("Starting reconstruction of %s" % star)
+            do_reconstruct(star, mrc, args.apix, args.sym, args.ctf)
+            print("Wrote %s reconstruction to %s" % (star, mrc))
+            if args.mask is not None:
+                masked_mrc = mrc.replace(".mrc", "_masked.mrc")
+                do_mask(mrc, masked_mrc, args.mask)
+                print("Wrote masked map %s" % masked_mrc)
+            if args.mask is not None and args.delete_unmasked:
+                delete_unmasked(mrc, masked_mrc)
+                print("Overwrote %s with %s" % (mrc, masked_mrc))
+        except Exception as e:
+            print("Failed on %s" % star)
+        return 0
 
-    pool = Pool(processes=args.nproc)
+    pool = Pool(nodes=args.nproc)
 
-    for star in args.input:
-        pool.apply_async(do_job, (star,))
+    #pool.apipe(do_job, args.input)
+    results = pool.imap(do_job, args.input)
+    codes = list(results)
 
     if pool is not None:
         pool.close()
         pool.join()
+        pool.terminate()
 
     return 0
 
@@ -66,9 +72,14 @@ def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reco
     #os.system(com)
     try:
         output = subprocess.check_output(shlex.split(com), stderr=subprocess.STDOUT)
+        #print(output)
     except subprocess.CalledProcessError as cpe:
-        raise Exception(str(cpe))
-    # print(com)
+        msg = str(cpe)
+        if "-11" in msg:
+            pass
+        else:
+            raise Exception(str(cpe))
+    #print(com)
 
 
 def do_mask(mrc, masked_mrc, mask, eman2_path="e2proc3d.py"):
@@ -77,6 +88,7 @@ def do_mask(mrc, masked_mrc, mask, eman2_path="e2proc3d.py"):
             (mask, mrc, masked_mrc)
     try:
         output = subprocess.check_output(shlex.split(com), stderr=subprocess.STDOUT)
+        #print(output)
     except subprocess.CalledProcessError as cpe:
         raise Exception(str(cpe))
     # print(com)
