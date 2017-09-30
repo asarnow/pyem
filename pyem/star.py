@@ -111,7 +111,10 @@ def main(args):
         star = smart_merge(star, angle_star, fields=ANGLES)
 
     if args.transform is not None:
-        r = np.array(json.loads(args.transform))
+        if args.transform.count(",") == 2:
+            r = euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
+        else:
+            r = np.array(json.loads(args.transform))
         star = transform_star(star, r, inplace=True)
 
     if args.recenter:
@@ -319,14 +322,14 @@ def transform_star(star, r, t=None, inplace=False):
         newstar = star.copy()
 
     rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
-    angles = [np.rad2deg(rot2euler(r.T.dot(ptcl))) for ptcl in rots]
+    newrots = [r.T.dot(ptcl) for ptcl in rots]
+    angles = [np.rad2deg(rot2euler(q)) for q in newrots]
     newstar[ANGLES] = angles
 
     if t is not None:
         assert (len(t) == 3)
-        tt = r.dot(t)
-        shifts = star[ORIGINS].copy()
-        newshifts = shifts + tt
+        tt = np.vstack([q.T.dot(t) for q in newrots])
+        newshifts = star[ORIGINS] + tt[:,:-1]
         newstar[ORIGINS] = newshifts
 
     return newstar

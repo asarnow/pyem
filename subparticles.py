@@ -65,9 +65,9 @@ def main(args):
         markers = []
         for cmmfile in cmmfiles:
             cmms = parse_cmm(cmmfile) / args.apix
-            markers.append(cmms[1:] - cmms[0:])
+            markers.append(cmms[1:] - cmms[0])
         if args.marker_sym is not None and len(markers) == 1:
-            markers = np.vstack([op.dot(markers[0][0]) for op in args.marker_sym])
+            markers = np.vstack([op.T.dot(markers[0][0]) for op in args.marker_sym])
         elif args.marker_sym is not None:
                 print("Exactly one marker is required for symmetry-derived subparticles")
                 return 1
@@ -77,23 +77,24 @@ def main(args):
         rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
         origins = star[ORIGINS].copy()
         #for cm in markers:
-        for i in range(len(markers)):
-            cm = markers[i]
+        for i in range(len(args.marker_sym)):
+            cm = markers[0]
             op = args.marker_sym[i]
             cm_ax = cm / np.linalg.norm(cm)
-            #cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-            cmr = op
-            angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
-            star[ANGLES] = angles
-            if not args.skip_origins:
-                neworigins = origins + np.array([r.dot(op.T)[:-1,2] for r in rots]) * -np.linalg.norm(cm)
-                star[ORIGINS] = neworigins
-            if args.recenter:
-                star = recenter(star, inplace=True)
-            if args.sym is not None:
-                stars.append(pd.concat(symmetry_expansion(star.copy(), args.sym, inplace=True)))
-            else:
-                stars.append(star.copy())
+            cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
+            stars.append(transform_star(star, op.T.dot(cmr.T), -cm))
+            #cmr = op
+            #angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
+            #star[ANGLES] = angles
+            #if not args.skip_origins:
+            #    neworigins = origins + np.array([r.dot(op.T)[:-1,2] for r in rots]) * -np.linalg.norm(cm)
+            #    star[ORIGINS] = neworigins
+            #if args.recenter:
+            #    star = recenter(star, inplace=True)
+            #if args.sym is not None:
+            #    stars.append(pd.concat(symmetry_expansion(star.copy(), args.sym, inplace=True)))
+            #else:
+            #    stars.append(star.copy())
     else:
         stars = symmetry_expansion(star, args.sym)
     
@@ -102,7 +103,7 @@ def main(args):
             star = pd.concat(stars)
         else:
             star = stars[0]
-        write_star(args.output, stars)
+        write_star(args.output, star)
     else:
         for i, star in enumerate(stars):
             write_star(os.path.join(args.output, args.suffix + "_%d" % i), star)
