@@ -65,9 +65,14 @@ def main(args):
 
 
 def do_reconstruct(star, mrc, apix, sym="C1", ctf=True, relion_path="relion_reconstruct"):
-    com = relion_path + \
-            " --angpix %f --sym %s --ctf %s --i %s --o %s" % \
-            (apix, sym, str(ctf).lower(), star, mrc)
+    if apix is not None:
+        com = relion_path + \
+                " --angpix %f --sym %s --ctf %s --i %s --o %s" % \
+                (apix, sym, str(ctf).lower(), star, mrc)
+    else:
+        com = relion_path + \
+                " --sym %s --ctf %s --i %s --o %s" % \
+                (sym, str(ctf).lower(), star, mrc)
     #os.system(com)
     try:
         output = subprocess.check_output(shlex.split(com), stderr=subprocess.STDOUT)
