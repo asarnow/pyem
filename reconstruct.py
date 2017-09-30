@@ -31,8 +31,7 @@ def main(args):
         return 1
 
     if args.apix is None:
-        print("Please specify pixel size (in Angstroms)")
-        return 1
+        print("Using pixel size computed from STAR files")
     
     def do_job(star):
         try:
