@@ -322,13 +322,14 @@ def transform_star(star, r, t=None, inplace=False):
         newstar = star.copy()
 
     rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
-    newrots = [r.T.dot(ptcl) for ptcl in rots]
+    #newrots = [r.T.dot(ptcl) for ptcl in rots]
+    newrots = [ptcl.dot(r) for ptcl in rots]
     angles = [np.rad2deg(rot2euler(q)) for q in newrots]
     newstar[ANGLES] = angles
 
     if t is not None:
         assert (len(t) == 3)
-        tt = np.vstack([q.T.dot(t) for q in newrots])
+        tt = np.vstack([q.dot(t) for q in newrots])
         newshifts = star[ORIGINS] + tt[:,:-1]
         newstar[ORIGINS] = newshifts
 

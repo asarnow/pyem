@@ -67,7 +67,7 @@ def main(args):
             cmms = parse_cmm(cmmfile) / args.apix
             markers.append(cmms[1:] - cmms[0])
         if args.marker_sym is not None and len(markers) == 1:
-            markers = np.vstack([op.T.dot(markers[0][0]) for op in args.marker_sym])
+            markers = np.vstack([op.dot(markers[0][0]) for op in args.marker_sym])
         elif args.marker_sym is not None:
                 print("Exactly one marker is required for symmetry-derived subparticles")
                 return 1
@@ -82,7 +82,7 @@ def main(args):
             op = args.marker_sym[i]
             cm_ax = cm / np.linalg.norm(cm)
             cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-            stars.append(transform_star(star, op.T.dot(cmr.T), -cm))
+            stars.append(transform_star(star, op.dot(cmr.T), -cm))
             #cmr = op
             #angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
             #star[ANGLES] = angles

@@ -38,7 +38,7 @@ def isrotation(r, tol=1e-4):
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
     #    assert(isrotation(r))
-    r = r.T
+    #r = r.T
     #    psi = np.arctan2(r[1,2], r[2,2])
     #    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
     #    theta = np.arctan2(-r[0,2], c2)
@@ -82,7 +82,7 @@ def euler2rot(alpha, beta, gamma):
     ss = sb * sa
     r = np.array([[cg * cc - sg * sa, cg * cs + sg * ca, -cg * sb],
                   [-sg * cc - cg * sa, -sg * cs + cg * ca, sg * sb],
-                  [sc, ss, cb]]).T
+                  [sc, ss, cb]])
     return r
 
 
@@ -95,7 +95,8 @@ def expmap(e):
     k = np.array([[0, -w[2], w[1]],
                   [w[2], 0, -w[0]],
                   [-w[1], w[0], 0]], dtype=e.dtype)
-    return np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
+    r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
+    return r.T
 
 
 def relion_symmetry_group(sym):
