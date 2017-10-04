@@ -307,14 +307,15 @@ def transform_star(star, r, t=None, inplace=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
-    The translation may also be given as the 4th column of a 3x4 matrix.
+    The translation may also be given as the 4th column of a 3x4 matrix,
+    or as a scalar distance to be applied along the axis of rotation.
     """
     assert (r.shape[0] == 3)
     if r.shape[1] == 4 and t is None:
         t = r[:, -1]
         r = r[:, :3]
-    else:
-        assert (r.shape == (3, 3))
+    assert (r.shape == (3, 3))
+    assert np.isscalar(t) or len(t) == 3
 
     if inplace:
         newstar = star
@@ -322,14 +323,15 @@ def transform_star(star, r, t=None, inplace=False):
         newstar = star.copy()
 
     rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
-    #newrots = [r.T.dot(ptcl) for ptcl in rots]
     newrots = [ptcl.dot(r) for ptcl in rots]
     angles = [np.rad2deg(rot2euler(q)) for q in newrots]
     newstar[ANGLES] = angles
 
     if t is not None:
-        assert (len(t) == 3)
-        tt = np.vstack([q.dot(t) for q in newrots])
+        if np.isscalar(t):
+            tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
+        else:
+            tt = np.vstack([q.dot(t) for q in newrots])
         newshifts = star[ORIGINS] + tt[:,:-1]
         newstar[ORIGINS] = newshifts
 
