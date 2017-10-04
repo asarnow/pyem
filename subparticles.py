@@ -77,25 +77,9 @@ def main(args):
         rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
         origins = star[ORIGINS].copy()
         for cm in markers:
-        #for i in range(len(args.marker_sym)):
-            #cm = markers[i]
-            #op = args.marker_sym[i]
             cm_ax = cm / np.linalg.norm(cm)
             cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-            #stars.append(transform_star(star, op.dot(cmr.T), -cm))
             stars.append(transform_star(star, cmr.T, -np.linalg.norm(cm)))
-            #cmr = op
-            #angles = [np.rad2deg(rot2euler(r.dot(cmr.T))) for r in rots]
-            #star[ANGLES] = angles
-            #if not args.skip_origins:
-            #    neworigins = origins + np.array([r.dot(op.T)[:-1,2] for r in rots]) * -np.linalg.norm(cm)
-            #    star[ORIGINS] = neworigins
-            #if args.recenter:
-            #    star = recenter(star, inplace=True)
-            #if args.sym is not None:
-            #    stars.append(pd.concat(symmetry_expansion(star.copy(), args.sym, inplace=True)))
-            #else:
-            #    stars.append(star.copy())
     else:
         stars = symmetry_expansion(star, args.sym)
     
