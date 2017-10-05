@@ -111,7 +111,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="STAR file with source particles")
     parser.add_argument("output", help="Output file path (and prefix for output files)")
-    parser.add_argument("--apix", "--angpix", help="Angstroms per pixel (calculate from STAR by default)")
+    parser.add_argument("--apix", "--angpix", help="Angstroms per pixel (calculate from STAR by default)",
+                        type=float)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
