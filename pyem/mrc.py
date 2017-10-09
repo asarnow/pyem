@@ -1,7 +1,6 @@
 # Copyright (C) 2016 Eugene Palovcak
 # University of Calfornia, San Francisco
-import numpy as n
-import matplotlib.pyplot as plt
+import numpy as np
 
 
 def read(fname, inc_header=False):
@@ -13,9 +12,9 @@ def read(fname, inc_header=False):
     with open(fname) as f:
         f.seek(1024)  # seek to start of data
         if datatype == 1:
-            data = n.reshape(n.fromfile(f, dtype='int16', count=nx * ny * nz), (nx, ny, nz), order='F')
+            data = np.reshape(np.fromfile(f, dtype='int16', count=nx * ny * nz), (nx, ny, nz), order='F')
         if datatype == 2:
-            data = n.reshape(n.fromfile(f, dtype='float32', count=nx * ny * nz), (nx, ny, nz), order='F')
+            data = np.reshape(np.fromfile(f, dtype='float32', count=nx * ny * nz), (nx, ny, nz), order='F')
     if inc_header:
         return data, hdr
     else:
@@ -25,8 +24,8 @@ def read(fname, inc_header=False):
 def write(fname, data, psz=1):
     """ Writes a MRC file. The header will be blank except for nx,ny,nz,datatype=2 for float32. 
     data should be (nx,ny,nz), and will be written in Fortran order as MRC requires."""
-    header = n.zeros(256, dtype=n.int32)  # 1024 byte header
-    header_f = header.view(n.float32)
+    header = np.zeros(256, dtype=np.int32)  # 1024 byte header
+    header_f = header.view(np.float32)
 
     header[:3] = data.shape  # nx, ny, nz
     header[3] = 2  # mode, 2 = float32 datatype
@@ -41,7 +40,7 @@ def write(fname, data, psz=1):
     header[53] = 16708
     with open(fname, 'wb') as f:
         header.tofile(f)
-        n.require(n.reshape(data, (-1,), order='F'), dtype=n.float32).tofile(f)
+        np.require(np.reshape(data, (-1,), order='F'), dtype=np.float32).tofile(f)
 
 
 def read_imgs(fname, idx, num=None):
@@ -59,29 +58,20 @@ def read_imgs(fname, idx, num=None):
     with open(fname) as f:
         f.seek(1024 + idx * datasizes[datatype] * nx * ny)  # Seek to start of img idx.
         if datatype == 1:
-            return n.reshape(n.fromfile(f, dtype='int16', count=nx * ny * num), (nx, ny, num), order='F')
+            return np.reshape(np.fromfile(f, dtype='int16', count=nx * ny * num), (nx, ny, num), order='F')
         if datatype == 2:
-            return n.reshape(n.fromfile(f, dtype='float32', count=nx * ny * num), (nx, ny, num), order='F')
+            return np.reshape(np.fromfile(f, dtype='float32', count=nx * ny * num), (nx, ny, num), order='F')
 
 
 def read_header(fname):
     with open(fname) as f:
         hdr = {}
-        header = n.fromfile(f, dtype=n.int32, count=256)
-        header_f = header.view(n.float32)
+        header = np.fromfile(f, dtype=np.int32, count=256)
+        header_f = header.view(np.float32)
         [hdr['nx'], hdr['ny'], hdr['nz'], hdr['datatype']] = header[:4]
         [hdr['xlen'], hdr['ylen'], hdr['zlen']] = header_f[10:13]
         # print "Nx %d Ny %d Nz %d Type %d" % (nx, ny, nz, datatype)
     return hdr
-
-
-def animplot(fname):
-    a = read(fname)
-    plt.ion()
-    image = plt.imshow(a[:, :, 0], interpolation='bicubic', animated=True, label="blah")
-    for i in range(1, 128):
-        image.set_data(a[:, :, i])
-        plt.draw()
 
 # C************************************************************************
 # C                                   *
