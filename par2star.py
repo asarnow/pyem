@@ -21,6 +21,7 @@ from __future__ import print_function
 import sys
 from pyem.io import parse_par
 from pyem.io import par2star
+from pyem.star import write_star
 
 
 def main(args):
@@ -34,7 +35,7 @@ def main(args):
 
 if __name__ == "__main__":
     import argparse
-    parser = argpars.ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Frealign .par file")
     parser.add_argument("output", help="Output Relion .star file")
     parser.add_argument("--data-path", help="Alternate path for particle stack")
