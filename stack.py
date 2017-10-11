@@ -32,7 +32,7 @@ def main(args):
             star = parse_star(fn, keep_index=False)
             for p in star["rlnImageName"]:
                 stack = p.split("@")[1]
-                idx = int(p.split("@")[0])
+                idx = int(p.split("@")[0]) - 1
                 img = EMData(stack, idx)
                 img.append_image(args.output)
         else:
