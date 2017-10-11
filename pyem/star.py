@@ -117,12 +117,6 @@ def main(args):
             r = np.array(json.loads(args.transform))
         star = transform_star(star, r, inplace=True)
 
-    if args.recenter:
-        star = recenter(star, inplace=True)
-
-    if args.zero_origins:
-        star = zero_origins(star, inplace=True)
-
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
         star[IMAGE_NAME] = path_star[IMAGE_NAME]
@@ -138,6 +132,12 @@ def main(args):
 
     if args.scale_coordinates is not None:
         star[COORDS] = star[COORDS] * args.scale_coordinates
+
+    if args.recenter:
+        star = recenter(star, inplace=True)
+
+    if args.zero_origins:
+        star = zero_origins(star, inplace=True)
 
     if args.pick:
         star.drop(star.columns.difference(PICK_PARAMS), axis=1, inplace=True, errors="ignore")
