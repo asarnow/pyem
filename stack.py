@@ -20,6 +20,8 @@
 from __future__ import print_function
 from builtins import range
 import glob
+import os
+import os.path
 import sys
 from EMAN2 import EMData
 from EMAN2 import EMUtil
@@ -27,14 +29,19 @@ from pyem.star import parse_star
 
 
 def main(args):
+    if os.path.exists(args.output):
+        os.remove(args.output)
     for fn in args.input:
         if fn.endswith(".star"):
             star = parse_star(fn, keep_index=False)
             for p in star["rlnImageName"]:
                 stack = p.split("@")[1]
                 idx = int(p.split("@")[0]) - 1
-                img = EMData(stack, idx)
-                img.append_image(args.output)
+                try:
+                    img = EMData(stack, idx)
+                    img.append_image(args.output)
+                except Exception:
+                    print("Error at %s" % p)
         else:
             n = EMUtil.get_image_count(fn)
             for i in range(n):
