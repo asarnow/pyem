@@ -19,8 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import sys
-from pyem.io import parse_par
-from pyem.io import par2star
+from pyem.metadata import parse_par
+from pyem.metadata import par2star
 from pyem.star import write_star
 
 
