@@ -227,22 +227,14 @@ def split_micrographs(star):
     return stars
 
 
-def recenter_row(row):
-    remx, offsetx = modf(row["rlnOriginX"])
-    remy, offsety = modf(row["rlnOriginY"])
-    offsetx = row["rlnCoordinateX"] - offsetx
-    offsety = row["rlnCoordinateY"] - offsety
-    return pd.Series({"rlnCoordinateX": offsetx, "rlnCoordinateY": offsety,
-                      "rlnOriginX": remx, "rlnOriginY": remy})
-
-
 def recenter(star, inplace=False):
     if inplace:
         newstar = star
     else:
         newstar = star.copy()
-    newvals = star.apply(recenter_row, axis=1)
-    newstar[COORDS + ORIGINS] = newvals[COORDS + ORIGINS]
+    remxy, offsetxy = np.vectorize(modf)(star[ORIGINS])
+    newstar[ORIGINS] = remxy
+    newstar[COORDS] = newstar[COORDS] - offsetxy
     return newstar
 
 
