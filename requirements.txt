@@ -1,7 +1,7 @@
 future
-numpy
+numpy>=1.13.1
 scipy
-matplotlib
+matplotlib>=2.0.2
 seaborn
-pandas
-pathos
+pandas>=0.20.3
+pathos>=0.2.1
