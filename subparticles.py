@@ -76,10 +76,13 @@ def main(args):
         stars = []
         rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
         origins = star[ORIGINS].copy()
-        for cm in markers:
+        for i, cm in enumerate(markers):
             cm_ax = cm / np.linalg.norm(cm)
             cmr = euler2rot(*np.array([np.arctan2(cm_ax[1], cm_ax[0]), np.arccos(cm_ax[2]), 0.]))
-            stars.append(transform_star(star, cmr.T, -np.linalg.norm(cm)))
+            if args.no_expand:
+                stars.append(transform_star(star.iloc[i::len(markers)], cmr.T, -np.linalg.norm(cm)))
+            else:
+                stars.append(transform_star(star, cmr.T, -np.linalg.norm(cm)))
     else:
         stars = symmetry_expansion(star, args.sym)
     
@@ -115,6 +118,7 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
+    parser.add_argument("--no-expand", help="Don't expand (e.g. if continuing from previous expansion", action="store_true")
     parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
     parser.add_argument("--marker-sym", help="Symmetry group for symmetry-derived subparticles (Relion conventions)")
     parser.add_argument("--recenter", help="Recenter subparticle coordinates",
