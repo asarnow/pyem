@@ -100,6 +100,8 @@ def main(args):
     if args.subsample is not None and args.suffix == "":
         if args.subsample < 1:
             args.subsample = np.int(max(np.round(args.subsample * star.shape[0]), 1))
+        else:
+            args.subsample = np.int(args.subsample)
         ind = np.random.choice(star.shape[0], size=args.subsample, replace=False)
         mask = star.index.isin(ind)
         if args.auxout is not None:
