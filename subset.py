@@ -57,6 +57,11 @@ def main(args):
     if args.min_ctf_fom is not None:
         ind = star["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
         star = star.loc[ind]
+    
+    if args.min_particles is not None:
+        counts = star["rlnMicrographName"].value_counts()
+        subset = star.set_index("rlnMicrographName").loc[counts.index[counts > args.min_particles]]
+        star = subset.reset_index()
 
     if args.subsample is not None:
         if args.subsample < 1:
@@ -85,6 +90,8 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--min-ctf-fom", help="Minimum CTF figure-of-merit",
                         type=float)
+    parser.add_argument("--min-particles", help="Minimum number of particles in a micrograph",
+                        type=int)
     parser.add_argument("--seed", help="Seed for random number generators",
                         type=int)
     parser.add_argument("--subsample", help="Randomly subsample particles",
