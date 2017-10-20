@@ -27,6 +27,7 @@ def parse_par(fn):
            "Amplitude contrast": None,
            "Pixel size of images (A)": None}
     ln = 1
+    skip = 0
     with open(fn, 'rU') as f:
         lastheader = False
         firstblock = True
@@ -49,11 +50,19 @@ def parse_par(fn):
                     firstblock = False
             elif l.startswith("C"):
                 break
+            else:
+                headers = ["C", "PHI", "THETA", "PSI", "SHX", "SHY",
+                        "MAG", "FILM", "DF1", "DF2", "ANGAST",
+                        "OCC", "LogP", "SIGMA", "SCORE", "CHANGE"]
+                break
                 
             ln += 1
 
-    n = ln - skip - 1
-    par = pd.read_table(fn, skiprows=skip, nrows=n, delimiter="\s+", header=None)
+    if skip == 0:
+        n = None
+    else:
+        n = ln - skip - 1
+    par = pd.read_table(fn, skiprows=skip, nrows=n, delimiter="\s+", header=None, comment="C")
     par.columns = headers
     for k in head_data:
         if head_data[k] is not None:
@@ -68,6 +77,7 @@ def par2star(par):
             "SHX": "rlnOriginX",
             "SHY": "rlnOriginY",
             "MAG": "rlnMagnification",
+            "FILM": "rlnGroupNumber",
             "DF1": "rlnDefocusU",
             "DF2": "rlnDefocusV",
             "ANGAST": "rlnDefocusAngle",
