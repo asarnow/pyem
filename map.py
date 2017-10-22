@@ -26,18 +26,24 @@ from pyem.mrc import write
 
 def main(args):
     data, hdr = read(args.input, inc_header=True)
-    if args.normalize is not None:
-        if args.normalize:
-            ref, refhdr = read(args.input, inc_header=True)
+    final = None
+    if args.normalize:
+        if args.reference is not None:
+            ref, refhdr = read(args.reference, inc_header=True)
             sigma = np.std(ref)
         else:
             sigma = np.std(data)
 
         mu = np.mean(data)
-        final = (data - mu) / std
+        final = (data - mu) / sigma
+        if args.verbose:
+            print("Mean: %f, Standard deviation: %f" % (mu, sigma))
 
     if args.apix is None:
         args.apix = hdr["nx"] / hdr["xlen"]
+
+    if final is None:
+        final = data
 
     write(args.output, final, psz=args.apix)
     return 0
@@ -50,6 +56,8 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output mask MRC file")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores",
-                        nargs="?", const=False, metavar="reference")
+                        action="store_true")
+    parser.add_argument("--reference", "-r", help="Reference volume MRC file")
+    parser.add_argument("--verbose", "-v", help="Be verbose", action="store_true")
     sys.exit(main(parser.parse_args()))
 
