@@ -38,7 +38,7 @@ ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
 CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle", "rlnSphericalAberration", "rlnCtfBfactor",
               "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast", "rlnCtfMaxResolution",
               "rlnCtfFigureOfMerit"]
-MICROSCOPE_PARMS = ["rlnVoltage", "rlnMagnification", "rlnDetectorPixelSize"]
+MICROSCOPE_PARAMS = ["rlnVoltage", "rlnMagnification", "rlnDetectorPixelSize"]
 MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
 PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit"]
 
@@ -154,6 +154,12 @@ def main(args):
         for i, ind in enumerate(inds):
             write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),
                        star.iloc[ind])
+
+    if args.to_micrographs:
+        gb = star.groupby(MICROGRAPH_NAME)
+        mu = gb.mean()
+        star = mu[[c for c in CTF_PARAMS + MICROSCOPE_PARAMS + [MICROGRAPH_NAME] if c in mu]].reset_index()
+
 
     if args.split_micrographs:
         stars = split_micrographs(star)
@@ -379,6 +385,8 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
+    parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
+                        action="store_true")
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
