@@ -70,6 +70,10 @@ def read_header(fname):
         header_f = header.view(np.float32)
         [hdr['nx'], hdr['ny'], hdr['nz'], hdr['datatype']] = header[:4]
         [hdr['xlen'], hdr['ylen'], hdr['zlen']] = header_f[10:13]
+        if hdr['xlen'] == hdr['ylen'] == hdr['zlen'] == 0:
+            hdr['xlen'] = hdr['nx']
+            hdr['ylen'] = hdr['ny']
+            hdr['zlen'] = hdr['nz']
         # print "Nx %d Ny %d Nz %d Type %d" % (nx, ny, nz, datatype)
     return hdr
 
