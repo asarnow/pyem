@@ -84,7 +84,7 @@ def main(args):
             else:
                 stars.append(transform_star(star, cmr.T, -np.linalg.norm(cm)))
     else:
-        stars = symmetry_expansion(star, args.sym)
+        stars = list(symmetry_expansion(star, args.sym))
     
     if args.suffix is None and not args.skip_join:
         if len(stars) > 1:
