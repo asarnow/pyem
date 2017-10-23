@@ -315,7 +315,7 @@ def transform_star(star, r, t=None, inplace=False):
         t = r[:, -1]
         r = r[:, :3]
     assert (r.shape == (3, 3))
-    assert np.isscalar(t) or len(t) == 3
+    assert t is None or np.isscalar(t) or len(t) == 3
 
     if inplace:
         newstar = star
