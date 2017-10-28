@@ -213,7 +213,10 @@ def is_particle_star(star):
 
 
 def calculate_apix(star):
-    return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
+    try:
+        return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
+    except KeyError:
+        return None
 
 
 def select_classes(star, classes):
@@ -303,7 +306,7 @@ def write_star(starfile, star, reindex=True):
     star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
-def transform_star(star, r, t=None, inplace=False):
+def transform_star(star, r, t=None, inplace=False, rots=None):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -322,12 +325,14 @@ def transform_star(star, r, t=None, inplace=False):
     else:
         newstar = star.copy()
 
-    rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
+    if rots is None:
+        rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
+ 
     newrots = [ptcl.dot(r) for ptcl in rots]
     angles = [np.rad2deg(rot2euler(q)) for q in newrots]
     newstar[ANGLES] = angles
 
-    if t is not None:
+    if t is not None and np.linalg.norm(t) > 0:
         if np.isscalar(t):
             tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
         else:

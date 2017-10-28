@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+import pandas as pd
 import subprocess
 from distutils.spawn import find_executable as which
 
@@ -37,15 +38,7 @@ def isrotation(r, tol=1e-4):
 
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
-    #    assert(isrotation(r))
-    #r = r.T
-    #    psi = np.arctan2(r[1,2], r[2,2])
-    #    c2 = np.sqrt(np.power(r[0,0], 2) + np.power(r[0,1], 2))
-    #    theta = np.arctan2(-r[0,2], c2)
-    #    s1 = np.sin(psi)
-    #    c1 = np.cos(psi)
-    #    phi = np.arctan2(s1*r[2,0] - c1*r[1,0], c1*r[1,1] - s1*r[2,1])
-
+    #assert(isrotation(r))
     # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
     epsilon = np.finfo(np.double).eps
     abs_sb = np.sqrt(r[0, 2] ** 2 + r[1, 2] ** 2)
@@ -86,6 +79,11 @@ def euler2rot(alpha, beta, gamma):
     return r
 
 
+def vec2rot(v):
+    ax = v / np.linalg.norm(v)
+    return euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), 0.]))
+
+
 def expmap(e):
     """Convert axis-angle vector into 3D rotation matrix"""
     theta = np.linalg.norm(e)
@@ -117,3 +115,8 @@ def aligndf(df1, df2, fields=None):
     df1a = ww.loc[iboth].copy()
     df2a = dd.loc[iboth].copy()
     return df1a, df2a
+
+
+def interleave(dfs, drop=True):
+    return pd.concat(dfs).sort_index(kind="mergesort").reset_index(drop=drop)
+
