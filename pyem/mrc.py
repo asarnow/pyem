@@ -21,7 +21,7 @@ def read(fname, inc_header=False):
         return data
 
 
-def write(fname, data, psz=1):
+def write(fname, data, psz=1, origin=None):
     """ Writes a MRC file. The header will be blank except for nx,ny,nz,datatype=2 for float32. 
     data should be (nx,ny,nz), and will be written in Fortran order as MRC requires."""
     header = np.zeros(256, dtype=np.int32)  # 1024 byte header
@@ -34,8 +34,12 @@ def write(fname, data, psz=1):
     header_f[13:16] = 90.0  # CELLB
     header[16:19] = [1, 2, 3]  # axis order
     header_f[19:22] = [data.min(), data.max(), data.mean()]  # data stats
-    # Put the origin at the center
-    header_f[49:52] = [psz * i / 2 for i in data.shape]
+    if origin is None:
+        header_f[49:52] = [0, 0, 0]
+    elif origin is "center":
+        header_f[49:52] = [psz * i / 2 for i in data.shape]
+    else:
+        header_f[49:52] = origin
     header[52] = 542130509  # 'MAP ' chars
     header[53] = 16708
     with open(fname, 'wb') as f:
