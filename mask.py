@@ -26,6 +26,8 @@ from scipy.interpolate import interp1d
 from scipy.ndimage import binary_dilation
 from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import distance_transform_edt
+from scipy.ndimage import label
+from scipy.ndimage import labeled_comprehension
 
 
 def main(args):
@@ -34,6 +36,8 @@ def main(args):
         return 1
     data, hdr = read(args.input, inc_header=True)
     mask = data >= args.threshold
+    if args.minvol is not None:
+        mask = binary_volume_opening(mask, args.minvol)
     if args.fill:
         mask = binary_fill_holes(mask)
     if args.extend is not None:
@@ -62,9 +66,26 @@ def binary_sphere(r, le=True):
     return sph
 
 
+def binary_volume_opening(vol, minvol):
+    lb_vol, num_objs = label(vol)
+    lbs = np.arange(1, num_objs + 1)
+    v = labeled_comprehension(lb_vol>0, lb_vol, lbs, np.sum, np.int, 0)
+    ix = np.isin(lb_vol, lbs[v >= minvol])
+    newvol = np.zeros(vol.shape)
+    newvol[ix] = vol[ix]
+    return newvol
+
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+            description="\n".join([
+                "The mask is generated according to the following procedure:",
+                "  1. Threshold map", 
+                "  2. Optionally delete small segments",
+                "  3. Optionally fill holes",
+                "  4. Extend initial mask",
+                "  5. Add soft edge"]))
     parser.add_argument("input", help="Input volume MRC file")
     parser.add_argument("output", help="Output mask MRC file")
     parser.add_argument("--threshold", "-t", help="Threshold for initial mask",
@@ -78,5 +99,6 @@ if __name__ == "__main__":
                         default="sinusoid")
     parser.add_argument("--fill", "-f", help="Flood fill initial mask",
                         action="store_true")
+    parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments", type=int)
     sys.exit(main(parser.parse_args()))
 
