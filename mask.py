@@ -23,6 +23,7 @@ import sys
 from pyem.mrc import read
 from pyem.mrc import write
 from scipy.interpolate import interp1d
+from scipy.ndimage import binary_closing
 from scipy.ndimage import binary_dilation
 from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import distance_transform_edt
@@ -43,6 +44,9 @@ def main(args):
     if args.extend is not None:
         se = binary_sphere(args.extend, False)
         mask = binary_dilation(mask, structure=se, iterations=1)
+    if args.close:
+        se = binary_sphere(args.extend, False)
+        mask = binary_closing(mask, structure=se, iterations=1)
     final = mask.astype(np.single)
     if args.edge_width is not None:
         dt = distance_transform_edt(~mask)  # Compute *outward* distance transform of mask.
@@ -85,7 +89,8 @@ if __name__ == "__main__":
                 "  2. Optionally delete small segments",
                 "  3. Optionally fill holes",
                 "  4. Extend initial mask",
-                "  5. Add soft edge"]))
+                "  5. Optional morphological closing",
+                "  6. Add soft edge"]))
     parser.add_argument("input", help="Input volume MRC file")
     parser.add_argument("output", help="Output mask MRC file")
     parser.add_argument("--threshold", "-t", help="Threshold for initial mask",
@@ -100,5 +105,6 @@ if __name__ == "__main__":
     parser.add_argument("--fill", "-f", help="Flood fill initial mask",
                         action="store_true")
     parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments", type=int)
+    parser.add_argument("--close", "-c", help="Perform morphological closing", action="store_true")
     sys.exit(main(parser.parse_args()))
 
