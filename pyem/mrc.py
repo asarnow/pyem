@@ -1,6 +1,7 @@
 # Copyright (C) 2016 Eugene Palovcak
 # University of Calfornia, San Francisco
 import numpy as np
+import os
 
 
 def read(fname, inc_header=False):
@@ -21,19 +22,19 @@ def read(fname, inc_header=False):
         return data
 
 
-def write(fname, data, psz=1, origin=None):
+def write(fname, data, psz=1, origin=None, fast=False):
     """ Writes a MRC file. The header will be blank except for nx,ny,nz,datatype=2 for float32. 
     data should be (nx,ny,nz), and will be written in Fortran order as MRC requires."""
     header = np.zeros(256, dtype=np.int32)  # 1024 byte header
     header_f = header.view(np.float32)
-
     header[:3] = data.shape  # nx, ny, nz
     header[3] = 2  # mode, 2 = float32 datatype
     header[7:10] = data.shape  # mx, my, mz (grid size)
     header_f[10:13] = [psz * i for i in data.shape]  # xlen, ylen, zlen
     header_f[13:16] = 90.0  # CELLB
     header[16:19] = [1, 2, 3]  # axis order
-    header_f[19:22] = [data.min(), data.max(), data.mean()]  # data stats
+    if not fast:
+        header_f[19:22] = [data.min(), data.max(), data.mean()]  # data stats
     if origin is None:
         header_f[49:52] = [0, 0, 0]
     elif origin is "center":
@@ -44,6 +45,36 @@ def write(fname, data, psz=1, origin=None):
     header[53] = 16708
     with open(fname, 'wb') as f:
         header.tofile(f)
+        np.require(np.reshape(data, (-1,), order='F'), dtype=np.float32).tofile(f)
+
+
+def append(fname, data):
+    with open(fname, 'r+b') as f:
+        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)  # First 12 bytes of stack.
+        f.seek(36)  # First byte of zlen.
+        zlen = np.fromfile(f, dtype=np.float32, count=1)
+        if data.shape[0] != nx or data.shape[1] != ny:
+            raise Exception
+        f.seek(0, os.SEEK_END)
+        np.require(np.reshape(data, (-1,), order='F'), dtype=np.float32).tofile(f)
+        # Update header after new data is written.
+        apix = zlen / nz
+        nz += data.shape[2]
+        zlen += apix * data.shape[2]
+        f.seek(8)
+        nz.tofile(f)
+        f.seek(36)
+        zlen.tofile(f)
+
+
+def write_imgs(fname, idx, data):
+    with open(fname, 'r+b') as f:
+        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)  # First 12 bytes of stack.
+        if data.shape[2] > nz:
+            raise Exception
+        if data.shape[0] != nx or data.shape[1] != ny:
+            raise Exception
+        f.seek(1024 + idx * nx * ny * 4)
         np.require(np.reshape(data, (-1,), order='F'), dtype=np.float32).tofile(f)
 
 
