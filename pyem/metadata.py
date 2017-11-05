@@ -70,12 +70,12 @@ def parse_par(fn):
     return par
 
 
-def par2star(par):
+def par2star(par, v9=True):
     general = {"PHI": None,
             "THETA": None,
             "PSI": None,
-            "SHX": "rlnOriginX",
-            "SHY": "rlnOriginY",
+            "SHX": None,
+            "SHY": None,
             "MAG": "rlnMagnification",
             "FILM": "rlnGroupNumber",
             "DF1": "rlnDefocusU",
@@ -93,6 +93,8 @@ def par2star(par):
     star["rlnImageName"] = ["%.6d" % (i + 1) for i in par["C"]]  # Reformat particle idx for Relion.
     star["rlnImageName"] = star["rlnImageName"].str.cat(par["Input particle images"], sep="@")
     star["rlnDetectorPixelSize"] = par["Pixel size of images (A)"] * par["MAG"] / 10000.0
+    star["rlnOriginX"] = par["SHX"] / par["Pixel size of images (A)"]
+    star["rlnOriginY"] = par["SHY"] / par["Pixel size of images (A)"]
     star["rlnAngleRot"] = -par["PSI"]
     star["rlnAngleTilt"] = -par["THETA"]
     star["rlnAnglePsi"] = -par["PHI"]
