@@ -49,6 +49,14 @@ def main(args):
     final = None
     box = np.array([hdr[a] for a in ["nx", "ny", "nz"]])
 
+    if args.transpose is not None:
+        try:
+            tax = [np.int64(a) for a in args.transpose.split(",")]
+            data = np.transpose(data, axes=tax)
+        except:
+            log.error("Transpose axes must be comma-separated list of three integers")
+            return 1
+
     if args.normalize:
         if args.reference is not None:
             ref, refhdr = read(args.reference, inc_header=True)
@@ -101,10 +109,11 @@ def main(args):
             log.error("Standard pose target must be comma-separated list of x,y,z coordinates")
             return 1
         args.target -= args.origin
+        args.target = np.where(args.target < 1, 0, args.target)
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
-        data = resample_volume(data, r=r, t=args.target, ori=args.origin, order=args.spline_order)
+        data = resample_volume(data, r=r, t=args.target, order=args.spline_order)
 
     if args.euler is not None:
         try:
@@ -140,6 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
+    parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
     parser.add_argument("--origin", help="Origin coordinates in Angstroms (volume center by default)", metavar="x,y,z")

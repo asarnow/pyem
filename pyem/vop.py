@@ -31,27 +31,29 @@ def ismask(vol):
     return np.unique(vol[vol.shape[2] / 2::vol.shape[2]]).size < 100
 
 
-def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", indexing="xy"):
+def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", indexing="ij"):
     if r is None and t is None:
         return vol.copy()
 
-    if ori is None:
-        ori = np.array(vol.shape) / 2
+    center = np.array(vol.shape) // 2
 
-    x, y, z = np.meshgrid(*[np.arange(-o, o) for o in ori], indexing=indexing)
+    x, y, z = np.meshgrid(*[np.arange(-c, c) for c in center], indexing=indexing)
     xyz = np.vstack([x.reshape(-1), y.reshape(-1), z.reshape(-1), np.ones(x.size)])
+
+    if ori is not None:
+        xyz -= ori[:, None]
 
     th = np.eye(4)
     if t is None and r.shape[1] == 4:
-        t = np.squeeze(r[:, 3]) - ori
+        t = np.squeeze(r[:, 3])
     elif t is not None:
-        th[:3, 3] = t - ori
+        th[:3, 3] = t
 
     rh = np.eye(4)
     if r is not None:
         rh[:3:, :3] = r[:3, :3].T
 
-    xyz = th.dot(rh.dot(xyz))[:3, :] + ori[:, None]
+    xyz = th.dot(rh.dot(xyz))[:3, :] + center[:, None]
     xyz = np.array([arr.reshape(vol.shape) for arr in xyz])
 
     if "relion" in compat.lower() or "xmipp" in compat.lower():
