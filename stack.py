@@ -18,19 +18,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
-from builtins import range
-import glob
 import os
 import os.path
 import sys
-from EMAN2 import EMData
-from EMAN2 import EMUtil
+from pyem.mrc import append
+from pyem.mrc import read
+from pyem.mrc import write
 from pyem.star import parse_star
 
 
 def main(args):
     if os.path.exists(args.output):
         os.remove(args.output)
+    first = True
     for fn in args.input:
         if fn.endswith(".star"):
             star = parse_star(fn, keep_index=False)
@@ -38,15 +38,22 @@ def main(args):
                 stack = p.split("@")[1]
                 idx = int(p.split("@")[0]) - 1
                 try:
-                    img = EMData(stack, idx)
-                    img.append_image(args.output)
+                    img = read(stack, idx)
+                    if first:
+                        write(args.output, img)
+                        first = False
+                    else:
+                        append(args.output, img)
                 except Exception:
                     print("Error at %s" % p)
         else:
-            n = EMUtil.get_image_count(fn)
-            for i in range(n):
-                img = EMData(fn, i)
-                img.append_image(args.output)
+            data, hdr = read(fn, inc_header=True)
+            apix = args.apix = hdr["xlen"] / hdr["nx"]
+            if first:
+                write(args.output, data, psz=apix)
+                first = False
+            else:
+                append(args.output, data)
     return 0
 
 

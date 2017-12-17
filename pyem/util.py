@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (C) 2017 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -82,6 +81,63 @@ def euler2rot(alpha, beta, gamma):
 def vec2rot(v):
     ax = v / np.linalg.norm(v)
     return euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), 0.]))
+
+
+def quat2aa(q):
+    n = np.sqrt(np.sum(q[1:] ** 2))
+    ax = q[1:] / n
+    theta = 2 * np.arctan2(n, q[0])  # Or 2 * np.arccos(q[0])
+    return theta * ax
+
+
+def quat2rot(q):
+    aa = q[0] ** 2
+    bb = q[1] ** 2
+    cc = q[2] ** 2
+    dd = q[3] ** 2
+    ab = q[0] * q[1]
+    ac = q[0] * q[2]
+    ad = q[0] * q[3]
+    bc = q[1] * q[2]
+    bd = q[1] * q[3]
+    cd = q[2] * q[3]
+    r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
+                  [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
+                  [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
+    return r
+
+
+def euler2quat(alpha, beta, gamma):
+    q = np.array([np.cos((alpha + gamma) / 2) * np.cos(beta / 2),
+                  np.cos((alpha - gamma) / 2) * np.sin(beta / 2),
+                  np.sin((alpha - gamma) / 2) * np.sin(beta / 2),
+                  np.sin((alpha + gamma) / 2) * np.cos(beta / 2)])
+    return q
+
+
+def quat2euler(q):
+    aa = q[0] ** 2
+    bb = q[1] ** 2
+    cc = q[2] ** 2
+    dd = q[3] ** 2
+    ab = q[0] * q[1]
+    ac = q[0] * q[2]
+    bd = q[1] * q[3]
+    cd = q[2] * q[3]
+
+    alpha = np.arctan2(bd + ac, ab - cd)
+
+    if alpha < 0:
+        alpha += 2 * np.pi
+
+    beta = np.arccos(aa - bb - cc + dd)
+
+    gamma = np.arctan2(bd - ac, ab + cd)
+
+    if gamma < 0:
+        gamma += 2 * np.pi
+
+    return alpha, beta, gamma
 
 
 def expmap(e):

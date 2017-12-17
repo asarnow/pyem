@@ -18,13 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
-import argparse
 import glob
 import logging
 import numpy as np
 import os
 import os.path
-import pandas as pd
 import sys
 import xml.etree.cElementTree as etree
 from pyem.star import calculate_apix
@@ -34,11 +32,7 @@ from pyem.star import transform_star
 from pyem.star import select_classes
 from pyem.star import recenter
 from pyem.star import ANGLES
-from pyem.star import COORDS
-from pyem.star import ORIGINS
 from pyem.util import euler2rot
-from pyem.util import rot2euler
-from pyem.util import expmap
 from pyem.util import relion_symmetry_group
 from pyem.util import interleave
 
@@ -72,7 +66,7 @@ def main(args):
 
     if args.origin is not None:
         if args.boxsize is not None:
-            logger.warn("--origin supersedes --boxsize")
+            log.warn("--origin supersedes --boxsize")
         try:
             args.origin = np.array([np.double(tok) for tok in args.origin.split(",")])
         except:
@@ -87,7 +81,7 @@ def main(args):
     if args.apix is None:
         args.apix = calculate_apix(star)
         if args.apix is None:
-            logger.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
+            log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
             args.apix = 1.0
 
     if args.cls is not None:
@@ -138,7 +132,7 @@ def main(args):
     if args.sym is not None:
         args.sym = relion_symmetry_group(args.sym)
         if len(stars) > 0:
-            stars = [se for se in subparticle_expansion(s, args.sym, -args.displacement / args.apix) for s in stars]
+            stars = [se for s in stars for se in subparticle_expansion(s, args.sym, -args.displacement / args.apix)]
         else:
             stars = list(subparticle_expansion(star, args.sym, -args.displacement / args.apix))
  
@@ -192,14 +186,15 @@ if __name__ == "__main__":
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
     parser.add_argument("--marker-sym", help="Symmetry group for symmetry-derived subparticles (Relion conventions)")
-    parser.add_argument("--recenter", help="Recenter subparticle coordinates", action="store_true")
-    parser.add_argument("--no-expand", help="Don't expand (e.g. if continuing from previous expansion", action="store_true")
+    parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
+                                           "extracting outside Relion)", action="store_true")
     parser.add_argument("--quiet", help="Don't print info messages", action="store_true")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
     parser.add_argument("--skip-origins", help="Skip update of particle origins", action="store_true")
     parser.add_argument("--suffix", help="Suffix for multiple output files")
-    parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles (Relion conventions)")
+    parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles ("
+                                      "Relion conventions)")
 
     sys.exit(main(parser.parse_args()))
 

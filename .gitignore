@@ -8,10 +8,12 @@
 
 # Project resources:
 example/**
+*.ipynb
 
 # EMAN2 Files:
 .browsercache.json
 .eman2settings
+.eman2log.txt
 
 # User-specific stuff:
 .idea/**
