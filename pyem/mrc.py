@@ -1,10 +1,26 @@
-# Copyright (C) 2016 Eugene Palovcak
+# Copyright (C) 2016 Eugene Palovcak and Daniel Asarnow
 # University of Calfornia, San Francisco
+#
+# Library functions for volume data.
+# See README file for more information.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import os
 
 
-def read(fname, inc_header=False):
+def read(fname, inc_header=False, compat="mrc2014"):
     hdr = read_header(fname)
     nx = hdr['nx']
     ny = hdr['ny']
@@ -16,6 +32,10 @@ def read(fname, inc_header=False):
             data = np.reshape(np.fromfile(f, dtype='int16', count=nx * ny * nz), (nx, ny, nz), order='F')
         if datatype == 2:
             data = np.reshape(np.fromfile(f, dtype='float32', count=nx * ny * nz), (nx, ny, nz), order='F')
+
+    if "relion" in compat.lower() or "xmipp" in compat.lower():
+        data = np.transpose(data)
+
     if inc_header:
         return data, hdr
     else:
