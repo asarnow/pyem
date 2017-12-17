@@ -27,8 +27,9 @@ from pyem.mrc import write
 from pyem.util import euler2rot
 from pyem.util import rot2euler
 from pyem.util import vec2rot
+from pyem.vop import ismask
+from pyem.vop import resample_volume
 from scipy.ndimage import affine_transform
-from scipy.ndimage import map_coordinates
 from scipy.ndimage import shift
 
 
@@ -92,7 +93,6 @@ def main(args):
             log.error("Matrix format is incorrect")
             return 1
         data = resample_volume(data, r=r, t=None, ori=None, order=args.spline_order)
-        
 
     if args.target is not None:
         try:
@@ -133,43 +133,9 @@ def main(args):
     return 0
 
 
-def ismask(vol):
-    """
-    Even with a soft edge, a mask will have very few unique values (unless it's already been resampled).
-    The 1D slice below treats just the central XY section for speed. Real maps have ~20,000 unique values here.
-    """
-    return np.unique(vol[vol.shape[2]/2::vol.shape[2]]).size < 100
-
-
-def resample_volume(vol, r=None, t=None, ori=None, order=3):
-    if r is None and t is None:
-        return vol.copy()
-
-    if ori is None:
-        ori = np.array(vol.shape) / 2
-
-    x, y, z = np.meshgrid(*[np.arange(-o,o) for o in ori], indexing="xy")
-    xyz = np.vstack([x.reshape(-1), y.reshape(-1), z.reshape(-1), np.ones(x.size)])
-    
-    th = np.eye(4)
-    if t is None and r.shape[1] == 4:
-        t = np.squeeze(r[:,3]) - ori
-    elif t is not None:
-        th[:3,3] = t - ori
-    
-    rh = np.eye(4)
-    if r is not None:
-        rh[:3:,:3] = r[:3,:3].T
-
-    xyz = th.dot(rh.dot(xyz))[:3,:] + ori[:, None]
-    xyz = np.array([xyz[a].reshape(vol.shape) for a in xrange(len(xyz))])
-
-    newvol = map_coordinates(vol, xyz, order=order)
-    return newvol
-
-
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Use equals sign when passing arguments with negative numbers.")
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
@@ -180,10 +146,11 @@ if __name__ == "__main__":
     parser.add_argument("--target", help="Target pose (view axis and origin) coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--euler", help="Euler angles in degrees (Relion conventions)", metavar="phi,theta,psi")
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
-    parser.add_argument("--matrix", help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
-    parser.add_argument("--spline-order", help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
+    parser.add_argument("--matrix",
+                        help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
+    parser.add_argument("--spline-order",
+                        help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
                         type=int, default=3, choices=np.arange(6))
     parser.add_argument("--quiet", "-q", help="Print errors only", action="store_true")
     parser.add_argument("--verbose", "-v", help="Print info messages", action="store_true")
     sys.exit(main(parser.parse_args()))
-
