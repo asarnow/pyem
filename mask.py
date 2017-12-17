@@ -22,13 +22,13 @@ import numpy as np
 import sys
 from pyem.mrc import read
 from pyem.mrc import write
+from pyem.vop import binary_sphere
+from pyem.vop import binary_volume_opening
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_closing
 from scipy.ndimage import binary_dilation
 from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import distance_transform_edt
-from scipy.ndimage import label
-from scipy.ndimage import labeled_comprehension
 
 
 def main(args):
@@ -41,9 +41,13 @@ def main(args):
         mask = binary_volume_opening(mask, args.minvol)
     if args.fill:
         mask = binary_fill_holes(mask)
-    if args.extend is not None:
-        se = binary_sphere(args.extend, False)
-        mask = binary_dilation(mask, structure=se, iterations=1)
+    if args.extend is not None and args.extend > 0:
+        if args.relion:
+            se = binary_sphere(args.extend, False)
+            mask = binary_dilation(mask, structure=se, iterations=1)
+        else:
+            dt = distance_transform_edt(~mask)
+            mask = mask | (dt <= args.edge_width)
     if args.close:
         se = binary_sphere(args.extend, False)
         mask = binary_closing(mask, structure=se, iterations=1)
@@ -60,32 +64,12 @@ def main(args):
     return 0
 
 
-def binary_sphere(r, le=True):
-    rr = np.linspace(-r, r, 2*r + 1)
-    x, y, z = np.meshgrid(rr, rr, rr)
-    if le:
-        sph = (x**2 + y**2 + z**2) <= r**2
-    else:
-        sph = (x**2 + y**2 + z**2) < r**2
-    return sph
-
-
-def binary_volume_opening(vol, minvol):
-    lb_vol, num_objs = label(vol)
-    lbs = np.arange(1, num_objs + 1)
-    v = labeled_comprehension(lb_vol>0, lb_vol, lbs, np.sum, np.int, 0)
-    ix = np.isin(lb_vol, lbs[v >= minvol])
-    newvol = np.zeros(vol.shape)
-    newvol[ix] = vol[ix]
-    return newvol
-
-
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
             description="\n".join([
                 "The mask is generated according to the following procedure:",
-                "  1. Threshold map", 
+                "  1. Threshold map",
                 "  2. Optionally delete small segments",
                 "  3. Optionally fill holes",
                 "  4. Extend initial mask",
@@ -106,5 +90,6 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments", type=int)
     parser.add_argument("--close", "-c", help="Perform morphological closing", action="store_true")
+    parser.add_argument("--relion", help="Mimics relion_mask_create output (slower)", action="store_true")
     sys.exit(main(parser.parse_args()))
 
