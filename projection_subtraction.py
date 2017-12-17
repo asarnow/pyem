@@ -43,8 +43,8 @@ def main(args):
     :return: Exit status
     """
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.getLevelName(args.loglevel.upper()))
+    log = logging.getLogger(__name__)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
     # rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
     # args.output = rchop(args.output, ".star")
@@ -57,20 +57,21 @@ def main(args):
 
     if args.wholemap is not None:
         dens = EMData(args.wholemap)
-    else:
-        print("Reference map is required.")
+    elif args.low_cutoff is not None or args.high_cutoff is not None:
+        log.error("Reference map is required for FRC normalization.")
         return 1
 
     if args.recenter:  # Compute difference vector between new and old mass centers.
         if args.wholemap is None:
-            print("Reference map required for recentering.")
+            log.error("Reference map required for automatic recentering.")
             return 1
 
         new_dens = dens - sub_dens
         # Note the sign of the shift in coordinate frame is opposite the shift in the CoM.
         recenter = Vec3f(*dens.phase_cog()[:3]) - Vec3f(*new_dens.phase_cog()[:3])
-    else:
-        recenter = None
+        # TODO shift(dens, recenter)
+        # TODO shift(sub_dens, recenter)
+        # TODO transform_star(star, recenter)
 
     star.reset_index(inplace=True)
     star["rlnOriginalImageName"] = star["rlnImageName"]
@@ -128,10 +129,10 @@ def subtract(s, sub_dens, dens=None, low_cutoff=None, high_cutoff=None):
             ptcl_sub = ptcl - ctfproj_sub
         fname = row["ucsfImagePath"]
         subimg = emn.em2numpy(ptcl_sub)
-        if os.path.exists(fname):
-            append(fname, subimg)
-        else:
+        if i == 0:
             write(fname, subimg, psz=row["emanPixelSize"])
+        else:
+            append(fname, subimg)
     return 0
 
 
@@ -167,12 +168,8 @@ if __name__ == "__main__":
     parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--recenter", action="store_true", default=False,
                         help="Shift particle origin to new center of mass")
-    parser.add_argument("--original", action="store_true", default=False,
-                        help="Also write original (not subtracted) particles to new image stack(s)")
     parser.add_argument("--low-cutoff", type=float, default=0.0, help="Low cutoff frequency in FRC normalization")
     parser.add_argument("--high-cutoff", type=float, default=0.7071, help="High cutoff frequency in FRC normalization")
-    parser.add_argument("--no-frc", action="store_true", default=False,
-                        help="Perform direct subtraction without FRC normalization")
     parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
 
     sys.exit(main(parser.parse_args()))
