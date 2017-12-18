@@ -48,6 +48,7 @@ def main(args):
     data, hdr = read(args.input, inc_header=True)
     final = None
     box = np.array([hdr[a] for a in ["nx", "ny", "nz"]])
+    center = box // 2
 
     if args.transpose is not None:
         try:
@@ -88,7 +89,7 @@ def main(args):
             log.error("Origin must be comma-separated list of x,y,z coordinates and lie within the box")
             return 1
     else:
-        args.origin = box / 2
+        args.origin = center
         log.info("Origin set to box center, %s" % (args.origin * args.apix))
 
     if ismask(data) and args.spline_order != 0:
@@ -110,10 +111,11 @@ def main(args):
             return 1
         args.target -= args.origin
         args.target = np.where(args.target < 1, 0, args.target)
+        ori = if args.origin is args.center None else args.origin - args.center
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
-        data = resample_volume(data, r=r, t=args.target, order=args.spline_order)
+        data = resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order)
 
     if args.euler is not None:
         try:
