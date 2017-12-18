@@ -111,7 +111,7 @@ def main(args):
             return 1
         args.target -= args.origin
         args.target = np.where(args.target < 1, 0, args.target)
-        ori = if args.origin is args.center None else args.origin - args.center
+        ori = None if args.origin is center else args.origin - args.center
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
