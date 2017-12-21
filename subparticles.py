@@ -114,6 +114,7 @@ def main(args):
             cmms = cmms[1:]
 
         markers = [cmm - args.origin for cmm in cmms]
+        markers = [np.where(np.abs(m) < 1, 0, m) for m in markers]
 
         if args.marker_sym is not None and len(markers) == 1:
             markers = [op.dot(markers[0]) for op in args.marker_sym]
