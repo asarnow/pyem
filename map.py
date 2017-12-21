@@ -110,7 +110,7 @@ def main(args):
             log.error("Standard pose target must be comma-separated list of x,y,z coordinates")
             return 1
         args.target -= args.origin
-        args.target = np.where(args.target < 1, 0, args.target)
+        args.target = np.where(np.abs(args.target) < 1, 0, args.target)
         ori = None if args.origin is center else args.origin - args.center
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
