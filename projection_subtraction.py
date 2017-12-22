@@ -129,7 +129,7 @@ def subtract(s, sub_dens, dens=None, low_cutoff=None, high_cutoff=None):
             ptcl_sub = ptcl - ctfproj_sub
         fname = row["ucsfImagePath"]
         subimg = emn.em2numpy(ptcl_sub)
-        if i == 0:
+        if row["ucsfParticleIndex"] == 0:
             write(fname, subimg, psz=row["emanPixelSize"])
         else:
             append(fname, subimg)
