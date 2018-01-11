@@ -115,6 +115,6 @@ def binary_volume_opening(vol, minvol):
     lbs = np.arange(1, num_objs + 1)
     v = labeled_comprehension(lb_vol > 0, lb_vol, lbs, np.sum, np.int, 0)
     ix = np.isin(lb_vol, lbs[v >= minvol])
-    newvol = np.zeros(vol.shape)
+    newvol = np.zeros(vol.shape, dtype=np.bool)
     newvol[ix] = vol[ix]
     return newvol
