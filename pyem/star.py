@@ -90,7 +90,7 @@ def main(args):
             return 1
         mgraphs = star["rlnMicrographName"].unique()
         if args.subsample_micrographs < 1:
-            args.subsample_micrographs = max(np.round(args.subsample_micrographs * len(mgraphs)), 1)
+            args.subsample_micrographs = np.int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
         ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
         mask = star["rlnMicrographName"].isin(mgraphs[ind])
         if args.auxout is not None:
@@ -159,7 +159,6 @@ def main(args):
         gb = star.groupby(MICROGRAPH_NAME)
         mu = gb.mean()
         star = mu[[c for c in CTF_PARAMS + MICROSCOPE_PARAMS + [MICROGRAPH_NAME] if c in mu]].reset_index()
-
 
     if args.split_micrographs:
         stars = split_micrographs(star)
