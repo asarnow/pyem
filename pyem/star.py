@@ -383,6 +383,7 @@ if __name__ == "__main__":
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
     parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
+                        type=float)
     parser.add_argument("--scale-origins", help="Factor to rescale particle origins (rebin refined particles)",
                         type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
