@@ -135,6 +135,9 @@ def main(args):
     if args.scale_coordinates is not None:
         star[COORDS] = star[COORDS] * args.scale_coordinates
 
+    if args.scale_origins:
+        star[ORIGINS] = star[ORIGINS] * args.scale_origins
+
     if args.recenter:
         star = recenter(star, inplace=True)
 
@@ -380,6 +383,7 @@ if __name__ == "__main__":
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
     parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
+    parser.add_argument("--scale-origins", help="Factor to rescale particle origins (rebin refined particles)",
                         type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
