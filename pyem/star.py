@@ -137,6 +137,7 @@ def main(args):
 
     if args.scale_origins:
         star[ORIGINS] = star[ORIGINS] * args.scale_origins
+        star["rlnMagnification"] = star["rlnMagnification"] * args.scale_origins
 
     if args.recenter:
         star = recenter(star, inplace=True)
