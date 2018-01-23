@@ -92,7 +92,8 @@ def main(args):
         args.origin = center
         log.info("Origin set to box center, %s" % (args.origin * args.apix))
 
-    if ismask(data) and args.spline_order != 0:
+    if not (args.target is None and args.euler is None and args.matrix is None) \
+            and ismask(data) and args.spline_order != 0:
         log.warn("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
 
     if args.matrix is not None:
