@@ -99,22 +99,3 @@ def interpolate_slice(f3d, rot, pfac=2, size=None):
     pslice[pr < nhalf] = pvals
     return pslice
 
-
-def binary_sphere(r, le=True):
-    rr = np.linspace(-r, r, 2 * r + 1)
-    x, y, z = np.meshgrid(rr, rr, rr)
-    if le:
-        sph = (x ** 2 + y ** 2 + z ** 2) <= r ** 2
-    else:
-        sph = (x ** 2 + y ** 2 + z ** 2) < r ** 2
-    return sph
-
-
-def binary_volume_opening(vol, minvol):
-    lb_vol, num_objs = label(vol)
-    lbs = np.arange(1, num_objs + 1)
-    v = labeled_comprehension(lb_vol > 0, lb_vol, lbs, np.sum, np.int, 0)
-    ix = np.isin(lb_vol, lbs[v >= minvol])
-    newvol = np.zeros(vol.shape, dtype=np.bool)
-    newvol[ix] = vol[ix]
-    return newvol
