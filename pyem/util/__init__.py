@@ -2,5 +2,9 @@
 # University of California, San Francisco
 from util import *
 from convert import *
-from quat_numba import *
+
+try:
+    from quat_numba import *
+except ImportError:
+    from quat import *
 
