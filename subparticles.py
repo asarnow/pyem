@@ -127,7 +127,7 @@ def main(args):
         for m in markers:
             d = np.linalg.norm(m)
             ax = m / d
-            op = euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), 0.]))
+            op = euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
             stars.append(transform_star(star, op.T, -d, rots=rots))
         
     if args.sym is not None:
@@ -185,6 +185,7 @@ if __name__ == "__main__":
                         type=float, default=0)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
+    parser.add_argument("--psi", help="Additional in-plane rotation of target in degrees", type=float, default=0)
     parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
     parser.add_argument("--marker-sym", help="Symmetry group for symmetry-derived subparticles (Relion conventions)")
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
