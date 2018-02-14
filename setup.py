@@ -1,11 +1,12 @@
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
-from distutils.core import setup
+from setuptools import find_packages
+from setuptools import setup
 
 setup(
     name='pyem',
     version='0.1',
-    packages=['pyem'],
+    packages=find_packages(),
 #    scripts=['angdist', 'project', 'projection_subtraction', 'recenter', 'pyem/star'],
 #    scripts=['pyem/star'],
     url='https://github.com/asarnow/pyem',
