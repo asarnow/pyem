@@ -28,7 +28,8 @@ def _qconj(q, p):
 
 @numba.guvectorize(["void(float64[:], float64[:])"],
                    "(m)->(m)",
-                   nopython=True)
+                   nopython=True,
+                   cache=True)
 def qconj(q, p):
     _qconj(q, p)
 
@@ -44,7 +45,8 @@ def _qtimes(q1, q2, q3):
 
 @numba.guvectorize(["void(float64[:], float64[:], float64[:])"],
                    "(m),(m)->(m)",
-                   nopython=True)
+                   nopython=True,
+                   cache=True)
 def qtimes(q1, q2, q3):
     _qtimes(q1, q2, q3)
 
