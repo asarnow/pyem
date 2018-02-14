@@ -27,8 +27,8 @@ import pandas as pd
 import json
 from glob import glob
 from math import modf
-from util import rot2euler
-from util import euler2rot
+from pyem.util import rot2euler
+from pyem.util import euler2rot
 
 MICROGRAPH_NAME = "rlnMicrographName"
 IMAGE_NAME = "rlnImageName"
