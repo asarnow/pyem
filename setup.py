@@ -1,7 +1,7 @@
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
-from setuptools import find_packages
 from setuptools import setup
+from setuptools import find_packages
 
 setup(
     name='pyem',
