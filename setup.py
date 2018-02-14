@@ -12,7 +12,7 @@ setup(
     url='https://github.com/asarnow/pyem',
     license='GNU Public License Version 3',
     author='Daniel Asarnow',
-    author_email='dasarnow@gmail.com',
+    author_email='asarnow@msg.ucsf.edu',
     description='Python programs for electron microscopy',
     install_requires=['future', 'numba', 'numpy', 'scipy', 'matplotlib', 'seaborn', 'pandas', 'pathos']
 )
