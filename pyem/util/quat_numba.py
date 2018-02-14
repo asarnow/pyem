@@ -17,7 +17,7 @@ import numba
 import numpy as np
 
 
-@numba.jit(cache=True, nopython=True)
+@numba.jit(nopython=True)
 def _qconj(q, p):
     p[0] = q[0]
     p[1] = -q[1]
@@ -33,7 +33,7 @@ def qconj(q, p):
     _qconj(q, p)
 
 
-@numba.jit(cache=True, nopython=True)
+@numba.jit(nopython=True)
 def _qtimes(q1, q2, q3):
     q3[0] = q1[0] * q2[0] - (q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3])
     q3[1] = q1[2] * q2[3] - q1[3] * q2[2] + q1[0] * q2[1] + q2[0] * q1[1]
