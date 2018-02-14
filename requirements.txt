@@ -1,4 +1,5 @@
 future
+numba
 numpy>=1.13.1
 scipy
 matplotlib>=2.0.2

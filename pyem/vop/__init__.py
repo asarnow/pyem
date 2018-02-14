@@ -3,9 +3,5 @@
 from __future__ import print_function
 from vop import *
 from binary import *
-
-try:
-    from vop_numba import *
-except:
-    print("Install numba to access all pyem features")
+from vop_numba import *
 
