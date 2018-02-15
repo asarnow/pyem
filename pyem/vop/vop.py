@@ -66,7 +66,6 @@ def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", in
 def grid_correct(vol, pfac=2, order=1):
     n = vol.shape[0]
     nhalf = n / 2
-    npad = nhalf * pfac - nhalf
     x, y, z = np.meshgrid(*[np.arange(-nhalf, nhalf)] * 3, indexing="xy")
     r = np.sqrt(x**2 + y**2 + z**2) / (n * pfac)
     sinc = np.sin(np.pi * r) / (np.pi * r)  # Results in 1 NaN in the center.
@@ -77,7 +76,6 @@ def grid_correct(vol, pfac=2, order=1):
         cordata = vol / sinc**2
     else:
         raise NotImplementedError("Only nearest-neighbor and trilinear grid corrections are available")
-    cordata = np.pad(cordata, npad, "constant", constant_values=0)
     return cordata
 
 
