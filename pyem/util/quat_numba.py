@@ -27,9 +27,7 @@ def _qconj(q, p):
 
 
 @numba.guvectorize(["void(float64[:], float64[:])"],
-                   "(m)->(m)",
-                   nopython=True,
-                   cache=True)
+        "(m)->(m)", nopython=True, cache=True)
 def qconj(q, p):
     _qconj(q, p)
 
@@ -43,10 +41,8 @@ def _qtimes(q1, q2, q3):
     return q3
 
 
-@numba.guvectorize(["void(float64[:], float64[:], float64[:])"],
-                   "(m),(m)->(m)",
-                   nopython=True,
-                   cache=True)
+@numba.guvectorize(["void(float64[:], float64[:], float64[:])"], 
+        "(m),(m)->(m)", nopython=True, cache=True)
 def qtimes(q1, q2, q3):
     _qtimes(q1, q2, q3)
 
@@ -56,11 +52,14 @@ def qslerp(q1, q2, t):
     cos_half_theta = np.dot(q1, q2)
     if cos_half_theta >= 1.0:
         return q1.copy()
+    if cos_half_theta < 0:
+        cos_half_theta = -cos_half_theta
+        q1 = qconj(q1)
     half_theta = np.arccos(cos_half_theta)
     sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
     if np.abs(sin_half_theta) < 1E-12:
         return (q1 + q2) / 2
-    a = np.sin((1 - t) * half_theta) / sin_half_theta
-    b = np.sin(t * half_theta) / sin_half_theta
-    return q1 * a + q2 * b
+    a = np.sin((1 - t) * half_theta)
+    b = np.sin(t * half_theta)
+    return (q1 * a + q2 * b) / sin_half_theta
 
