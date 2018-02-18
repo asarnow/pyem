@@ -241,6 +241,15 @@ def split_micrographs(star):
     return stars
 
 
+def all_same_class(star, inplace=False):
+    vc = star[IMAGE_NAME].value_counts()
+    n = vc.max()
+    si = star.set_index(["rlnImageName", "rlnClassNumber"], inplace=inplace)
+    vci = si.index.value_counts()
+    si.loc[vci[vci==n].index].reset_index(inplace=inplace)
+    return si
+
+
 def recenter(star, inplace=False):
     if inplace:
         newstar = star
