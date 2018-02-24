@@ -48,13 +48,17 @@ def qtimes(q1, q2, q3):
 
 
 @numba.jit(cache=True, nopython=True)
-def qslerp(q1, q2, t):
+def qslerp(q1, q2, t, longest=False):
     cos_half_theta = np.dot(q1, q2)
     if cos_half_theta >= 1.0:
         return q1.copy()
-    if cos_half_theta < 0:
+    if longest:
+        if cos_half_theta > 0:
+            cos_half_theta = -cos_half_theta
+            q1 = -q1
+    elif cos_half_theta < 0:
         cos_half_theta = -cos_half_theta
-        q1 = qconj(q1)
+        q1 = -q1
     half_theta = np.arccos(cos_half_theta)
     sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
     if np.abs(sin_half_theta) < 1E-12:
