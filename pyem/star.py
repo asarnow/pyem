@@ -164,6 +164,14 @@ def main(args):
         mu = gb.mean()
         star = mu[[c for c in CTF_PARAMS + MICROSCOPE_PARAMS + [MICROGRAPH_NAME] if c in mu]].reset_index()
 
+    if args.micrograph_range:
+        star.set_index(MICROGRAPH_NAME, inplace=True)
+        m, n = [int(tok) for tok in args.micrograph_range.split(",")]
+        mg = star.index.unique().sort_values()
+        outside = list(range(0,m)) + list(range(n,len(mg)))
+        otherstar = star.loc[mg[outside]].reset_index()
+        star = star.loc[mg[m:n]].reset_index()
+
     if args.split_micrographs:
         stars = split_micrographs(star)
         for mg in stars:
@@ -398,6 +406,8 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
+    parser.add_argument("--micrograph-range", help="Write micrographs with alphanumeric sort index [m, n) to output file",
+                        metavar="m,n")
     parser.add_argument("--subsample", help="Randomly subsample remaining particles",
                         type=float, metavar="N")
     parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
