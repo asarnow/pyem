@@ -24,15 +24,16 @@ import numpy as np
 def ctf_freqs(shape, ps=1.0):
     nyq = 1. / (2. * ps)
     x, y = np.meshgrid(np.linspace(-1, 1, shape[0]), np.linspace(-1, 1, shape[0]))
-    rho = np.sqrt(np.su(grid**2, axis=0))
+    rho = np.sqrt(x**2 + y**2)
     a = np.arctan2(y, x)
     s = rho * nyq
-    return s
+    return s, a
 
 
-def eval_ctf(s, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
+def eval_ctf(s, , def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
     """
     :param s: Precomputed frequency grid for CTF evaluation.
+    :param a: Precomputed frequency grid angles.
     :param def1: 1st prinicipal underfocus distance (Å).
     :param def2: 2nd principal underfocus distance (Å).
     :param angast: Angle of astigmatism (deg) from x-axis to azimuth.
@@ -53,7 +54,7 @@ def eval_ctf(s, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=
     k2 = np.pi / 2. * cs * lamb**3
     k3 = np.sqrt(1 - ac**2)
     k4 = bf / 4.  # B-factor, follows RELION convention.
-    k5 = np.deg2rad(phaseshift)  # Phase shift.
+    k5 = np.deg2rad(phase)  # Phase shift.
     if lp != 0:  # Hard low- or high-pass.
         s[s > (1. / lp)] = 0
     s_2 = s**2
