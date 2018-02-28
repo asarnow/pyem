@@ -18,6 +18,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import numba
 import numpy as np
 
 
@@ -30,6 +31,7 @@ def ctf_freqs(shape, ps=1.0):
     return s, a
 
 
+@numba.jit(cache=True, nopython=True)
 def eval_ctf(s, , def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
     """
     :param s: Precomputed frequency grid for CTF evaluation.
@@ -58,7 +60,7 @@ def eval_ctf(s, , def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, l
     if lp != 0:  # Hard low- or high-pass.
         s[s > (1. / lp)] = 0
     s_2 = s**2
-    s_4 = s**4
+    s_4 = s_2**2
     dZ = def_avg + def_dev * (np.cos(2 * (a - angast)))
     gamma = (k1 * dZ * s_2) + (k2 * s_4) - k5
     ctf = -(k3 * np.sin(gamma) - ac*np.cos(gamma))
