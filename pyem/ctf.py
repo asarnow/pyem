@@ -32,7 +32,7 @@ def ctf_freqs(shape, ps=1.0):
 
 
 @numba.jit(cache=True, nopython=True)
-def eval_ctf(s, , def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
+def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
     """
     :param s: Precomputed frequency grid for CTF evaluation.
     :param a: Precomputed frequency grid angles.
