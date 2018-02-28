@@ -58,7 +58,7 @@ def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, 
     k4 = bf / 4.  # B-factor, follows RELION convention.
     k5 = np.deg2rad(phase)  # Phase shift.
     if lp != 0:  # Hard low- or high-pass.
-        s[s > (1. / lp)] = 0
+        s *= s <= (1. / lp)
     s_2 = s**2
     s_4 = s_2**2
     dZ = def_avg + def_dev * (np.cos(2 * (a - angast)))
