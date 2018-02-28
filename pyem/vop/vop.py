@@ -66,12 +66,13 @@ def grid_correct(vol, pfac=2, order=1):
     nhalf = n / 2
     x, y, z = np.meshgrid(*[np.arange(-nhalf, nhalf)] * 3, indexing="xy")
     r = np.sqrt(x**2 + y**2 + z**2) / (n * pfac)
-    sinc = np.sin(np.pi * r) / (np.pi * r)  # Results in 1 NaN in the center.
+    with np.errstate(divide="ignore"):
+        sinc = np.sin(np.pi * r) / (np.pi * r)  # Results in 1 NaN in the center.
     sinc[nhalf, nhalf, nhalf] = 1.
     if order == 0:
-        cordata = vol / sinc
+       cordata = vol / sinc
     elif order == 1:
-        cordata = vol / sinc**2
+       cordata = vol / sinc**2
     else:
         raise NotImplementedError("Only nearest-neighbor and trilinear grid corrections are available")
     return cordata
