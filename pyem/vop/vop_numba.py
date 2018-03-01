@@ -21,7 +21,7 @@ import numba
 import numpy as np
 
 
-@numba.jit(cache=True, nopython=True)
+@numba.jit(cache=True, nopython=True, nogil=True)
 def fill_ft(ft, ftc, rmax, normfft=1):
     rmax2 = rmax ** 2
     for k in range(ft.shape[0]):
@@ -35,7 +35,7 @@ def fill_ft(ft, ftc, rmax, normfft=1):
                     ftc[kp + ftc.shape[0]//2, ip + ftc.shape[1]//2, jp] = ft[k, i, j] * normfft
 
 
-@numba.jit(cache=False, nopython=True)
+@numba.jit(cache=False, nopython=True, nogil=True)
 def interpolate_slice_numba(f3d, rot, pfac=2, size=None):
     linterp = lambda a, l, h: l + (h - l) * a
     n = f3d.shape[0] // pfac - 1
