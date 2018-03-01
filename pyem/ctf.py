@@ -22,9 +22,13 @@ import numba
 import numpy as np
 
 
-def ctf_freqs(shape, ps=1.0):
+def ctf_freqs(shape, ps=1.0, full=True):
     nyq = 1. / (2. * ps)
-    x, y = np.meshgrid(np.linspace(-1, 1, shape[0]), np.linspace(-1, 1, shape[0]))
+    if full:
+        nx = shape[1]
+    else:
+        nx = shape[1] // 2 + 1
+    x, y = np.meshgrid(np.linspace(-full, 1, nx), np.linspace(-1, 1, shape[0]))
     rho = np.sqrt(x**2 + y**2)
     a = np.arctan2(y, x)
     s = rho * nyq
