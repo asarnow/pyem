@@ -225,7 +225,12 @@ def is_particle_star(star):
 
 def calculate_apix(star):
     try:
-        return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
+        if star.ndim == 2:
+            return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
+        elif star.ndim == 1:
+            return 10000.0 * star['rlnDetectorPixelSize'] / star['rlnMagnification']
+        else:
+            raise ValueError
     except KeyError:
         return None
 
