@@ -28,7 +28,7 @@ from pyem.star import write_star
 def main(args):
     par = [parse_par(inp) for inp in args.input]
     if len(par) > 1:
-        idx = par[:,:,"OCC"].idxmax(axis=1)
+        idx = par[:, :, "OCC"].idxmax(axis=1)
     else:
         par = par[0]
 
