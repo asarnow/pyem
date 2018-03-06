@@ -19,6 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from scipy.ndimage import map_coordinates
+from pyfftw.interfaces.numpy_fft import rfftn
+from vop_numba import fill_ft
 
 
 def ismask(vol):
@@ -96,3 +98,16 @@ def interpolate_slice(f3d, rot, pfac=2, size=None):
     pslice[pr < nhalf] = pvals
     return pslice
 
+
+def vol_ft(vol, pfac=2, threads=1):
+    """ Returns a centered, Nyquist-limited, zero-padded, interpolation-ready 3D Fourier transform.
+    :param vol: Volume to be Fourier transformed.
+    :param pfac: Size factor for zero-padding.
+    :param threads: Number of threads for pyFFTW.
+    """
+    vol = grid_correct(vol.astype(np.float64), pfac=pfac, order=1)
+    padvol = np.pad(vol, (vol.shape[0] * pfac - vol.shape[0]) // 2, "constant")
+    ft = rfftn(np.fft.ifftshift(padvol), padvol.shape, threads=threads)
+    ftc = np.zeros((ft.shape[0] + 3, ft.shape[1] + 3, ft.shape[2]), dtype=np.complex128)
+    fill_ft(ft, ftc, vol.shape[0])
+    return ftc
