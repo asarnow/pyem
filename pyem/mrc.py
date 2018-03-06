@@ -20,22 +20,50 @@ import numpy as np
 import os
 
 
-def read(fname, inc_header=False, compat="mrc2014"):
-    hdr = read_header(fname)
-    nx = hdr['nx']
-    ny = hdr['ny']
-    nz = hdr['nz']
-    datatype = hdr['datatype']
+def _read_header(f):
+    hdr = {}
+    header = np.fromfile(f, dtype=np.int32, count=256)
+    header_f = header.view(np.float32)
+    [hdr['nx'], hdr['ny'], hdr['nz'], hdr['datatype']] = header[:4]
+    [hdr['xlen'], hdr['ylen'], hdr['zlen']] = header_f[10:13]
+    if hdr['xlen'] == hdr['ylen'] == hdr['zlen'] == 0:
+        hdr['xlen'] = hdr['nx']
+        hdr['ylen'] = hdr['ny']
+        hdr['zlen'] = hdr['nz']
+    return hdr
+
+
+def read_header(fname):
     with open(fname) as f:
-        f.seek(1024)  # seek to start of data
-        if datatype == 1:
-            data = np.reshape(np.fromfile(f, dtype='int16', count=nx * ny * nz), (nx, ny, nz), order='F')
-        if datatype == 2:
-            data = np.reshape(np.fromfile(f, dtype='float32', count=nx * ny * nz), (nx, ny, nz), order='F')
+        hdr = _read_header(f)
+        # print "Nx %d Ny %d Nz %d Type %d" % (nx, ny, nz, datatype)
+    return hdr
 
+
+def read(fname, inc_header=False, compat="mrc2014"):
     if "relion" in compat.lower() or "xmipp" in compat.lower():
-        data = np.transpose(data)
-
+        order = "C"
+    else:
+        order = "F"
+    with open(fname) as f:
+        hdr = _read_header(f)
+        nx = hdr['nx']
+        ny = hdr['ny']
+        nz = hdr['nz']
+        datatype = hdr['datatype']
+        f.seek(1024)  # seek to start of data
+        if nz == 1:
+            shape = (nx, ny)
+        else:
+            shape = (nx, ny, nz)
+        if datatype == 1:
+            data = np.reshape(
+                np.fromfile(f, dtype='int16', count=nx * ny * nz),
+                shape, order=order)
+        if datatype == 2:
+            data = np.reshape(
+                np.fromfile(f, dtype='float32', count=nx * ny * nz),
+                shape, order=order)
     if inc_header:
         return data, hdr
     else:
@@ -45,6 +73,7 @@ def read(fname, inc_header=False, compat="mrc2014"):
 def write(fname, data, psz=1, origin=None, fast=False):
     """ Writes a MRC file. The header will be blank except for nx,ny,nz,datatype=2 for float32. 
     data should be (nx,ny,nz), and will be written in Fortran order as MRC requires."""
+    data = np.atleast_3d(data)
     header = np.zeros(256, dtype=np.int32)  # 1024 byte header
     header_f = header.view(np.float32)
     header[:3] = data.shape  # nx, ny, nz
@@ -69,6 +98,7 @@ def write(fname, data, psz=1, origin=None, fast=False):
 
 
 def append(fname, data):
+    data = np.atleast_3d(data)
     with open(fname, 'r+b') as f:
         nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)  # First 12 bytes of stack.
         f.seek(36)  # First byte of zlen.
@@ -89,7 +119,7 @@ def append(fname, data):
 
 def write_imgs(fname, idx, data):
     with open(fname, 'r+b') as f:
-        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)  # First 12 bytes of stack.
+        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)
         if data.shape[2] > nz:
             raise Exception
         if data.shape[0] != nx or data.shape[1] != ny:
@@ -98,39 +128,32 @@ def write_imgs(fname, idx, data):
         np.require(np.reshape(data, (-1,), order='F'), dtype=np.float32).tofile(f)
 
 
-def read_imgs(fname, idx, num=None):
-    hdr = read_header(fname)
-    nx = hdr['nx']
-    ny = hdr['ny']
-    nz = hdr['nz']
-    datatype = hdr['datatype']
-    assert (idx < nz)
-    if num is None:
-        num = nz - idx
-    assert (idx + num <= nz)
-    assert (num > 0)
-    datasizes = {1: 2, 2: 4}
+def read_imgs(fname, idx, num=1, compat="mrc2014"):
     with open(fname) as f:
-        f.seek(1024 + idx * datasizes[datatype] * nx * ny)  # Seek to start of img idx.
+        nx, ny, nz, datatype = np.fromfile(f, dtype=np.int32, count=4)
+        assert (idx < nz)
+        if num < 0:
+            num = nz - idx
+        assert (idx + num <= nz)
+        assert (num != 0)
+        if num == 1:
+            shape = (nx, ny)
+        else:
+            shape = (nx, ny, num)
+        if "relion" in compat or "xmipp" in compat:
+            order = "C"
+        else:
+            order = "F"
         if datatype == 1:
-            return np.reshape(np.fromfile(f, dtype='int16', count=nx * ny * num), (nx, ny, num), order='F')
+            f.seek(1024 + idx * 2 * nx * ny)
+            return np.reshape(
+                np.fromfile(f, dtype='int16', count=nx * ny * num),
+                shape, order=order)
         if datatype == 2:
-            return np.reshape(np.fromfile(f, dtype='float32', count=nx * ny * num), (nx, ny, num), order='F')
-
-
-def read_header(fname):
-    with open(fname) as f:
-        hdr = {}
-        header = np.fromfile(f, dtype=np.int32, count=256)
-        header_f = header.view(np.float32)
-        [hdr['nx'], hdr['ny'], hdr['nz'], hdr['datatype']] = header[:4]
-        [hdr['xlen'], hdr['ylen'], hdr['zlen']] = header_f[10:13]
-        if hdr['xlen'] == hdr['ylen'] == hdr['zlen'] == 0:
-            hdr['xlen'] = hdr['nx']
-            hdr['ylen'] = hdr['ny']
-            hdr['zlen'] = hdr['nz']
-        # print "Nx %d Ny %d Nz %d Type %d" % (nx, ny, nz, datatype)
-    return hdr
+            f.seek(1024 + idx * 4 * nx * ny)
+            return np.reshape(
+                np.fromfile(f, dtype='float32', count=nx * ny * num),
+                shape, order=order)
 
 # C************************************************************************
 # C                                   *
