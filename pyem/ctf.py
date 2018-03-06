@@ -22,20 +22,24 @@ import numba
 import numpy as np
 
 
-def ctf_freqs(shape, ps=1.0, full=True):
-    nyq = 1. / (2. * ps)
+def ctf_freqs(shape, d=1.0, full=True):
+    """
+    :param shape: Shape tuple.
+    :param d: Frequency spacing in inverse Å (1 / pixel size).
+    :param full: When false, return only unique Fourier half-space for real data. 
+    """
     if full:
-        nx = shape[1]
+        xfrq = np.fft.fftfreqs(shape[1])
     else:
-        nx = shape[1] // 2 + 1
-    x, y = np.meshgrid(np.linspace(-full, 1, nx), np.linspace(-1, 1, shape[0]))
+        xfrq = np.fft.rfftfreqs(shape[1])
+    x, y = np.meshgrid(xfrq, np.fft.fftfreqs(shape[0]))
     rho = np.sqrt(x**2 + y**2)
     a = np.arctan2(y, x)
-    s = rho * nyq
+    s = rho * d
     return s, a
 
 
-@numba.jit(cache=True, nopython=True)
+@numba.jit(cache=True, nopython=True, nogil=True)
 def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
     """
     :param s: Precomputed frequency grid for CTF evaluation.
@@ -48,7 +52,7 @@ def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, 
     :param ac:  Amplitude contrast in [0, 1.0].
     :param cs:  Spherical aberration (mm).
     :param bf:  B-factor, divided by 4 in exponential, lowpass positive.
-    :param lp:  Hard low-pass filter (Å).
+    :param lp:  Hard low-pass filter (Å), should usually be Nyquist.
     """
     angast = np.deg2rad(angast)
     kv = kv * 1E3
