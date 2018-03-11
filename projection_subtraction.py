@@ -27,6 +27,7 @@ import pyfftw
 import Queue
 import sys
 import threading
+from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 from numpy.fft import fftshift
 from pyem import mrc
@@ -77,7 +78,7 @@ def main(args):
 
     if args.submap_ft is None:
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
-        submap_ft = vol_ft(submap, threads=args.nproc)
+        submap_ft = vol_ft(submap, threads=min(args.nproc, cpu_count()))
     else:
         log.debug("Loading %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
@@ -96,7 +97,7 @@ def main(args):
         coefs_method = 1
         if args.refmap_ft is None:
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
-            refmap_ft = vol_ft(refmap, threads=args.nproc)
+            refmap_ft = vol_ft(refmap, threads=min(args.nproc, cpu_count()))
         else:
             log.debug("Loading %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
@@ -134,13 +135,14 @@ def main(args):
 
     log.debug("Instantiating worker pool")
     pool = Pool(processes=args.nproc)
+    threads = []
 
     for fname, particles in gb.indices.iteritems():
         log.debug("Instantiating queue")
         queue = Queue.Queue(maxsize=qsize)
         log.debug("Start consumer for %s" % fname)
         thread = threading.Thread(target=consumer, args=(queue, fname, apix, fftthreads))
-        thread.daemon = True
+        threads.append(thread)
         thread.start()
         log.debug("Calling producer()")
         producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
@@ -148,12 +150,14 @@ def main(args):
                   az, el, sk, xshift, yshift,
                   new_idx, new_stack, coefs_method, r, nr, fftthreads=fftthreads)
         log.debug("Producer returned for %s" % fname)
-        # thread.join()
         log.debug("Done waiting for consumer to return")
 
     pool.close()
     pool.join()
     pool.terminate()
+
+    for thread in threads:
+        thread.join()
 
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c], axis=1, inplace=True)
 
