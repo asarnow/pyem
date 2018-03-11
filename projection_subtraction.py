@@ -140,6 +140,7 @@ def main(args):
         queue = Queue.Queue(maxsize=qsize)
         log.debug("Start consumer for %s" % fname)
         thread = threading.Thread(target=consumer, args=(queue, fname, apix, fftthreads))
+        thread.daemon = True
         thread.start()
         log.debug("Calling producer()")
         producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
@@ -147,7 +148,7 @@ def main(args):
                   az, el, sk, xshift, yshift,
                   new_idx, new_stack, coefs_method, r, nr, fftthreads=fftthreads)
         log.debug("Producer returned for %s" % fname)
-        thread.join()
+        # thread.join()
         log.debug("Done waiting for consumer to return")
 
     pool.close()
@@ -205,7 +206,7 @@ def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
                    az[i], el[i], sk[i], xshift[i], yshift[i],
                    coefs_method, r, nr))
         log.debug("Put")
-        queue.put((new_idx[i], ri), block=True)
+        queue.put((new_idx[i], ri), block=False)
 
     # Either the poison-pill-put blocks, we have multiple queues and
     # consumers, or the consumer knows maps results to multiple files.
