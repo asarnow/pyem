@@ -212,12 +212,12 @@ def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
                    az[i], el[i], sk[i], xshift[i], yshift[i],
                    coefs_method, r, nr))
         log.debug("Put")
-        queue.put((new_idx[i], ri), block=False)
+        queue.put((new_idx[i], ri), block=True)
 
     # Either the poison-pill-put blocks, we have multiple queues and
     # consumers, or the consumer knows maps results to multiple files.
     log.debug("Put poison pill")
-    queue.put((-1, None), block=True)
+    queue.put((-1, None), block=False)
 
 
 @profile
