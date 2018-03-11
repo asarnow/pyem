@@ -77,7 +77,7 @@ def main(args):
 
     if args.submap_ft is None:
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
-        submap_ft = vol_ft(submap, threads=4)
+        submap_ft = vol_ft(submap, threads=args.nproc)
     else:
         log.debug("Loading %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
@@ -96,7 +96,7 @@ def main(args):
         coefs_method = 1
         if args.refmap_ft is None:
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
-            refmap_ft = vol_ft(refmap, threads=4)
+            refmap_ft = vol_ft(refmap, threads=args.nproc)
         else:
             log.debug("Loading %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
