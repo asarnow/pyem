@@ -29,6 +29,7 @@ from pyem.util import rot2euler
 from pyem.util import vec2rot
 from pyem.vop import ismask
 from pyem.vop import resample_volume
+from pyem.vop import vol_ft
 from scipy.ndimage import affine_transform
 from scipy.ndimage import shift
 
@@ -49,6 +50,11 @@ def main(args):
     final = None
     box = np.array([hdr[a] for a in ["nx", "ny", "nz"]])
     center = box // 2
+
+    if args.fft:
+        data_ft = vol_ft(data.T, threads=args.threads)
+        np.save(args.output, data_ft)
+        return 0
 
     if args.transpose is not None:
         try:
@@ -155,6 +161,8 @@ if __name__ == "__main__":
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
+    parser.add_argument("--fft", help="Cache padded FFT for projections.", action="store_true")
+    parser.add_argument("--threads", help="Thread count for FFTW", type=int, default=1)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms (volume center by default)", metavar="x,y,z")
     parser.add_argument("--target", help="Target pose (view axis and origin) coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--euler", help="Euler angles in degrees (Relion conventions)", metavar="phi,theta,psi")
