@@ -23,6 +23,7 @@ import numba
 import numpy as np
 import os.path
 import pandas as pd
+import pyfftw
 import Queue
 import sys
 import threading
@@ -127,8 +128,9 @@ def main(args):
     log.debug("Grouping particles by output stack")
     gb = df.groupby("ucsfImagePath")
 
-    qsize = 24
+    qsize = 1000
     fftthreads=1
+    pyfftw.interfaces.cache.enable()
 
     log.debug("Instantiating worker pool")
     pool = Pool(processes=args.nproc)
@@ -162,7 +164,7 @@ def main(args):
     return 0
 
 
-@numba.jit(nopython=True, nogil=True)
+@numba.jit(cache=True, nopython=True, nogil=True)
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):
