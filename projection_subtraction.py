@@ -68,7 +68,8 @@ def main(args):
     gb = df.groupby("ucsfOriginalImagePath")
     df["ucsfParticleIndex"] = gb.cumcount()
     df["ucsfImagePath"] = df["ucsfOriginalImagePath"].map(
-        lambda x: os.path.join(args.prefix, os.path.basename(x)))
+        lambda x: os.path.join(args.dest,
+                               args.prefix + os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
     df["rlnImageName"] = df["ucsfParticleIndex"].map(
         lambda x: "%.6d" % x).str.cat(df["ucsfImagePath"], sep="@")
     log.debug("Read particle .star file")
@@ -156,12 +157,12 @@ def main(args):
     df.set_index("index", inplace=True)
     df.sort_index(inplace=True, kind="mergesort")
 
-    write_star(os.path.join(args.output, args), df, reindex=True)
+    write_star(args.output, df, reindex=True)
 
     return 0
 
 
-# @numba.jit(nopython=True, nogil=True)
+@numba.jit(nopython=True, nogil=True)
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):
@@ -249,6 +250,7 @@ if __name__ == "__main__":
     #                     help="Shift particle origin to new center of mass")
     # parser.add_argument("--low-cutoff", type=float, default=0.0, help="Low cutoff frequency")
     # parser.add_argument("--high-cutoff", type=float, default=0.7071, help="High cutoff frequency")
+    parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
     parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks")
 
     sys.exit(main(parser.parse_args()))
