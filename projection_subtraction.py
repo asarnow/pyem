@@ -43,7 +43,6 @@ from pyfftw.interfaces.numpy_fft import rfft2
 from pyfftw.interfaces.numpy_fft import irfft2
 
 
-@profile
 def main(args):
     """
     Projection subtraction program entry point.
@@ -193,7 +192,6 @@ def subtract(p1, submap_ft, refmap_ft,
     return p1s
 
 
-@profile
 def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
                   sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
                   az, el, sk, xshift, yshift,
@@ -220,7 +218,6 @@ def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
     queue.put((-1, None), block=False)
 
 
-@profile
 def consumer(queue, stack, apix=1.0, fftthreads=1):
     log = logging.getLogger('root')
     while True:
