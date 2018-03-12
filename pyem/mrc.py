@@ -145,17 +145,17 @@ def read_imgs(fname, idx, num=1, compat="mrc2014"):
             shape = (nx, ny, num)
         if datatype == 1:
             dtype = 'int16'
-            size = '2'
+            size = 2
         elif datatype == 2:
             dtype = 'float32'
-            size = '4'
+            size = 4
         else:
             raise IOError("Unknown MRC data type")
         f.seek(1024 + idx * size * nx * ny)
         return np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * num), shape, order=order)
 
 
-def zslice(fname, compat="mrc2014"):
+def read_zslices(fname, compat="mrc2014"):
     if "relion" in compat or "xmipp" in compat:
         order = "C"
     else:
@@ -165,15 +165,48 @@ def zslice(fname, compat="mrc2014"):
         shape = (nx, ny)
         if datatype == 1:
             dtype = 'int16'
-            size = '2'
+            size = 2
         elif datatype == 2:
             dtype = 'float32'
-            size = '4'
+            size = 4
         else:
             raise IOError("Unknown MRC data type")
         for idx in range(nz):
             f.seek(1024 + idx * size * nx * ny)
             yield np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny), shape, order=order)
+
+
+class ZSliceReader:
+    def __init__(self, fname, compat="mrc2014"):
+        if "relion" in compat or "xmipp" in compat:
+            self.order = "C"
+        else:
+            self.order = "F"
+        self.path = fname
+        self.f = open(self.path)
+        self.nx, self.ny, self.nz, datatype = np.fromfile(self.f, dtype=np.int32, count=4)
+        self.shape = (self.nx, self.ny)
+        self.size = self.nx * self.ny
+        if datatype == 1:
+            self.dtype = 'int16'
+            self.datasize = 2
+        elif datatype == 2:
+            self.dtype = 'float32'
+            self.datasize = 4
+        else:
+            raise IOError("Unknown MRC data type")
+        self.i = 0
+
+    def read(self, i):
+        self.i = i
+        if i >= self.nz:
+            raise IOError("Index %d out of bounds for stack of size %d" % (i, self.nz))
+        self.f.seek(1024 + self.i * self.datasize * self.size)
+        return np.reshape(np.fromfile(self.f, dtype=self.dtype, count=self.size),
+                          self.shape, order=self.order)
+
+    def close(self):
+        self.f.close()
 
 
 # C************************************************************************
