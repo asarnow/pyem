@@ -263,6 +263,6 @@ if __name__ == "__main__":
     parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help="Low cutoff frequency (Å)")
     parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help="High cutoff frequency (Å)")
     parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
-    parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks")
+    parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks", default="")
 
     sys.exit(main(parser.parse_args()))
