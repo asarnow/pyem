@@ -68,7 +68,7 @@ def grid_correct(vol, pfac=2, order=1):
     nhalf = n / 2
     x, y, z = np.meshgrid(*[np.arange(-nhalf, nhalf)] * 3, indexing="xy")
     r = np.sqrt(x**2 + y**2 + z**2) / (n * pfac)
-    with np.errstate(divide="ignore"):
+    with np.errstate(divide="ignore", invalid="ignore"):
         sinc = np.sin(np.pi * r) / (np.pi * r)  # Results in 1 NaN in the center.
     sinc[nhalf, nhalf, nhalf] = 1.
     if order == 0:
