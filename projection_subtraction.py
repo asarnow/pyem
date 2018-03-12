@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
 # Copyright (C) 2015-2018 Daniel Asarnow, Eugene Palovcak
 # University of California, San Francisco
 #
@@ -247,20 +248,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(version="projection_subtraction.py 2.0a")
     parser.add_argument("input", type=str, help="STAR file with original particles")
     parser.add_argument("output", type=str, help="STAR file with subtracted particles)")
-    parser.add_argument("--dest", type=str, help="Destination directory for subtracted particle stacks")
-    parser.add_argument("--refmap", type=str, help="Map used to calculate reference projections")
-    parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
+    parser.add_argument("--dest", "-d", type=str, help="Destination directory for subtracted particle stacks")
+    parser.add_argument("--refmap", "-r", type=str, help="Map used to calculate reference projections")
+    parser.add_argument("--submap", "-s", type=str, help="Map used to calculate subtracted projections")
     parser.add_argument("--refmap_ft", type=str,
                         help="Fourier transform used to calculate reference projections (.npy)")
     parser.add_argument("--submap_ft", type=str,
                         help="Fourier transform used to calculate subtracted projections (.npy)")
-    parser.add_argument("--nproc", type=int, default=None, help="Number of parallel processes")
-    # parser.add_argument("--maxchunk", type=int, default=1000, help="Maximum task chunk size")
-    parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
-    # parser.add_argument("--recenter", action="store_true", default=False,
-    #                     help="Shift particle origin to new center of mass")
-    # parser.add_argument("--low-cutoff", type=float, default=0.0, help="Low cutoff frequency")
-    # parser.add_argument("--high-cutoff", type=float, default=0.7071, help="High cutoff frequency")
+    parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
+    parser.add_argument("--loglevel", "-v", type=str, default="WARNING", help="Logging level and debug output")
+    parser.add_argument("--low-cutoff", "-l", type=float, default=0.0, help="Low cutoff frequency (Å)")
+    parser.add_argument("--high-cutoff", "-h", type=float, default=0.5, help="High cutoff frequency (Å)")
     parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
     parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks")
 
