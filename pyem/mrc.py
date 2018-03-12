@@ -57,13 +57,12 @@ def read(fname, inc_header=False, compat="mrc2014"):
         else:
             shape = (nx, ny, nz)
         if datatype == 1:
-            data = np.reshape(
-                np.fromfile(f, dtype='int16', count=nx * ny * nz),
-                shape, order=order)
-        if datatype == 2:
-            data = np.reshape(
-                np.fromfile(f, dtype='float32', count=nx * ny * nz),
-                shape, order=order)
+            dtype = 'int16'
+        elif datatype == 2:
+            dtype = 'float32'
+        else:
+            raise IOError("Unknown MRC data type")
+        data = np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * nz), shape, order=order)
     if inc_header:
         return data, hdr
     else:
@@ -129,6 +128,10 @@ def write_imgs(fname, idx, data):
 
 
 def read_imgs(fname, idx, num=1, compat="mrc2014"):
+    if "relion" in compat or "xmipp" in compat:
+        order = "C"
+    else:
+        order = "F"
     with open(fname) as f:
         nx, ny, nz, datatype = np.fromfile(f, dtype=np.int32, count=4)
         assert (idx < nz)
@@ -140,20 +143,38 @@ def read_imgs(fname, idx, num=1, compat="mrc2014"):
             shape = (nx, ny)
         else:
             shape = (nx, ny, num)
-        if "relion" in compat or "xmipp" in compat:
-            order = "C"
-        else:
-            order = "F"
         if datatype == 1:
-            f.seek(1024 + idx * 2 * nx * ny)
-            return np.reshape(
-                np.fromfile(f, dtype='int16', count=nx * ny * num),
-                shape, order=order)
-        if datatype == 2:
-            f.seek(1024 + idx * 4 * nx * ny)
-            return np.reshape(
-                np.fromfile(f, dtype='float32', count=nx * ny * num),
-                shape, order=order)
+            dtype = 'int16'
+            size = '2'
+        elif datatype == 2:
+            dtype = 'float32'
+            size = '4'
+        else:
+            raise IOError("Unknown MRC data type")
+        f.seek(1024 + idx * size * nx * ny)
+        return np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * num), shape, order=order)
+
+
+def zslice(fname, compat="mrc2014"):
+    if "relion" in compat or "xmipp" in compat:
+        order = "C"
+    else:
+        order = "F"
+    with open(fname) as f:
+        nx, ny, nz, datatype = np.fromfile(f, dtype=np.int32, count=4)
+        shape = (nx, ny)
+        if datatype == 1:
+            dtype = 'int16'
+            size = '2'
+        elif datatype == 2:
+            dtype = 'float32'
+            size = '4'
+        else:
+            raise IOError("Unknown MRC data type")
+        for idx in range(nz):
+            f.seek(1024 + idx * size * nx * ny)
+            yield np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny), shape, order=order)
+
 
 # C************************************************************************
 # C                                   *
