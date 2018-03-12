@@ -69,7 +69,7 @@ def main(args):
     df["ucsfOriginalParticleIndex"] = pd.to_numeric(df["ucsfOriginalParticleIndex"])
     df.sort_values("rlnOriginalImageName", inplace=True, kind="mergesort")
     gb = df.groupby("ucsfOriginalImagePath")
-    df["ucsfParticleIndex"] = gb.cumcount()
+    df["ucsfParticleIndex"] = gb.cumcount() + 1
     df["ucsfImagePath"] = df["ucsfOriginalImagePath"].map(
         lambda x: os.path.join(args.dest,
                                args.prefix + os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
@@ -79,7 +79,7 @@ def main(args):
 
     if args.submap_ft is None:
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
-        submap_ft = vol_ft(submap, threads=min(args.nproc, cpu_count()))
+        submap_ft = vol_ft(submap, threads=min(args.threads, cpu_count()))
     else:
         log.debug("Loading %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
@@ -98,7 +98,7 @@ def main(args):
         coefs_method = 1
         if args.refmap_ft is None:
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
-            refmap_ft = vol_ft(refmap, threads=min(args.nproc, cpu_count()))
+            refmap_ft = vol_ft(refmap, threads=min(args.threads, cpu_count()))
         else:
             log.debug("Loading %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
@@ -135,7 +135,7 @@ def main(args):
     pyfftw.interfaces.cache.enable()
 
     log.debug("Instantiating worker pool")
-    pool = Pool(processes=args.nproc)
+    pool = Pool(processes=args.threads)
     threads = []
 
     for fname, particles in gb.indices.iteritems():
@@ -146,7 +146,7 @@ def main(args):
         threads.append(thread)
         thread.start()
         log.debug("Calling producer()")
-        producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
+        producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
                   sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
                   az, el, sk, xshift, yshift,
                   new_idx, new_stack, coefs_method, r, nr, fftthreads=fftthreads)
@@ -198,14 +198,17 @@ def subtract(p1, submap_ft, refmap_ft,
     return p1s
 
 
-def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
+def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
                   sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
                   az, el, sk, xshift, yshift,
                   new_idx, new_stack, coefs_method, r, nr, fftthreads=1):
     log = logging.getLogger('root')
+    log.debug("Producing %s" % fname)
+    zreader = mrc.ZSliceReader(stack[particles[0]], compat="relion")
     for i in particles:
-        log.debug("Producing %d@%s" % (idx[i], stack[i]))
-        p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
+        log.debug("Produce %d@%s" % (idx[i], stack[i]))
+        # p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
+        p1r = zreader.read(idx[i] - 1)
         log.debug("Apply")
         ri = pool.apply_async(subtract_outer,
                   (p1r, submap_ft, refmap_ft,
@@ -216,7 +219,7 @@ def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
                    coefs_method, r, nr), {"fftthreads": fftthreads})
         log.debug("Put")
         queue.put((new_idx[i], ri), block=True)
-
+    zreader.close()
     # Either the poison-pill-put blocks, we have multiple queues and
     # consumers, or the consumer knows maps results to multiple files.
     log.debug("Put poison pill")
@@ -234,7 +237,7 @@ def consumer(queue, stack, apix=1.0, fftthreads=1):
         p1s = ri.get()
         log.debug("Result for %d was shape (%d,%d)" % (i, p1s.shape[0], p1s.shape[1]))
         new_image = irfft2(fftshift(p1s, axes=0), threads=fftthreads)
-        if i == 0:
+        if i - 1 == 0:
             log.debug("Write %d@%s" % (i, stack))
             mrc.write(stack, new_image, psz=apix)
         else:
@@ -256,9 +259,9 @@ if __name__ == "__main__":
     parser.add_argument("--submap_ft", type=str,
                         help="Fourier transform used to calculate subtracted projections (.npy)")
     parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
-    parser.add_argument("--loglevel", "-v", type=str, default="WARNING", help="Logging level and debug output")
-    parser.add_argument("--low-cutoff", "-l", type=float, default=0.0, help="Low cutoff frequency (Å)")
-    parser.add_argument("--high-cutoff", "-h", type=float, default=0.5, help="High cutoff frequency (Å)")
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
+    parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help="Low cutoff frequency (Å)")
+    parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help="High cutoff frequency (Å)")
     parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
     parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks")
 
