@@ -169,6 +169,11 @@ def main(args):
     return 0
 
 
+def subtract_outer(*args, **kwargs):
+    p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"])
+    return subtract(p1, *args[1:])
+
+
 @numba.jit(cache=True, nopython=True, nogil=True)
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
@@ -200,15 +205,14 @@ def producer(pool, queue, submap_ft, refmap_ft, particles, idx, stack,
     for i in particles:
         log.debug("Producing %d@%s" % (idx[i], stack[i]))
         p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
-        p1 = rfft2(fftshift(p1r), threads=fftthreads)
         log.debug("Apply")
-        ri = pool.apply_async(subtract,
-                  (p1, submap_ft, refmap_ft,
+        ri = pool.apply_async(subtract_outer,
+                  (p1r, submap_ft, refmap_ft,
                    sx, sy, s, a, apix,
                    def1[i], def2[i], angast[i],
                    phase[i], kv[i], ac[i], cs[i],
                    az[i], el[i], sk[i], xshift[i], yshift[i],
-                   coefs_method, r, nr))
+                   coefs_method, r, nr), {"fftthreads": fftthreads})
         log.debug("Put")
         queue.put((new_idx[i], ri), block=True)
 
