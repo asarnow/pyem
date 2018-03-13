@@ -37,7 +37,7 @@ from pyem.ctf import eval_ctf
 from pyem.star import calculate_apix
 from pyem.star import parse_star
 from pyem.star import write_star
-from pyem.util import euler2rot
+from pyem.util.convert_numba import euler2rot
 from pyem.vop import interpolate_slice_numba
 from pyem.vop import vol_ft
 from pyfftw.interfaces.numpy_fft import rfft2
