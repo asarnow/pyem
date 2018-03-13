@@ -111,9 +111,9 @@ def append(fname, data):
         nz += data.shape[2]
         zlen += apix * data.shape[2]
         f.seek(8)
-        nz.tofile(f)
+        nz.astype(np.int32).tofile(f)
         f.seek(36)
-        zlen.tofile(f)
+        zlen.astype(np.float32).tofile(f)
 
 
 def write_imgs(fname, idx, data):
@@ -209,41 +209,36 @@ class ZSliceReader:
         self.f.close()
 
 
-# C************************************************************************
-# C                                   *
-# C   HEADER FORMAT                           *
-# C   1   NX  number of columns (fastest changing in map) *
-# C   2   NY  number of rows                  *
-# C   3   NZ  number of sections (slowest changing in map)    *
-# C   4   MODE    data type :                 *
-# C           0   image : signed 8-bit bytes range -128   *
-# C                   to 127              *
-# C           1   image : 16-bit halfwords        *
-# C           2   image : 32-bit reals            *
-# C           3   transform : complex 16-bit integers *
-# C           4   transform : complex 32-bit reals    *
-# C   5   NXSTART number of first column in map           *
-# C   6   NYSTART number of first row in map          *
-# C   7   NZSTART number of first section in map          *
-# C   8   MX  number of intervals along X         *
-# C   9   MY  number of intervals along Y         *
-# C   10  MZ  number of intervals along Z         *
-# C   11-13   CELLA   cell dimensions in angstroms            *
-# C   14-16   CELLB   cell angles in degrees              *
-# C   17  MAPC    axis corresp to cols (1,2,3 for X,Y,Z)      *
-# C   18  MAPR    axis corresp to rows (1,2,3 for X,Y,Z)      *
-# C   19  MAPS    axis corresp to sections (1,2,3 for X,Y,Z)  *
-# C   20  DMIN    minimum density value               *
-# C   21  DMAX    maximum density value               *
-# C   22  DMEAN   mean density value              *
-# C   23  ISPG    space group number 0 or 1 (default=0)       *
-# C   24  NSYMBT  number of bytes used for symmetry data (0 or 80)*
-# C   25-49   EXTRA   extra space used for anything           *
-# C   50-52   ORIGIN  origin in X,Y,Z used for transforms     *
-# C   53  MAP character string 'MAP ' to identify file type   *
-# C   54  MACHST  machine stamp                   *
-# C   55  RMS rms deviation of map from mean density      *
-# C   56  NLABL   number of labels being used         *
-# C   57-256  LABEL(80,10) 10 80-character text labels        *
-# C                                   *
-# C************************************************************************
+# HEADER FORMAT
+# 1      (0,4)      NX  number of columns (fastest changing in map)
+# 2      (4,8)      NY  number of rows
+# 3      (8,12)     NZ  number of sections (slowest changing in map)
+# 4      (12,16)    MODE  data type:
+#                       0   image: signed 8-bit bytes range -128 to 127
+#                       1   image: 16-bit halfwords
+#                       2   image: 32-bit reals
+#                       3   transform: complex 16-bit integers
+#                       4   transform: complex 32-bit reals
+# 5      (16,20)    NXSTART number of first column in map
+# 6      (20,24)    NYSTART number of first row in map
+# 7      (24,28)    NZSTART number of first section in map
+# 8      (28,32)    MX      number of intervals along X
+# 9      (32,36)    MY      number of intervals along Y
+# 10     (36,40)    MZ      number of intervals along Z
+# 11-13  (40,52)    CELLA   cell dimensions in angstroms
+# 14-16  (52,64)    CELLB   cell angles in degrees
+# 17     (64,68)    MAPC    axis corresp to cols (1,2,3 for X,Y,Z)
+# 18     (68,72)    MAPR    axis corresp to rows (1,2,3 for X,Y,Z)
+# 19     (72,76)    MAPS    axis corresp to sections (1,2,3 for X,Y,Z)
+# 20     (76,80)    DMIN    minimum density value
+# 21     (80,84)    DMAX    maximum density value
+# 22     (84,88)    DMEAN   mean density value
+# 23     (88,92)    ISPG    space group number 0 or 1 (default=0)
+# 24     (92,96)    NSYMBT  number of bytes used for symmetry data (0 or 80)
+# 25-49  (96,196)   EXTRA   extra space used for anything
+# 50-52  (196,208)  ORIGIN  origin in X,Y,Z used for transforms
+# 53     (208,212)  MAP     character string 'MAP ' to identify file type
+# 54     (212,216)  MACHST  machine stamp
+# 55     (216,220)  RMS     rms deviation of map from mean density
+# 56     (220,224)  NLABL   number of labels being used
+# 57-256 (224,1024) LABEL(80,10)    10 80-character text labels
