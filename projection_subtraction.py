@@ -172,7 +172,9 @@ def main(args):
 
 def subtract_outer(*args, **kwargs):
     p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"])
-    return subtract(p1, *args[1:])
+    p1s = subtract(p1, *args[1:])
+    new_image = irfft2(fftshift(p1s, axes=0), threads=kwargs["fftthreads"])
+    return new_image
 
 
 @numba.jit(cache=True, nopython=True, nogil=True)
@@ -180,12 +182,10 @@ def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):
     c = eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0, lp=2 * apix)
-
     orient = euler2rot(np.deg2rad(az), np.deg2rad(el), np.deg2rad(sk))
     pshift = np.exp(-2 * np.pi * 1j * (-xshift * sx + -yshift * sy))
     p2 = interpolate_slice_numba(submap_ft, orient)
     p2 *= pshift
-
     if coefs_method < 1:
         p1s = p1 - p2 * c
     elif coefs_method == 1:
@@ -194,7 +194,6 @@ def subtract(p1, submap_ft, refmap_ft,
         frc = np.abs(bincorr_nb(p1, p3 * c, r, nr))
         coefs = np.take(frc, r)
         p1s = p1 - p2 * c * coefs
-
     return p1s
 
 
@@ -234,9 +233,8 @@ def consumer(queue, stack, apix=1.0, fftthreads=1):
         log.debug("Got %d" % i)
         if i == -1:
             break
-        p1s = ri.get()
-        log.debug("Result for %d was shape (%d,%d)" % (i, p1s.shape[0], p1s.shape[1]))
-        new_image = irfft2(fftshift(p1s, axes=0), threads=fftthreads)
+        new_image = ri.get()
+        log.debug("Result for %d was shape (%d,%d)" % (i, new_image.shape[0], new_image.shape[1]))
         if i - 1 == 0:
             log.debug("Write %d@%s" % (i, stack))
             mrc.write(stack, new_image, psz=apix)
@@ -247,7 +245,6 @@ def consumer(queue, stack, apix=1.0, fftthreads=1):
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser(version="projection_subtraction.py 2.0a")
     parser.add_argument("input", type=str, help="STAR file with original particles")
     parser.add_argument("output", type=str, help="STAR file with subtracted particles)")
