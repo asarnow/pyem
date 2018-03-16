@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import bisect
 import numpy as np
 import pandas as pd
 import subprocess
@@ -38,10 +39,15 @@ def isrotation(r, tol=1e-4):
 def relion_symmetry_group(sym):
     relion = which("relion_refine")
     if relion is None:
-        raise RuntimeError("Need relion_refine on PATH to obtain symmetry operators")
-    stdout = subprocess.check_output(("%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" % (relion, sym)).split())
+        raise RuntimeError(
+            "Need relion_refine on PATH to obtain symmetry operators")
+    stdout = subprocess.check_output(
+        ("%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" %
+         (relion, sym)).split())
     lines = stdout.split("\n")[2:-1]
-    return [np.array([[np.double(val) for val in l.split()] for l in lines[i:i + 3]]) for i in range(1, len(lines), 4)]
+    return [np.array(
+        [[np.double(val) for val in l.split()] for l in lines[i:i + 3]])
+        for i in range(1, len(lines), 4)]
 
 
 def aligndf(df1, df2, fields=None):
@@ -60,17 +66,18 @@ def interleave(dfs, drop=True):
 
 
 def nearest_good_box_size(n):
-    b = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108, 112, 120,
-    128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182, 192, 200, 208,
-    216, 220, 224, 240, 256, 264, 288, 300, 308, 320, 324, 336, 338, 352, 364,
-    384, 400, 420, 432, 448, 450, 462, 480, 486, 500, 504, 512, 520, 528, 546,
-    560, 576, 588, 600, 640, 648, 650, 660, 672, 686, 700, 702, 704, 720, 726,
-    728, 750, 768, 770, 784, 800, 810, 840, 882, 896, 910, 924, 936, 972, 980,
-    1008, 1014, 1020, 1024, 1080, 1125, 1152, 1200, 1215, 1250, 1280, 1296, 1350,
-    1440, 1458, 1500, 1536, 1600, 1620, 1728, 1800, 1875, 1920, 1944, 2000, 2025,
-    2048, 2160, 2187, 2250, 2304, 2400, 2430, 2500, 2560, 2592, 2700, 2880, 2916,
-    3000, 3072, 3125, 3200, 3240, 3375, 3456, 3600, 3645, 3750, 3840, 3888, 4000,
-    4050, 4320, 4374, 4500, 4608, 4800, 4860, 5000, 5120, 5184, 5400, 5625, 5760,
-    5832, 6000, 6075, 6144, 6250, 6400, 6480, 6750, 6912, 7200, 7290, 7500, 7680, 7776, 8000, 8100]
-    return b[bisect(b,n)-1]
-
+    b = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108, 112,
+         120, 128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182, 192,
+         200, 208, 216, 220, 224, 240, 256, 264, 288, 300, 308, 320, 324, 336,
+         338, 352, 364, 384, 400, 420, 432, 448, 450, 462, 480, 486, 500, 504,
+         512, 520, 528, 546, 560, 576, 588, 600, 640, 648, 650, 660, 672, 686,
+         700, 702, 704, 720, 726, 728, 750, 768, 770, 784, 800, 810, 840, 882,
+         896, 910, 924, 936, 972, 980, 1008, 1014, 1020, 1024, 1080, 1125, 1152,
+         1200, 1215, 1250, 1280, 1296, 1350, 1440, 1458, 1500, 1536, 1600, 1620,
+         1728, 1800, 1875, 1920, 1944, 2000, 2025, 2048, 2160, 2187, 2250, 2304,
+         2400, 2430, 2500, 2560, 2592, 2700, 2880, 2916, 3000, 3072, 3125, 3200,
+         3240, 3375, 3456, 3600, 3645, 3750, 3840, 3888, 4000, 4050, 4320, 4374,
+         4500, 4608, 4800, 4860, 5000, 5120, 5184, 5400, 5625, 5760, 5832, 6000,
+         6075, 6144, 6250, 6400, 6480, 6750, 6912, 7200, 7290, 7500, 7680, 7776,
+         8000, 8100]
+    return b[bisect.bisect(b, n) - 1]
