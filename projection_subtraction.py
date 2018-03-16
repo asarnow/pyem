@@ -153,6 +153,7 @@ def main(args):
                 target=consumer,
                 args=(queue, fname, apix, fftthreads, iothreads))
             threads.append((prod, cons))
+            iothreads.acquire()
             log.debug("Start consumer for %s" % fname)
             cons.start()
             log.debug("Start producer for %s" % fname)
@@ -238,7 +239,6 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
 
 def consumer(queue, stack, apix=1.0, fftthreads=1, iothreads=None):
     log = logging.getLogger('root')
-    iothreads.acquire()
     with mrc.ZSliceWriter(stack, psz=apix) as zwriter:
         while True:
             log.debug("Get")
