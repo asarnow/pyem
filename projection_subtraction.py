@@ -58,12 +58,12 @@ def main(args):
     log.debug("Reading particle .star file")
     df = parse_star(args.input, keep_index=False)
     df.reset_index(inplace=True)
-    df["rlnOriginalImageName"] = df["rlnImageName"]
+    df["rlnImageOriginalName"] = df["rlnImageName"]
     df["ucsfOriginalParticleIndex"], df["ucsfOriginalImagePath"] = \
-        df["rlnOriginalImageName"].str.split("@").str
+        df["rlnImageOriginalName"].str.split("@").str
     df["ucsfOriginalParticleIndex"] = pd.to_numeric(
         df["ucsfOriginalParticleIndex"])
-    df.sort_values("rlnOriginalImageName", inplace=True, kind="mergesort")
+    df.sort_values("rlnImageOriginalName", inplace=True, kind="mergesort")
     gb = df.groupby("ucsfOriginalImagePath")
     df["ucsfParticleIndex"] = gb.cumcount() + 1
     df["ucsfImagePath"] = df["ucsfOriginalImagePath"].map(
