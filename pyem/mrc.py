@@ -127,7 +127,7 @@ def write(fname, data, psz=1, origin=None, fast=False):
         header = mrc_header_complete(data, psz=psz, origin=origin)
     with open(fname, 'wb') as f:
         f.write(header.tobytes())
-        f.write(np.require(data, dtype=np.float32).tobytes(order="A"))
+        f.write(np.require(data, dtype=np.float32).tobytes(order="F"))
 
 
 def append(fname, data):
@@ -139,7 +139,7 @@ def append(fname, data):
         if data.shape[0] != nx or data.shape[1] != ny:
             raise ValueError("Data has different shape than destination file")
         f.seek(0, os.SEEK_END)
-        f.write(np.require(data, dtype=np.float32).tobytes(order="A"))
+        f.write(np.require(data, dtype=np.float32).tobytes(order="F"))
         # Update header after new data is written.
         apix = zlen / nz
         nz += data.shape[2]
@@ -164,7 +164,7 @@ def write_imgs(fname, idx, data):
         if data.shape[0] != nx or data.shape[1] != ny:
             raise ValueError("Data has different shape than destination file")
         f.seek(HEADER_LEN + idx * nx * ny * dtype.itemsize)
-        f.write(np.require(data, dtype=dtype).tobytes(order="A"))
+        f.write(np.require(data, dtype=dtype).tobytes(order="F"))
 
 
 def read_imgs(fname, idx, num=1, compat="mrc2014"):
