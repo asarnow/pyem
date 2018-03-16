@@ -66,15 +66,16 @@ def main(args):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-            description="\n".join([
-                "The mask is generated according to the following procedure:",
-                "  1. Threshold map",
-                "  2. Optionally delete small segments",
-                "  3. Optionally fill holes",
-                "  4. Extend initial mask",
-                "  5. Optional morphological closing",
-                "  6. Add soft edge"]))
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="\n".join([
+            "The mask is generated according to the following procedure:",
+            "  1. Threshold map",
+            "  2. Optionally delete small segments",
+            "  3. Optionally fill holes",
+            "  4. Extend initial mask",
+            "  5. Optional morphological closing",
+            "  6. Add soft edge"]))
     parser.add_argument("input", help="Input volume MRC file")
     parser.add_argument("output", help="Output mask MRC file")
     parser.add_argument("--threshold", "-t", help="Threshold for initial mask",
