@@ -128,36 +128,45 @@ def main(args):
     log.debug("Grouping particles by output stack")
     gb = df.groupby("ucsfImagePath")
 
-    qsize = 1000
-    fftthreads = 1
+    iothreads = threading.Semaphore(args.io_thread_pairs)
+    qsize = args.io_queue_length
+    fftthreads = args.fft_threads
     pyfftw.interfaces.cache.enable()
 
     log.debug("Instantiating worker pool")
     pool = Pool(processes=args.threads)
     threads = []
 
-    for fname, particles in gb.indices.iteritems():
-        log.debug("Instantiating queue")
-        queue = Queue.Queue(maxsize=qsize)
-        log.debug("Start consumer for %s" % fname)
-        thread = threading.Thread(target=consumer,
-                                  args=(queue, fname, apix, fftthreads))
-        threads.append(thread)
-        thread.start()
-        log.debug("Calling producer()")
-        producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx,
-                 stack, sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac,
-                 cs, az, el, sk, xshift, yshift, new_idx, new_stack,
-                 coefs_method, r, nr, fftthreads=fftthreads)
-        log.debug("Producer returned for %s" % fname)
-        log.debug("Done waiting for consumer to return")
+    try:
+        for fname, particles in gb.indices.iteritems():
+            log.debug("Instantiating queue")
+            queue = Queue.Queue(maxsize=qsize)
+            log.debug("Create producer for %s" % fname)
+            prod = threading.Thread(
+                target=producer,
+                args=(pool, queue, submap_ft, refmap_ft, fname, particles, idx,
+                      stack, sx, sy, s, a, apix, def1, def2, angast, phase, kv,
+                      ac, cs, az, el, sk, xshift, yshift, new_idx, new_stack,
+                      coefs_method, r, nr, fftthreads))
+            log.debug("Create consumer for %s" % fname)
+            cons = threading.Thread(
+                target=consumer,
+                args=(queue, fname, apix, fftthreads, iothreads))
+            threads.append((prod, cons))
+            log.debug("Start consumer for %s" % fname)
+            cons.start()
+            log.debug("Start producer for %s" % fname)
+            prod.start()
+    except KeyboardInterrupt:
+        log.debug("Main thread want's out!")
+
+    for pair in threads:
+        for thread in pair:
+            thread.join()
 
     pool.close()
     pool.join()
     pool.terminate()
-
-    for thread in threads:
-        thread.join()
 
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
             axis=1, inplace=True)
@@ -227,8 +236,9 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
     queue.put((-1, None), block=False)
 
 
-def consumer(queue, stack, apix=1.0, fftthreads=1):
+def consumer(queue, stack, apix=1.0, fftthreads=1, iothreads=None):
     log = logging.getLogger('root')
+    iothreads.acquire()
     with mrc.ZSliceWriter(stack, psz=apix) as zwriter:
         while True:
             log.debug("Get")
@@ -241,6 +251,8 @@ def consumer(queue, stack, apix=1.0, fftthreads=1):
                       (i, new_image.shape[0], new_image.shape[1]))
             zwriter.write(new_image)
             log.debug("Wrote %d to %d@%s" % (i, zwriter.i, stack))
+    if iothreads is not None:
+        iothreads.release()
 
 
 if __name__ == "__main__":
@@ -257,6 +269,9 @@ if __name__ == "__main__":
     parser.add_argument("--refmap_ft", type=str, help="Fourier transform used to calculate reference projections (.npy)")
     parser.add_argument("--submap_ft", type=str, help="Fourier transform used to calculate subtracted projections (.npy)")
     parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
+    parser.add_argument("--io-thread-pairs", type=int, default=1)
+    parser.add_argument("--io-queue-length", type=int, default=1000)
+    parser.add_argument("--fft-threads", type=int, default=1)
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help="Low cutoff frequency (Å)")
     parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help="High cutoff frequency (Å)")
