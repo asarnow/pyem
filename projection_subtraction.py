@@ -50,29 +50,27 @@ def main(args):
     :param args: Command-line arguments parsed by ArgumentParser.parse_args()
     :return: Exit status
     """
-
     log = logging.getLogger('root')
     hdlr = logging.StreamHandler(sys.stdout)
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    # rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
-    # args.output = rchop(args.output, ".star")
-    # args.suffix = rchop(args.suffix, ".mrc")
-    # args.suffix = rchop(args.suffix, ".mrcs")
-
     log.debug("Reading particle .star file")
     df = parse_star(args.input, keep_index=False)
     df.reset_index(inplace=True)
     df["rlnOriginalImageName"] = df["rlnImageName"]
-    df["ucsfOriginalParticleIndex"], df["ucsfOriginalImagePath"] = df["rlnOriginalImageName"].str.split("@").str
-    df["ucsfOriginalParticleIndex"] = pd.to_numeric(df["ucsfOriginalParticleIndex"])
+    df["ucsfOriginalParticleIndex"], df["ucsfOriginalImagePath"] = \
+        df["rlnOriginalImageName"].str.split("@").str
+    df["ucsfOriginalParticleIndex"] = pd.to_numeric(
+        df["ucsfOriginalParticleIndex"])
     df.sort_values("rlnOriginalImageName", inplace=True, kind="mergesort")
     gb = df.groupby("ucsfOriginalImagePath")
     df["ucsfParticleIndex"] = gb.cumcount() + 1
     df["ucsfImagePath"] = df["ucsfOriginalImagePath"].map(
-        lambda x: os.path.join(args.dest,
-                               args.prefix + os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
+        lambda x: os.path.join(
+            args.dest,
+            args.prefix +
+            os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
     df["rlnImageName"] = df["ucsfParticleIndex"].map(
         lambda x: "%.6d" % x).str.cat(df["ucsfImagePath"], sep="@")
     log.debug("Read particle .star file")
@@ -87,7 +85,7 @@ def main(args):
 
     sz = submap_ft.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
-    s = np.sqrt(sx**2 + sy**2)
+    s = np.sqrt(sx ** 2 + sy ** 2)
     r = s * sz
     r = np.round(r).astype(np.int64)
     r[r > sz // 2] = sz // 2 + 1
@@ -131,7 +129,7 @@ def main(args):
     gb = df.groupby("ucsfImagePath")
 
     qsize = 1000
-    fftthreads=1
+    fftthreads = 1
     pyfftw.interfaces.cache.enable()
 
     log.debug("Instantiating worker pool")
@@ -142,14 +140,15 @@ def main(args):
         log.debug("Instantiating queue")
         queue = Queue.Queue(maxsize=qsize)
         log.debug("Start consumer for %s" % fname)
-        thread = threading.Thread(target=consumer, args=(queue, fname, apix, fftthreads))
+        thread = threading.Thread(target=consumer,
+                                  args=(queue, fname, apix, fftthreads))
         threads.append(thread)
         thread.start()
         log.debug("Calling producer()")
-        producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
-                  sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
-                  az, el, sk, xshift, yshift,
-                  new_idx, new_stack, coefs_method, r, nr, fftthreads=fftthreads)
+        producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx,
+                 stack, sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac,
+                 cs, az, el, sk, xshift, yshift, new_idx, new_stack,
+                 coefs_method, r, nr, fftthreads=fftthreads)
         log.debug("Producer returned for %s" % fname)
         log.debug("Done waiting for consumer to return")
 
@@ -160,7 +159,8 @@ def main(args):
     for thread in threads:
         thread.join()
 
-    df.drop([c for c in df.columns if "ucsf" in c or "eman" in c], axis=1, inplace=True)
+    df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
+            axis=1, inplace=True)
 
     df.set_index("index", inplace=True)
     df.sort_index(inplace=True, kind="mergesort")
@@ -181,7 +181,8 @@ def subtract_outer(*args, **kwargs):
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):
-    c = eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0, lp=2 * apix)
+    c = eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0,
+                 lp=2 * apix)
     orient = euler2rot(np.deg2rad(az), np.deg2rad(el), np.deg2rad(sk))
     pshift = np.exp(-2 * np.pi * 1j * (-xshift * sx + -yshift * sy))
     p2 = interpolate_slice_numba(submap_ft, orient)
@@ -198,24 +199,25 @@ def subtract(p1, submap_ft, refmap_ft,
 
 
 def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
-                  sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
-                  az, el, sk, xshift, yshift,
-                  new_idx, new_stack, coefs_method, r, nr, fftthreads=1):
+             sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
+             az, el, sk, xshift, yshift,
+             new_idx, new_stack, coefs_method, r, nr, fftthreads=1):
     log = logging.getLogger('root')
     log.debug("Producing %s" % fname)
-    zreader = mrc.ZSliceReader(stack[particles[0]], compat="relion")
+    zreader = mrc.ZSliceReader(stack[particles[0]])
     for i in particles:
         log.debug("Produce %d@%s" % (idx[i], stack[i]))
         # p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
         p1r = zreader.read(idx[i] - 1)
         log.debug("Apply")
-        ri = pool.apply_async(subtract_outer,
-                  (p1r, submap_ft, refmap_ft,
-                   sx, sy, s, a, apix,
-                   def1[i], def2[i], angast[i],
-                   phase[i], kv[i], ac[i], cs[i],
-                   az[i], el[i], sk[i], xshift[i], yshift[i],
-                   coefs_method, r, nr), {"fftthreads": fftthreads})
+        ri = pool.apply_async(
+            subtract_outer,
+            (p1r, submap_ft, refmap_ft,
+             sx, sy, s, a, apix,
+             def1[i], def2[i], angast[i],
+             phase[i], kv[i], ac[i], cs[i],
+             az[i], el[i], sk[i], xshift[i], yshift[i],
+             coefs_method, r, nr), {"fftthreads": fftthreads})
         log.debug("Put")
         queue.put((new_idx[i], ri), block=True)
     zreader.close()
@@ -227,34 +229,33 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
 
 def consumer(queue, stack, apix=1.0, fftthreads=1):
     log = logging.getLogger('root')
-    while True:
-        log.debug("Get")
-        i, ri = queue.get(block=True)
-        log.debug("Got %d" % i)
-        if i == -1:
-            break
-        new_image = ri.get()
-        log.debug("Result for %d was shape (%d,%d)" % (i, new_image.shape[0], new_image.shape[1]))
-        if i - 1 == 0:
-            log.debug("Write %d@%s" % (i, stack))
-            mrc.write(stack, new_image, psz=apix)
-        else:
-            log.debug("Append %d@%s" % (i, stack))
-            mrc.append(stack, new_image)
+    with mrc.ZSliceWriter(stack, psz=apix) as zwriter:
+        while True:
+            log.debug("Get")
+            i, ri = queue.get(block=True)
+            log.debug("Got %d" % i)
+            if i == -1:
+                break
+            new_image = ri.get()
+            log.debug("Result for %d was shape (%d,%d)" %
+                      (i, new_image.shape[0], new_image.shape[1]))
+            zwriter.write(new_image)
+            log.debug("Wrote %d to %d@%s" % (i, zwriter.i, stack))
 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(version="projection_subtraction.py 2.0a")
-    parser.add_argument("input", type=str, help="STAR file with original particles")
-    parser.add_argument("output", type=str, help="STAR file with subtracted particles)")
+    parser.add_argument("input", type=str,
+                        help="STAR file with original particles")
+    parser.add_argument("output", type=str,
+                        help="STAR file with subtracted particles)")
     parser.add_argument("--dest", "-d", type=str, help="Destination directory for subtracted particle stacks")
     parser.add_argument("--refmap", "-r", type=str, help="Map used to calculate reference projections")
     parser.add_argument("--submap", "-s", type=str, help="Map used to calculate subtracted projections")
-    parser.add_argument("--refmap_ft", type=str,
-                        help="Fourier transform used to calculate reference projections (.npy)")
-    parser.add_argument("--submap_ft", type=str,
-                        help="Fourier transform used to calculate subtracted projections (.npy)")
+    parser.add_argument("--refmap_ft", type=str, help="Fourier transform used to calculate reference projections (.npy)")
+    parser.add_argument("--submap_ft", type=str, help="Fourier transform used to calculate subtracted projections (.npy)")
     parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help="Low cutoff frequency (Å)")
