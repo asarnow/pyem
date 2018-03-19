@@ -128,7 +128,7 @@ def main(args):
     log.debug("Grouping particles by output stack")
     gb = df.groupby("ucsfImagePath")
 
-    iothreads = threading.Semaphore(args.io_thread_pairs)
+    iothreads = threading.BoundedSemaphore(args.io_thread_pairs)
     qsize = args.io_queue_length
     fftthreads = args.fft_threads
     pyfftw.interfaces.cache.enable()
@@ -159,11 +159,14 @@ def main(args):
             log.debug("Start producer for %s" % fname)
             prod.start()
     except KeyboardInterrupt:
-        log.debug("Main thread want's out!")
+        log.debug("Main thread wants out!")
 
     for pair in threads:
         for thread in pair:
-            thread.join()
+            try:
+                thread.join()
+            except RuntimeError as e:
+                log.debug(e)
 
     pool.close()
     pool.join()
@@ -183,7 +186,7 @@ def main(args):
 def subtract_outer(*args, **kwargs):
     p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"])
     p1s = subtract(p1, *args[1:])
-    new_image = irfft2(fftshift(p1s, axes=0), threads=kwargs["fftthreads"])
+    new_image = fftshift(irfft2(p1s, threads=kwargs["fftthreads"]))
     return new_image
 
 
