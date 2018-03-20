@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
+import enum
 import sys
 import re
 import os.path
@@ -30,17 +31,31 @@ from math import modf
 from pyem.util import rot2euler
 from pyem.util import euler2rot
 
-MICROGRAPH_NAME = "rlnMicrographName"
-IMAGE_NAME = "rlnImageName"
-COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
-ORIGINS = ["rlnOriginX", "rlnOriginY"]
-ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
-CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle", "rlnSphericalAberration", "rlnCtfBfactor",
-              "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast", "rlnCtfMaxResolution",
-              "rlnCtfFigureOfMerit"]
-MICROSCOPE_PARAMS = ["rlnVoltage", "rlnMagnification", "rlnDetectorPixelSize"]
-MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
-PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber", "rlnAutopickFigureOfMerit"]
+
+class Relion(enum.Enum):
+    MICROGRAPH_NAME = "rlnMicrographName"
+    IMAGE_NAME = "rlnImageName"
+    IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
+    COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
+    ORIGINS = ["rlnOriginX", "rlnOriginY"]
+    ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+    CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle",
+                  "rlnSphericalAberration", "rlnCtfBfactor",
+                  "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast",
+                  "rlnCtfMaxResolution",
+                  "rlnCtfFigureOfMerit"]
+    MICROSCOPE_PARAMS = ["rlnVoltage", "rlnMagnification",
+                         "rlnDetectorPixelSize"]
+    MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
+    PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber",
+                                       "rlnAutopickFigureOfMerit"]
+
+
+class UCSF(enum.Enum):
+    IMAGE_PATH = "ucsfImagePath"
+    IMAGE_INDEX = "ucsfImageIndex"
+    IMAGE_ORIGINAL_PATH = "ucsfImageOriginalPath"
+    IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
 
 
 def main(args):
@@ -73,7 +88,7 @@ def main(args):
         return 0
 
     if args.drop_angles:
-        star.drop(ANGLES, axis=1, inplace=True, errors="ignore")
+        star.drop(Relion.ANGLES, axis=1, inplace=True, errors="ignore")
 
     if args.drop_containing is not None:
         containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
@@ -110,7 +125,7 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = parse_star(args.copy_angles, keep_index=False)
-        star = smart_merge(star, angle_star, fields=ANGLES)
+        star = smart_merge(star, angle_star, fields=Relion.ANGLES)
 
     if args.transform is not None:
         if args.transform.count(",") == 2:
@@ -121,22 +136,22 @@ def main(args):
 
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
-        star[IMAGE_NAME] = path_star[IMAGE_NAME]
+        star[Relion.IMAGE_NAME] = path_star[Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
         ctf_star = pd.concat((parse_star(inp, keep_index=False) for inp in glob(args.copy_ctf)), join="inner")
-        star = smart_merge(star, ctf_star, CTF_PARAMS)
+        star = smart_merge(star, ctf_star, Relion.CTF_PARAMS)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
-        star = smart_merge(star, coord_star, fields=MICROGRAPH_COORDS)
+        star = smart_merge(star, coord_star, fields=Relion.MICROGRAPH_COORDS)
 
     if args.scale_coordinates is not None:
-        star[COORDS] = star[COORDS] * args.scale_coordinates
+        star[Relion.COORDS] = star[Relion.COORDS] * args.scale_coordinates
 
     if args.scale_origins:
-        star[ORIGINS] = star[ORIGINS] * args.scale_origins
+        star[Relion.ORIGINS] = star[Relion.ORIGINS] * args.scale_origins
         star["rlnMagnification"] = star["rlnMagnification"] * args.scale_origins
 
     if args.recenter:
@@ -146,7 +161,7 @@ def main(args):
         star = zero_origins(star, inplace=True)
 
     if args.pick:
-        star.drop(star.columns.difference(PICK_PARAMS), axis=1, inplace=True, errors="ignore")
+        star.drop(star.columns.difference(Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
 
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
@@ -160,12 +175,12 @@ def main(args):
                        star.iloc[ind])
 
     if args.to_micrographs:
-        gb = star.groupby(MICROGRAPH_NAME)
+        gb = star.groupby(Relion.MICROGRAPH_NAME)
         mu = gb.mean()
-        star = mu[[c for c in CTF_PARAMS + MICROSCOPE_PARAMS + [MICROGRAPH_NAME] if c in mu]].reset_index()
+        star = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS + [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
 
     if args.micrograph_range:
-        star.set_index(MICROGRAPH_NAME, inplace=True)
+        star.set_index(Relion.MICROGRAPH_NAME, inplace=True)
         m, n = [int(tok) for tok in args.micrograph_range.split(",")]
         mg = star.index.unique().sort_values()
         outside = list(range(0,m)) + list(range(n,len(mg)))
@@ -202,25 +217,25 @@ def merge_key(s1, s2):
     inter = s1.columns.intersection(s2.columns)
     if not inter.size:
         return None
-    if IMAGE_NAME in inter:
-        c = Counter(s1[IMAGE_NAME])
-        shared = sum(c[i] for i in set(s2[IMAGE_NAME]))
+    if Relion.IMAGE_NAME in inter:
+        c = Counter(s1[Relion.IMAGE_NAME])
+        shared = sum(c[i] for i in set(s2[Relion.IMAGE_NAME]))
         if shared > s1.shape[0] * 0.5:
-            return IMAGE_NAME
-    mgraph_coords = inter.intersection(MICROGRAPH_COORDS)
-    if MICROGRAPH_NAME in mgraph_coords:
-        c = Counter(s1[MICROGRAPH_NAME])
-        shared = sum(c[i] for i in set(s2[MICROGRAPH_NAME]))
-        can_merge_mgraph_name = MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
-        if can_merge_mgraph_name and mgraph_coords.intersection(COORDS).size:
-            return MICROGRAPH_COORDS
+            return Relion.IMAGE_NAME
+    mgraph_coords = inter.intersection(Relion.MICROGRAPH_COORDS)
+    if Relion.MICROGRAPH_NAME in mgraph_coords:
+        c = Counter(s1[Relion.MICROGRAPH_NAME])
+        shared = sum(c[i] for i in set(s2[Relion.MICROGRAPH_NAME]))
+        can_merge_mgraph_name = Relion.MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
+        if can_merge_mgraph_name and mgraph_coords.intersection(Relion.COORDS).size:
+            return Relion.MICROGRAPH_COORDS
         elif can_merge_mgraph_name:
-            return MICROGRAPH_NAME
+            return Relion.MICROGRAPH_NAME
     return None
 
 
 def is_particle_star(star):
-    return star.columns.intersection([IMAGE_NAME] + COORDS).size
+    return star.columns.intersection([Relion.IMAGE_NAME] + Relion.COORDS).size
 
 
 def calculate_apix(star):
@@ -255,7 +270,7 @@ def split_micrographs(star):
 
 
 def all_same_class(star, inplace=False):
-    vc = star[IMAGE_NAME].value_counts()
+    vc = star[Relion.IMAGE_NAME].value_counts()
     n = vc.max()
     si = star.set_index(["rlnImageName", "rlnClassNumber"], inplace=inplace)
     vci = si.index.value_counts()
@@ -268,9 +283,9 @@ def recenter(star, inplace=False):
         newstar = star
     else:
         newstar = star.copy()
-    remxy, offsetxy = np.vectorize(modf)(star[ORIGINS])
-    newstar[ORIGINS] = remxy
-    newstar[COORDS] = newstar[COORDS] - offsetxy
+    remxy, offsetxy = np.vectorize(modf)(star[Relion.ORIGINS])
+    newstar[Relion.ORIGINS] = remxy
+    newstar[Relion.COORDS] = newstar[Relion.COORDS] - offsetxy
     return newstar
 
 
@@ -351,21 +366,39 @@ def transform_star(star, r, t=None, inplace=False, rots=None):
         newstar = star.copy()
 
     if rots is None:
-        rots = [euler2rot(*np.deg2rad(row[1])) for row in star[ANGLES].iterrows()]
+        rots = [euler2rot(*np.deg2rad(row[1])) for row in star[Relion.ANGLES].iterrows()]
  
     newrots = [ptcl.dot(r) for ptcl in rots]
     angles = [np.rad2deg(rot2euler(q)) for q in newrots]
-    newstar[ANGLES] = angles
+    newstar[Relion.ANGLES] = angles
 
     if t is not None and np.linalg.norm(t) > 0:
         if np.isscalar(t):
             tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
         else:
             tt = np.vstack([q.dot(t) for q in newrots])
-        newshifts = star[ORIGINS] + tt[:,:-1]
-        newstar[ORIGINS] = newshifts
+        newshifts = star[Relion.ORIGINS] + tt[:,:-1]
+        newstar[Relion.ORIGINS] = newshifts
 
     return newstar
+
+
+def augment_star_ucsf(df):
+    df.reset_index(inplace=True)
+    df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
+    df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
+        df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
+    df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(
+        df[UCSF.IMAGE_ORIGINAL_PATH])
+    df.sort_values(Relion.IMAGE_ORIGINAL_NAME, inplace=True, kind="mergesort")
+    gb = df.groupby(UCSF.IMAGE_ORIGINAL_PATH)
+
+
+def simplify_star_ucsf(df):
+    df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
+            axis=1, inplace=True)
+    df.set_index("index", inplace=True)
+    df.sort_index(inplace=True, kind="mergesort")
 
 
 if __name__ == "__main__":
