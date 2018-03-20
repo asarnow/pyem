@@ -154,6 +154,7 @@ def main(args):
                 args=(queue, fname, apix, fftthreads, iothreads))
             threads.append((prod, cons))
             iothreads.acquire()
+            log.debug("iotheads at %d" % iothreads._Semaphore__value)
             log.debug("Start consumer for %s" % fname)
             cons.start()
             log.debug("Start producer for %s" % fname)
@@ -233,6 +234,7 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
              coefs_method, r, nr), {"fftthreads": fftthreads})
         log.debug("Put")
         queue.put((new_idx[i], ri), block=True)
+        log.debug("Queue for %s is size %d" % (stack[i], queue.qsize()))
     zreader.close()
     # Either the poison-pill-put blocks, we have multiple queues and
     # consumers, or the consumer knows maps results to multiple files.
@@ -246,13 +248,15 @@ def consumer(queue, stack, apix=1.0, fftthreads=1, iothreads=None):
         while True:
             log.debug("Get")
             i, ri = queue.get(block=True)
-            log.debug("Got %d" % i)
+            log.debug("Got %d, queue for %s is size %d" %
+                      (i, stack, queue.qsize()))
             if i == -1:
                 break
             new_image = ri.get()
             log.debug("Result for %d was shape (%d,%d)" %
                       (i, new_image.shape[0], new_image.shape[1]))
             zwriter.write(new_image)
+            queue.task_done()
             log.debug("Wrote %d to %d@%s" % (i, zwriter.i, stack))
     if iothreads is not None:
         iothreads.release()
