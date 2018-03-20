@@ -31,7 +31,7 @@ from pyem.star import write_star
 from pyem.star import transform_star
 from pyem.star import select_classes
 from pyem.star import recenter
-from pyem.star import ANGLES
+from pyem.star import Relion
 from pyem.util import euler2rot
 from pyem.util import relion_symmetry_group
 from pyem.util import interleave
@@ -122,7 +122,7 @@ def main(args):
             log.error("Exactly one marker is required for symmetry-derived subparticles")
             return 1
         
-        rots = [euler2rot(*np.deg2rad(r[1])) for r in star[ANGLES].iterrows()]
+        rots = [euler2rot(*np.deg2rad(r[1])) for r in star[Relion.ANGLES].iterrows()]
         #origins = star[ORIGINS].copy()
         for m in markers:
             d = np.linalg.norm(m)
@@ -161,7 +161,7 @@ def parse_cmm(cmmfile):
 
 def subparticle_expansion(s, ops=[np.eye(3)], dists=None, rots=None):
     if rots is None:
-        rots = [euler2rot(*np.deg2rad(r[1])) for r in s[ANGLES].iterrows()]
+        rots = [euler2rot(*np.deg2rad(r[1])) for r in s[Relion.ANGLES].iterrows()]
     if dists is not None:
         if np.isscalar(dists):
             dists = [dists] * len(ops)
