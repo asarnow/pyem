@@ -395,8 +395,6 @@ def augment_star_ucsf(df):
         df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
     df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(
         df[UCSF.IMAGE_ORIGINAL_INDEX])
-    df.sort_values(Relion.IMAGE_ORIGINAL_NAME, inplace=True, kind="mergesort")
-    gb = df.groupby(UCSF.IMAGE_ORIGINAL_PATH)
 
 
 def simplify_star_ucsf(df):
