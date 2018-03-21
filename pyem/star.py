@@ -385,11 +385,16 @@ def transform_star(star, r, t=None, inplace=False, rots=None):
 
 def augment_star_ucsf(df):
     df.reset_index(inplace=True)
-    df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
+    if Relion.IMAGE_ORIGINAL_NAME in df and Relion.IMAGE_NAME in df:
+        df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
+            df[Relion.IMAGE_NAME].str.split("@").str
+        df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX])
+    if Relion.IMAGE_ORIGINAL_NAME not in df:
+        df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
     df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
         df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
     df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(
-        df[UCSF.IMAGE_ORIGINAL_PATH])
+        df[UCSF.IMAGE_ORIGINAL_INDEX])
     df.sort_values(Relion.IMAGE_ORIGINAL_NAME, inplace=True, kind="mergesort")
     gb = df.groupby(UCSF.IMAGE_ORIGINAL_PATH)
 
