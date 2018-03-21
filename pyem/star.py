@@ -32,7 +32,7 @@ from pyem.util import rot2euler
 from pyem.util import euler2rot
 
 
-class Relion(enum.Enum):
+class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
@@ -51,7 +51,7 @@ class Relion(enum.Enum):
                                        "rlnAutopickFigureOfMerit"]
 
 
-class UCSF(enum.Enum):
+class UCSF:
     IMAGE_PATH = "ucsfImagePath"
     IMAGE_INDEX = "ucsfImageIndex"
     IMAGE_ORIGINAL_PATH = "ucsfImageOriginalPath"
