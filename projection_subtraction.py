@@ -131,7 +131,7 @@ def main(args):
     iothreads = threading.BoundedSemaphore(args.io_thread_pairs)
     qsize = args.io_queue_length
     fftthreads = args.fft_threads
-    pyfftw.interfaces.cache.enable()
+    # pyfftw.interfaces.cache.enable()
 
     log.debug("Instantiating worker pool")
     pool = Pool(processes=args.threads)
@@ -185,9 +185,9 @@ def main(args):
 
 
 def subtract_outer(*args, **kwargs):
-    p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"])
+    p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE")
     p1s = subtract(p1, *args[1:])
-    new_image = fftshift(irfft2(p1s, threads=kwargs["fftthreads"]))
+    new_image = fftshift(irfft2(p1s, threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE"))
     return new_image
 
 
