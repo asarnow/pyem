@@ -23,11 +23,11 @@ import os
 
 MODE = {0: np.dtype(np.int8), 1: np.dtype(np.int16), 2: np.dtype(np.float32), 6: np.dtype(np.uint16),
         np.dtype(np.int8): 0, np.dtype(np.int16): 1, np.dtype(np.float32): 2, np.dtype(np.uint16): 6}
-HEADER_LEN = 1024
+HEADER_LEN = 1024  # Bytes.
 
 
 def mrc_header(shape, dtype=np.float32, psz=1.0):
-    header = np.zeros(HEADER_LEN / np.dtype(np.int32).itemsize, dtype=np.int32)  # 1024 byte header.
+    header = np.zeros(HEADER_LEN / np.dtype(np.int32).itemsize, dtype=np.int32)
     header_f = header.view(np.float32)
     header[:3] = shape
     if np.dtype(dtype) not in MODE:
@@ -37,7 +37,7 @@ def mrc_header(shape, dtype=np.float32, psz=1.0):
     header_f[10:13] = psz * header[:3]  # xlen, ylen, zlen
     header_f[13:16] = 90.0  # CELLB
     header[16:19] = 1, 2, 3  # Axis order.
-    header_f[19:22] = 1, 0, -1  # Convention for unreliable min, max, mean values.
+    header_f[19:22] = 1, 0, -1  # Convention for unreliable  values.
     # header[26] = 1329812045  # "MRCO" chars.
     header[27] = 20140  # Version 2014-0.
     header_f[49:52] = 0, 0, 0  # Default origin.
@@ -113,12 +113,12 @@ def read(fname, inc_header=False, compat="mrc2014"):
 
 def write(fname, data, psz=1, origin=None, fast=False):
     """
-    Write a MRC file. The closest contiguity of the data is used to determine the axes order.
+    Write a MRC file. Fortran axes order is assumed.
     :param fname: Destination path.
     :param data: Array to write.
     :param psz: Pixel size in Å for MRC header.
     :param origin: Coordinate of origin voxel.
-    :param fast: Skip computing density statistics in MRC header. Default is False.
+    :param fast: Skip computing density statistics in header. Default is False.
     """
     data = np.atleast_3d(data)
     if fast:
@@ -133,7 +133,7 @@ def write(fname, data, psz=1, origin=None, fast=False):
 def append(fname, data):
     data = np.atleast_3d(data)
     with open(fname, 'r+b') as f:
-        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)  # First 12 bytes of stack.
+        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)
         f.seek(36)  # First byte of zlen.
         zlen = np.fromfile(f, dtype=np.float32, count=1)
         if data.shape[0] != nx or data.shape[1] != ny:
@@ -188,7 +188,8 @@ def read_imgs(fname, idx, num=1, compat="mrc2014"):
         else:
             raise IOError("Unknown MRC data type")
         f.seek(HEADER_LEN + idx * dtype.itemsize * nx * ny)
-        return np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * num), shape, order=order)
+        return np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * num),
+                          shape, order=order)
 
 
 def read_zslices(fname):
@@ -215,8 +216,9 @@ class ZSliceReader:
         if self.i >= self.nz:
             raise IOError("Index %d out of bounds for stack of size %d" % (i, self.nz))
         self.f.seek(HEADER_LEN + self.i * self.dtype.itemsize * self.size)
-        # Populate slice in row-major (C) order so that X is fastest axis i.e. j / columns.
-        return np.reshape(np.fromfile(self.f, dtype=self.dtype, count=self.size), self.shape)
+        # Populate slice C order so that X is fastest axis i.e. j / columns.
+        return np.reshape(
+            np.fromfile(self.f, dtype=self.dtype, count=self.size), self.shape)
 
     def close(self):
         self.f.close()
@@ -241,7 +243,7 @@ class ZSliceReader:
 
 
 class ZSliceWriter:
-    def __init__(self, fname, shape=None, dtype=np.float32, psz=1.0):
+    def __init__(self, fname, shape=None, dtype=np.float32, psz=1.0, mode="w"):
         self.path = fname
         self.shape = None
         self.size = None
@@ -250,12 +252,23 @@ class ZSliceWriter:
         self.f = None
         self.i = 0
         if shape is not None:
-            self.shape = self.set_shape(shape)
+            self.set_shape(shape)
         if dtype is not None:
             self.set_dtype(dtype)
-        self.f = open(self.path, 'wb')
-        self.f.seek(HEADER_LEN)  # Results in a sparse file?
-        # self.f.write(b'\x00' * HEADER_LEN)
+        if "a" in mode:
+            hdr = read_header(self.path)
+            self.f = open(self.path, 'ab')
+            self.psz = hdr["xlen"] / hdr["nx"]
+            self.set_shape((hdr["nx"], hdr["ny"]))
+            if hdr["datatype"] in MODE:
+                self.set_dtype(hdr["datatype"])
+            else:
+                raise IOError("Unknown MRC data type")
+            self.f.seek(0, os.SEEK_END)
+        else:
+            self.f = open(self.path, 'wb')
+            # self.f.seek(HEADER_LEN)  # Results in a sparse file?
+            self.f.write(b'\x00' * HEADER_LEN)
 
     def set_dtype(self, dtype):
         if np.dtype(dtype).kind == 'f':
@@ -300,7 +313,8 @@ class ZSliceWriter:
         self.i += arr.size / self.size
 
     def close(self):
-        header = mrc_header(shape=(self.shape[1], self.shape[0], self.i), dtype=self.dtype, psz=self.psz)
+        header = mrc_header(shape=(self.shape[1], self.shape[0], self.i),
+                            dtype=self.dtype, psz=self.psz)
         self.f.seek(0)
         self.f.write(header.tobytes())
         self.f.close()
@@ -339,8 +353,8 @@ class ZSliceWriter:
 # 22     (88,92)    ISPG    space group number, 0 for images or 1 for volumes
 # 23     (92,96)    NSYMBT  number of bytes in extended header
 # 24-49  (96,196)   EXTRA   extra space used for anything
-#                   26  (104)   EXTTYP      extended header type("MRCO" for MRC)
-#                   27  (108)   NVERSION    MRC format version (20140)
+#           26  (104)   EXTTYP      extended header type("MRCO" for MRC)
+#           27  (108)   NVERSION    MRC format version (20140)
 # 49-52  (196,208)  ORIGIN  origin in X,Y,Z used for transforms
 # 52     (208,212)  MAP     character string 'MAP ' to identify file type
 # 53     (212,216)  MACHST  machine stamp
