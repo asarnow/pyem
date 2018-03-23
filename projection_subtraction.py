@@ -191,7 +191,7 @@ def subtract_outer(*args, **kwargs):
     return new_image
 
 
-@numba.jit(cache=True, nopython=True, nogil=True)
+@numba.jit(cache=False, nopython=True, nogil=True)
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):

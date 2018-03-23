@@ -33,7 +33,7 @@ def bincount_nb(bins, data, out=None):
     return out
 
 
-@numba.jit(cache=True, nopython=True, nogil=True)
+@numba.jit(cache=False, nopython=True, nogil=True)
 def bincorr_nb(p1, p2, bins, n=-1):
     bflat = bins.reshape(-1)
     p1flat = p1.reshape(-1)
