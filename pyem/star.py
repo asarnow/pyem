@@ -385,7 +385,7 @@ def transform_star(star, r, t=None, inplace=False, rots=None):
 
 def augment_star_ucsf(df):
     df.reset_index(inplace=True)
-    if Relion.IMAGE_ORIGINAL_NAME in df and Relion.IMAGE_NAME in df:
+    if Relion.IMAGE_NAME in df:
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
             df[Relion.IMAGE_NAME].str.split("@").str
         df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX])
