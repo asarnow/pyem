@@ -24,7 +24,7 @@ import numba
 import numpy as np
 import os.path
 import pandas as pd
-import pyfftw
+# import pyfftw
 import Queue
 import sys
 import threading
@@ -40,8 +40,10 @@ from pyem.star import write_star
 from pyem.util.convert_numba import euler2rot
 from pyem.vop import interpolate_slice_numba
 from pyem.vop import vol_ft
-from pyfftw.interfaces.numpy_fft import rfft2
-from pyfftw.interfaces.numpy_fft import irfft2
+from numpy.fft import rfft2
+from numpy.fft import irfft2
+# from pyfftw.interfaces.numpy_fft import rfft2
+# from pyfftw.interfaces.numpy_fft import irfft2
 
 
 def main(args):
@@ -185,9 +187,9 @@ def main(args):
 
 
 def subtract_outer(*args, **kwargs):
-    p1 = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE")
+    p1 = rfft2(fftshift(args[0]))#, threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE")
     p1s = subtract(p1, *args[1:])
-    new_image = fftshift(irfft2(p1s, threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE"))
+    new_image = fftshift(irfft2(p1s))#, threads=kwargs["fftthreads"], planner_effort="FFTW_ESTIMATE"))
     return new_image
 
 
