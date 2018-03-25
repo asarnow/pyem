@@ -33,8 +33,8 @@ def main(args):
     # apix = args.apix = hdr["xlen"] / hdr["nx"]
 
     for fn in args.input:
-        if not fn.endswith(".star") or not fn.endswith(
-                ".mrcs") or not fn.endswith(".mrc"):
+        if not (fn.endswith(".star") or fn.endswith(".mrcs") or
+                fn.endswith(".mrc")):
             log.error("Only .star, .mrc, and .mrcs files supported")
             return 1
 
