@@ -39,6 +39,7 @@ def main(args):
             return 1
 
     first_ptcl = 0
+    dfs = []
     with mrc.ZSliceWriter(args.output) as writer:
         for fn in args.input:
             if fn.endswith(".star"):
@@ -65,13 +66,13 @@ def main(args):
                 df[star.UCSF.IMAGE_PATH] = writer.path
                 df["index"] = df[star.UCSF.IMAGE_INDEX]
                 star.simplify_star_ucsf(df)
-                if first_ptcl == 0:
-                    star.write_star(args.star, df)
-                else:
-                    df.to_csv(args.star, mode='a', sep=' ', header=False,
-                              index=False)
-
+                dfs.append(df)
             first_ptcl += df.shape[0]
+
+            if args.star is not None:
+                df = pd.concat(dfs, axis=1, join="inner")
+                star.write_star(args.star, df)
+
     return 0
 
 
