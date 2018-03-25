@@ -63,6 +63,7 @@ def main(args):
                 df[star.UCSF.IMAGE_INDEX] = np.arange(first_ptcl,
                                                       first_ptcl + df.shape[0])
                 df[star.UCSF.IMAGE_PATH] = writer.path
+                star.simplify_star_ucsf(df)
                 if first_ptcl == 0:
                     star.write_star(args.star, df)
                 else:

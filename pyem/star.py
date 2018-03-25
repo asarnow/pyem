@@ -388,23 +388,23 @@ def augment_star_ucsf(df):
     if Relion.IMAGE_NAME in df and Relion.IMAGE_ORIGINAL_NAME in df:
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
             df[Relion.IMAGE_NAME].str.split("@").str
-        df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX])
+        df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
     if Relion.IMAGE_ORIGINAL_NAME not in df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
     df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
         df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
     df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(
-        df[UCSF.IMAGE_ORIGINAL_INDEX])
+        df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
 
 
 def simplify_star_ucsf(df):
     if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH is df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[UCSF.IMAGE_ORIGINAL_INDEX].map(
-            lambda x: "%.6d" % x).str.cat(df[UCSF.IMAGE_ORIGINAL_PATH],
-                                          sep="@")
+            lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_ORIGINAL_PATH],
+                                                sep="@")
     if UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH is df:
         df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
-            lambda x: "%.6d" % x).str.cat(df[UCSF.IMAGE_PATH], sep="@")
+            lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
             axis=1, inplace=True)
     df.set_index("index", inplace=True)
