@@ -35,7 +35,7 @@ def main(args):
     for fn in args.input:
         if not fn.endswith(".star") or not fn.endswith(
                 ".mrcs") or not fn.endswith(".mrc"):
-            log.error("")
+            log.error("Only .star, .mrc, and .mrcs files supported")
             return 1
 
     first_ptcl = 0
@@ -49,7 +49,7 @@ def main(args):
                 gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
                 for name, g in gb:
                     with mrc.ZSliceReader(name) as reader:
-                        for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX]:
+                        for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX].values:
                             writer.write(reader.read(i))
             else:
                 with mrc.ZSliceReader(fn) as reader:
