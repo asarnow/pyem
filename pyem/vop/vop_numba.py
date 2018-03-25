@@ -104,3 +104,6 @@ def interpolate_slice_numba(f3d, rot, pfac=2, size=None):
                 f2d[i, j] = np.conj(f2d[i, j])
     return f2d
 
+
+def accumulate_slice_nb(f3d, f2d, rot, pfac=2):
+    pass
