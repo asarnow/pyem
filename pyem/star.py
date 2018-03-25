@@ -385,7 +385,7 @@ def transform_star(star, r, t=None, inplace=False, rots=None):
 
 def augment_star_ucsf(df):
     df.reset_index(inplace=True)
-    if Relion.IMAGE_NAME in df:
+    if Relion.IMAGE_NAME in df and Relion.IMAGE_ORIGINAL_NAME in df:
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
             df[Relion.IMAGE_NAME].str.split("@").str
         df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX])
@@ -398,6 +398,13 @@ def augment_star_ucsf(df):
 
 
 def simplify_star_ucsf(df):
+    if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH is df:
+        df[Relion.IMAGE_ORIGINAL_NAME] = df[UCSF.IMAGE_ORIGINAL_INDEX].map(
+            lambda x: "%.6d" % x).str.cat(df[UCSF.IMAGE_ORIGINAL_PATH],
+                                          sep="@")
+    if UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH is df:
+        df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
+            lambda x: "%.6d" % x).str.cat(df[UCSF.IMAGE_PATH], sep="@")
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
             axis=1, inplace=True)
     df.set_index("index", inplace=True)
