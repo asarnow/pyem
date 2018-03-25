@@ -70,8 +70,8 @@ def main(args):
             first_ptcl += df.shape[0]
 
             if args.star is not None:
-                df = pd.concat(dfs, axis=1, join="inner")
-                star.write_star(args.star, df)
+                df = pd.concat(dfs, join="inner")
+                star.write_star(args.star, df, reindex=True)
 
     return 0
 
