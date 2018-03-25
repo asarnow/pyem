@@ -1,5 +1,5 @@
 #!/usr/bin/env python2.7
-# Copyright (C) 2017 Daniel Asarnow
+# Copyright (C) 2017-2018 Daniel Asarnow
 # University of California, San Francisco
 #
 # Efficiently combine image stacks.
@@ -17,50 +17,70 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import print_function
-import os
-import os.path
+import logging
+import numpy as np
+import pandas as pd
 import sys
-from pyem.mrc import append
-from pyem.mrc import read
-from pyem.mrc import write
-from pyem.star import parse_star
+from pyem import mrc
+from pyem import star
 
 
 def main(args):
-    if os.path.exists(args.output):
-        os.remove(args.output)
-    first = True
+    log = logging.getLogger('root')
+    hdlr = logging.StreamHandler(sys.stdout)
+    log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
+    # apix = args.apix = hdr["xlen"] / hdr["nx"]
+
     for fn in args.input:
-        if fn.endswith(".star"):
-            star = parse_star(fn, keep_index=False)
-            for p in star["rlnImageName"]:
-                stack = p.split("@")[1]
-                idx = int(p.split("@")[0]) - 1
-                try:
-                    img = read(stack, idx)
-                    if first:
-                        write(args.output, img)
-                        first = False
-                    else:
-                        append(args.output, img)
-                except Exception:
-                    print("Error at %s" % p)
-        else:
-            data, hdr = read(fn, inc_header=True)
-            apix = args.apix = hdr["xlen"] / hdr["nx"]
-            if first:
-                write(args.output, data, psz=apix)
-                first = False
+        if not fn.endswith(".star") or not fn.endswith(
+                ".mrcs") or not fn.endswith(".mrc"):
+            log.error("")
+            return 1
+
+    first_ptcl = 0
+    with mrc.ZSliceWriter(args.output) as writer:
+        for fn in args.input:
+            if fn.endswith(".star"):
+                df = star.parse_star(fn, keep_index=False)
+                star.augment_star_ucsf(df)
+                df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
+                                     star.UCSF.IMAGE_ORIGINAL_INDEX])
+                gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
+                for name, g in gb:
+                    with mrc.ZSliceReader(name) as reader:
+                        for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX]:
+                            writer.write(reader.read(i))
             else:
-                append(args.output, data)
+                with mrc.ZSliceReader(fn) as reader:
+                    for img in reader:
+                        writer.write(img)
+                    df = pd.DataFrame(
+                        {star.UCSF.IMAGE_ORIGINAL_INDEX: np.arange(reader.nz)})
+                df[star.UCSF.IMAGE_ORIGINAL_PATH] = fn
+
+            if args.star is not None:
+                df[star.UCSF.IMAGE_INDEX] = np.arange(first_ptcl,
+                                                      first_ptcl + df.shape[0])
+                df[star.UCSF.IMAGE_PATH] = writer.path
+                if first_ptcl == 0:
+                    star.write_star(args.star, df)
+                else:
+                    df.to_csv(args.star, mode='a', sep=' ', header=False,
+                              index=False)
+
+            first_ptcl += df.shape[0]
     return 0
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Input particle image(s), stack(s) and/or .star file(s)", nargs="*")
+    parser.add_argument("input",
+                        help="Input image(s), stack(s) and/or .star file(s)",
+                        nargs="*")
     parser.add_argument("output", help="Output stack")
+    parser.add_argument("--star", help="Optional composite .star output file")
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
+                        help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
-
