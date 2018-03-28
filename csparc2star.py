@@ -23,6 +23,7 @@ import sys
 import json
 import numpy as np
 import pandas as pd
+from glob import glob
 from pyem import star
 from pyem.util import expmap
 from pyem.util import rot2euler
@@ -67,8 +68,8 @@ def main(args):
             return 1
         meta["data_input_relpath"] = args.data_path
 
-    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(meta["data_input_relpath"],
-                                                                sep="@")  # Construct _rlnImageName field.
+    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(
+        meta["data_input_relpath"], sep="@")  # Construct rlnImageName field.
     # Take care of trivial mappings.
     rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
     df = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
@@ -80,7 +81,7 @@ def main(args):
     if "rlnPhaseShift" in df.columns:
         df["rlnPhaseShift"] = np.rad2deg(df["rlnPhaseShift"])
 
-    # general class assignments and other model parameters.
+    # Class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
     if len(phic.columns) > 0:  # Check class assignments exist in input.
         # phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
@@ -93,7 +94,7 @@ def main(args):
                 if len(param.columns) > 0:
                     param.columns = phic.columns
                     df[model[p]] = param.lookup(param.index, cls)
-        df["rlnClassNumber"] = cls + 1  # Compute most probable classes and add one for Relion indexing.
+        df["rlnClassNumber"] = cls + 1  # Add one for Relion indexing.
     else:
         for p in model:
             if model[p] is not None and p in meta.columns:
@@ -105,7 +106,9 @@ def main(args):
 
     # Convert axis-angle representation to Euler angles (degrees).
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
-        df[star.Relion.ANGLES] = np.rad2deg(df[star.Relion.ANGLES].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+        df[star.Relion.ANGLES] = np.rad2deg(
+            df[star.Relion.ANGLES].apply(lambda x: rot2euler(expmap(x)),
+                                         axis=1, raw=True, broadcast=True))
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
@@ -113,6 +116,12 @@ def main(args):
             df.loc[mask, "rlnClassNumber"] = 0
         else:
             df.drop(df[mask].index, inplace=True)
+
+    if args.copy_micrograph_coordinates is not None:
+        coord_star = pd.concat(
+            (star.parse_star(inp, keep_index=False) for inp in
+             glob(args.copy_micrograph_coordinates)), join="inner")
+        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
