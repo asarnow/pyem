@@ -34,11 +34,9 @@ def main(args):
     df = star.parse_star(args.input, keep_index=False)
     if args.apix is None:
         args.apix = star.calculate_apix(df)
-    angular_sampling = [58.6, 29.3, 14.66, 7.33, 3.66, 1.83, 0.916]
-    # order = bisect(healpix_spacing, desired_spacing)
     nside = 2**args.healpix_order
-    theta, phi = pix2ang(nside[args.healpix_order],
-                         np.arange(12 * nside ** 2))
+    angular_sampling = np.sqrt(3 / np.pi) * 60 / nside
+    theta, phi = pix2ang(nside, np.arange(12 * nside ** 2))
     phi = np.pi - phi
     hp = np.column_stack((np.sin(theta) * np.cos(phi),
                           np.sin(theta) * np.sin(phi),
