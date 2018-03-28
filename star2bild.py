@@ -36,9 +36,9 @@ def main(args):
         args.apix = star.calculate_apix(df)
     angular_sampling = [58.6, 29.3, 14.66, 7.33, 3.66, 1.83, 0.916]
     # order = bisect(healpix_spacing, desired_spacing)
-    nside = 2**np.arange(0, 7)
+    nside = 2**args.healpix_order
     theta, phi = pix2ang(nside[args.healpix_order],
-                         np.arange(12 * nside[args.healpix_order] ** 2))
+                         np.arange(12 * nside ** 2))
     phi = np.pi - phi
     hp = np.column_stack((np.sin(theta) * np.cos(phi),
                           np.sin(theta) * np.sin(phi),
@@ -67,7 +67,7 @@ def main(args):
     base2 = base2[:, [0, 1, 2]] + np.array([r]*3)
     height = np.squeeze(np.abs(rp - r))
     idx = np.where(height >= 0.01)[0]
-    width = args.width_scale * np.pi * r * angular_sampling[args.healpix_order] / 360
+    width = args.width_scale * np.pi * r * angular_sampling / 360
     bild = np.hstack((base1, base2, np.ones((base1.shape[0], 1)) * width))
     fmt_color = ".color %f 0 %f\n"
     fmt_cyl = ".cylinder %f %f %f %f %f %f %f\n"
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output .bild file")
     parser.add_argument("--healpix-order",
                         help="Healpix order (Relion convention)", type=int,
-                        default=3)
+                        default=4)
     parser.add_argument("--apix",
                         help="Angstroms per pixel (calculate from STAR by default)",
                         type=float)
