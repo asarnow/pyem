@@ -23,11 +23,10 @@ import sys
 import json
 import numpy as np
 import pandas as pd
-from pyem.star import write_star
-from pyem.star import transform_star
-from pyem.star import select_classes
-from pyem.util import rot2euler
+from pyem import star
 from pyem.util import expmap
+from pyem.util import rot2euler
+
 
 general = {u'uid': None,
            u'split': "rlnRandomSubset",
@@ -56,8 +55,6 @@ model = {u'alignments.model.U': None,
          u'alignments.model.r.2': "rlnAnglePsi",
          u'alignments.model.t.0': "rlnOriginX",
          u'alignments.model.t.1': "rlnOriginY"}
-
-angles = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
 
 
 def main(args):
@@ -104,11 +101,11 @@ def main(args):
         df["rlnClassNumber"] = 1
 
     if args.cls is not None:
-        df = select_classes(df, args.cls)
+        df = star.select_classes(df, args.cls)
 
     # Convert axis-angle representation to Euler angles (degrees).
-    if df.columns.intersection(angles).size == len(angles):
-        df[angles] = np.rad2deg(df[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+    if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
+        df[star.Relion.ANGLES] = np.rad2deg(df[star.Relion.ANGLES].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
@@ -119,10 +116,10 @@ def main(args):
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
-        df = transform_star(df, r, inplace=True)
+        df = star.transform_star(df, r, inplace=True)
 
     # Write Relion .star file with correct headers.
-    write_star(args.output, df, reindex=True)
+    star.write_star(args.output, df, reindex=True)
     return 0
 
 
