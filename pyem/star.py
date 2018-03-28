@@ -18,7 +18,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
-import enum
 import sys
 import re
 import os.path
@@ -36,9 +35,16 @@ class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
-    COORDS = ["rlnCoordinateX", "rlnCoordinateY"]
-    ORIGINS = ["rlnOriginX", "rlnOriginY"]
-    ANGLES = ["rlnAngleRot", "rlnAngleTilt", "rlnAnglePsi"]
+    COORDX = "rlnCoordinateX"
+    COORDY = "rlnCoordinateY"
+    ORIGINX = "rlnOriginX"
+    ORIGINY = "rlnOriginY"
+    ANGLEROT = "rlnAngleRot"
+    ANGLETILT = "rlnAngleTilt"
+    ANGLEPSI = "rlnAnglePsi"
+    COORDS = [COORDX, COORDY]
+    ORIGINS = [ORIGINX, ORIGINY]
+    ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
     CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle",
                   "rlnSphericalAberration", "rlnCtfBfactor",
                   "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast",
