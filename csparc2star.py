@@ -74,14 +74,14 @@ def main(args):
                                                                 sep="@")  # Construct _rlnImageName field.
     # Take care of trivial mappings.
     rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
-    star = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
-    star.columns = rlnheaders
+    df = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
+    df.columns = rlnheaders
 
-    if "rlnRandomSubset" in star.columns:
-        star["rlnRandomSubset"] = star["rlnRandomSubset"].apply(lambda x: ord(x) - 64)
+    if "rlnRandomSubset" in df.columns:
+        df["rlnRandomSubset"] = df["rlnRandomSubset"].apply(lambda x: ord(x) - 64)
 
-    if "rlnPhaseShift" in star.columns:
-        star["rlnPhaseShift"] = np.rad2deg(star["rlnPhaseShift"])
+    if "rlnPhaseShift" in df.columns:
+        df["rlnPhaseShift"] = np.rad2deg(df["rlnPhaseShift"])
 
     # general class assignments and other model parameters.
     phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
@@ -95,34 +95,34 @@ def main(args):
                 param = meta[[h for h in meta.columns if pspec in h]]
                 if len(param.columns) > 0:
                     param.columns = phic.columns
-                    star[model[p]] = param.lookup(param.index, cls)
-        star["rlnClassNumber"] = cls + 1  # Compute most probable classes and add one for Relion indexing.
+                    df[model[p]] = param.lookup(param.index, cls)
+        df["rlnClassNumber"] = cls + 1  # Compute most probable classes and add one for Relion indexing.
     else:
         for p in model:
             if model[p] is not None and p in meta.columns:
-                star[model[p]] = meta[p]
-        star["rlnClassNumber"] = 1
+                df[model[p]] = meta[p]
+        df["rlnClassNumber"] = 1
 
     if args.cls is not None:
-        star = select_classes(star, args.cls)
+        df = select_classes(df, args.cls)
 
     # Convert axis-angle representation to Euler angles (degrees).
-    if star.columns.intersection(angles).size == len(angles):
-        star[angles] = np.rad2deg(star[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
+    if df.columns.intersection(angles).size == len(angles):
+        df[angles] = np.rad2deg(df[angles].apply(lambda x: rot2euler(expmap(x)), axis=1, raw=True, broadcast=True))
 
     if args.minphic is not None:
         mask = np.all(phic < args.minphic, axis=1)
         if args.keep_bad:
-            star.loc[mask, "rlnClassNumber"] = 0
+            df.loc[mask, "rlnClassNumber"] = 0
         else:
-            star.drop(star[mask].index, inplace=True)
+            df.drop(df[mask].index, inplace=True)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
-        star = transform_star(star, r, inplace=True)
+        df = transform_star(df, r, inplace=True)
 
     # Write Relion .star file with correct headers.
-    write_star(args.output, star, reindex=True)
+    write_star(args.output, df, reindex=True)
     return 0
 
 
@@ -156,6 +156,9 @@ if __name__ == "__main__":
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
     parser.add_argument("--keep-bad", help="Keep low-confidence particles and assign them to class 0 (incompatible with Relion)", action="store_true")
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
+    parser.add_argument("--copy-micrograph-coordinates",
+                        help="Source for micrograph paths and particle coordinates (file or quoted glob)",
+                        type=str)
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
