@@ -17,15 +17,15 @@
 import numpy as np
 
 
-def bincorr(p1, p2, bins):
+def bincorr(p1, p2, bins, minlength=0):
     bflat = bins.reshape(-1)
     p1flat = p1.reshape(-1)
     p2flat = p2.reshape(-1)
     fc = p1flat * np.conj(p2flat)
-    fcr = np.bincount(bflat, fc.real)
-    fcc = np.bincount(bflat, fc.imag)
-    mag = np.sqrt(np.bincount(bflat, np.abs(p1flat)**2) *
-                  np.bincount(bflat, np.abs(p2flat)**2))
+    fcr = np.bincount(bflat, fc.real, minlength=minlength)
+    fcc = np.bincount(bflat, fc.imag, minlength=minlength)
+    mag = np.sqrt(np.bincount(bflat, np.abs(p1flat)**2, minlength=minlength) *
+                  np.bincount(bflat, np.abs(p2flat)**2, minlength=minlength))
     mag[-1] += 1e-17
     frc = (fcr + fcc*1j) / mag
     return frc
