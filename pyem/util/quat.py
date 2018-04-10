@@ -24,7 +24,7 @@ def _qconj(q, p):
     return p
 
 
-qconj(q, p) = np.vectorize(_qconj, signature="(m),(m)->(m)")
+qconj = np.vectorize(_qconj, signature="(m),(m)->(m)")
 
 
 def _qtimes(q1, q2, q3):
@@ -35,7 +35,7 @@ def _qtimes(q1, q2, q3):
     return q3
 
 
-qtimes(q1, q2) = np.vectorize(_qtimes, signature="(m),(m)->(m)")
+qtimes = np.vectorize(_qtimes, signature="(m),(m)->(m)")
 
 
 def qslerp(q1, q2, t):
