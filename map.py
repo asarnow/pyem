@@ -122,7 +122,7 @@ def main(args):
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
-        data = resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order)
+        data = resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.target_invert)
 
     if args.euler is not None:
         try:
@@ -165,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument("--threads", help="Thread count for FFTW", type=int, default=1)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms (volume center by default)", metavar="x,y,z")
     parser.add_argument("--target", help="Target pose (view axis and origin) coordinates in Angstroms", metavar="x,y,z")
+    parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
     parser.add_argument("--euler", help="Euler angles in degrees (Relion conventions)", metavar="phi,theta,psi")
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--matrix",

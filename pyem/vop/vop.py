@@ -31,7 +31,7 @@ def ismask(vol):
     return np.unique(vol[vol.shape[2] / 2::vol.shape[2]]).size < 100
 
 
-def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", indexing="ij"):
+def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", indexing="ij", invert=False):
     if r is None and t is None:
         return vol.copy()
 
@@ -51,9 +51,15 @@ def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", in
 
     rh = np.eye(4)
     if r is not None:
-        rh[:3:, :3] = r[:3, :3].T
+        rh[:3, :3] = r[:3, :3].T
 
-    xyz = th.dot(rh.dot(xyz))[:3, :] + center[:, None]
+    if invert:
+        th[:3, 3] = -th[:3, 3]
+        rh[:3, :3] = rh[:3:, :3].T
+        xyz = rh.dot(th.dot(xyz))[:3, :] + center[:, None]
+    else:
+        xyz = th.dot(rh.dot(xyz))[:3, :] + center[:, None]
+
     xyz = np.array([arr.reshape(vol.shape) for arr in xyz])
 
     if "relion" in compat.lower() or "xmipp" in compat.lower():
