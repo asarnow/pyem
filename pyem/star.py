@@ -393,9 +393,15 @@ def transform_star(star, r, t=None, inplace=False, rots=None, invert=False):
 
     if t is not None and np.linalg.norm(t) > 0:
         if np.isscalar(t):
-            tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
+            if invert:
+                tt = -np.vstack([np.squeeze(q[:,2]) * t for q in rots])
+            else:
+                tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
         else:
-            tt = np.vstack([q.dot(t) for q in newrots])
+            if invert:
+                tt = -np.vstack([q.dot(t) for q in rots])
+            else:
+                tt = np.vstack([q.dot(t) for q in newrots])
         newshifts = star[Relion.ORIGINS] + tt[:,:-1]
         newstar[Relion.ORIGINS] = newshifts
 
