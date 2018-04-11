@@ -27,6 +27,7 @@ import pandas as pd
 import json
 from glob import glob
 from math import modf
+from pyem.algo import query_cliques
 from pyem.util import rot2euler
 from pyem.util import euler2rot
 
@@ -68,142 +69,151 @@ def main(args):
     if args.info:
         args.input.append(args.output)
 
-    star = pd.concat((parse_star(inp, keep_index=False) for inp in args.input), join="inner")
+    df = pd.concat((parse_star(inp, keep_index=False) for inp in args.input), join="inner")
 
-    otherstar = None
+    dfaux = None
 
     if args.cls is not None:
-        star = select_classes(star, args.cls)
+        df = select_classes(df, args.cls)
 
     if args.info:
-        if is_particle_star(star) and "rlnClassNumber" in star.columns:
-            c = star["rlnClassNumber"].value_counts()
-            print("%s particles in %d classes" % ("{:,}".format(star.shape[0]), len(c)))
+        if is_particle_star(df) and "rlnClassNumber" in df.columns:
+            c = df["rlnClassNumber"].value_counts()
+            print("%s particles in %d classes" % ("{:,}".format(df.shape[0]), len(c)))
             print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100.*s/c.sum())
                 for i,s in c.sort_index().iteritems()]))
-        elif is_particle_star(star):
-            print("%s particles" % "{:,}".format(star.shape[0]))
-        if "rlnMicrographName" in star.columns:
-            mgraphcnt = star["rlnMicrographName"].value_counts()
+        elif is_particle_star(df):
+            print("%s particles" % "{:,}".format(df.shape[0]))
+        if "rlnMicrographName" in df.columns:
+            mgraphcnt = df["rlnMicrographName"].value_counts()
             print("%s micrographs, %s +/- %s particles per micrograph" %
                     ("{:,}".format(len(mgraphcnt)), "{:,.3f}".format(np.mean(mgraphcnt)), "{:,.3f}".format(np.std(mgraphcnt))))
         try:
-            print("%f A/px (%sX magnification)" % (calculate_apix(star), "{:,.0f}".format(star["rlnMagnification"][0])))
+            print("%f A/px (%sX magnification)" % (calculate_apix(df), "{:,.0f}".format(df["rlnMagnification"][0])))
         except KeyError:
             pass
         return 0
 
     if args.drop_angles:
-        star.drop(Relion.ANGLES, axis=1, inplace=True, errors="ignore")
+        df.drop(Relion.ANGLES, axis=1, inplace=True, errors="ignore")
 
     if args.drop_containing is not None:
-        containing_fields = [f for q in args.drop_containing for f in star.columns if q in f]
+        containing_fields = [f for q in args.drop_containing for f in df.columns if q in f]
         if args.invert:
-            containing_fields = star.columns.difference(containing_fields)
-        star.drop(containing_fields, axis=1, inplace=True, errors="ignore")
+            containing_fields = df.columns.difference(containing_fields)
+        df.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
     if args.offset_group is not None:
-        star["rlnGroupNumber"] += args.offset_group
+        df["rlnGroupNumber"] += args.offset_group
 
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
             print("Only particle sampling allows bootstrapping")
             return 1
-        mgraphs = star["rlnMicrographName"].unique()
+        mgraphs = df["rlnMicrographName"].unique()
         if args.subsample_micrographs < 1:
             args.subsample_micrographs = np.int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
         ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
-        mask = star["rlnMicrographName"].isin(mgraphs[ind])
+        mask = df["rlnMicrographName"].isin(mgraphs[ind])
         if args.auxout is not None:
-            otherstar = star.loc[~mask]
-        star = star.loc[mask]
+            dfaux = df.loc[~mask]
+        df = df.loc[mask]
 
     if args.subsample is not None and args.suffix == "":
         if args.subsample < 1:
-            args.subsample = np.int(max(np.round(args.subsample * star.shape[0]), 1))
+            args.subsample = np.int(max(np.round(args.subsample * df.shape[0]), 1))
         else:
             args.subsample = np.int(args.subsample)
-        ind = np.random.choice(star.shape[0], size=args.subsample, replace=False)
-        mask = star.index.isin(ind)
+        ind = np.random.choice(df.shape[0], size=args.subsample, replace=False)
+        mask = df.index.isin(ind)
         if args.auxout is not None:
-            otherstar = star.loc[~mask]
-        star = star.loc[mask]
+            dfaux = df.loc[~mask]
+        df = df.loc[mask]
 
     if args.copy_angles is not None:
         angle_star = parse_star(args.copy_angles, keep_index=False)
-        star = smart_merge(star, angle_star, fields=Relion.ANGLES)
+        df = smart_merge(df, angle_star, fields=Relion.ANGLES)
 
     if args.transform is not None:
         if args.transform.count(",") == 2:
             r = euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
         else:
             r = np.array(json.loads(args.transform))
-        star = transform_star(star, r, inplace=True)
+        df = transform_star(df, r, inplace=True)
 
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
-        star[Relion.IMAGE_NAME] = path_star[Relion.IMAGE_NAME]
+        df[Relion.IMAGE_NAME] = path_star[Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
         ctf_star = pd.concat((parse_star(inp, keep_index=False) for inp in glob(args.copy_ctf)), join="inner")
-        star = smart_merge(star, ctf_star, Relion.CTF_PARAMS)
+        df = smart_merge(df, ctf_star, Relion.CTF_PARAMS)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
-        star = smart_merge(star, coord_star, fields=Relion.MICROGRAPH_COORDS)
+        df = smart_merge(df, coord_star, fields=Relion.MICROGRAPH_COORDS)
 
     if args.scale_coordinates is not None:
-        star[Relion.COORDS] = star[Relion.COORDS] * args.scale_coordinates
+        df[Relion.COORDS] = df[Relion.COORDS] * args.scale_coordinates
 
     if args.scale_origins:
-        star[Relion.ORIGINS] = star[Relion.ORIGINS] * args.scale_origins
-        star["rlnMagnification"] = star["rlnMagnification"] * args.scale_origins
+        df[Relion.ORIGINS] = df[Relion.ORIGINS] * args.scale_origins
+        df["rlnMagnification"] = df["rlnMagnification"] * args.scale_origins
 
     if args.recenter:
-        star = recenter(star, inplace=True)
+        df = recenter(df, inplace=True)
 
     if args.zero_origins:
-        star = zero_origins(star, inplace=True)
+        df = zero_origins(df, inplace=True)
 
     if args.pick:
-        star.drop(star.columns.difference(Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
+        df.drop(df.columns.difference(Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
 
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
             print("Specific integer sample size")
             return 1
-        nsamplings = args.bootstrap if args.bootstrap is not None else star.shape[0] / np.int(args.subsample)
-        inds = np.random.choice(star.shape[0], size=(nsamplings, np.int(args.subsample)),
+        nsamplings = args.bootstrap if args.bootstrap is not None else df.shape[0] / np.int(args.subsample)
+        inds = np.random.choice(df.shape[0], size=(nsamplings, np.int(args.subsample)),
                                 replace=args.bootstrap is not None)
         for i, ind in enumerate(inds):
             write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),
-                       star.iloc[ind])
+                       df.iloc[ind])
 
     if args.to_micrographs:
-        gb = star.groupby(Relion.MICROGRAPH_NAME)
+        gb = df.groupby(Relion.MICROGRAPH_NAME)
         mu = gb.mean()
-        star = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS + [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
+        df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS + [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
 
     if args.micrograph_range:
-        star.set_index(Relion.MICROGRAPH_NAME, inplace=True)
+        df.set_index(Relion.MICROGRAPH_NAME, inplace=True)
         m, n = [int(tok) for tok in args.micrograph_range.split(",")]
-        mg = star.index.unique().sort_values()
+        mg = df.index.unique().sort_values()
         outside = list(range(0,m)) + list(range(n,len(mg)))
-        otherstar = star.loc[mg[outside]].reset_index()
-        star = star.loc[mg[m:n]].reset_index()
+        dfaux = df.loc[mg[outside]].reset_index()
+        df = df.loc[mg[m:n]].reset_index()
+
+    if args.min_separation is not None:
+        gb = df.groupby(Relion.MICROGRAPH_NAME)
+        dupes = []
+        for n, g in gb:
+            nb = query_cliques(g[Relion.COORDS], args.min_separation / calculate_apix(df))
+            dupes.extend(g.index[~np.isnan(nb)])
+        dfaux = df.loc[dupes]
+        df.drop(dupes, inplace=True)
 
     if args.split_micrographs:
-        stars = split_micrographs(star)
-        for mg in stars:
-            write_star(os.path.join(args.output, os.path.basename(mg)[:-4]) + args.suffix, stars[mg])
+        dfs = split_micrographs(df)
+        for mg in dfs:
+            write_star(os.path.join(args.output, os.path.basename(mg)[:-4]) + args.suffix, dfs[mg])
         return 0
 
-    if args.auxout is not None and otherstar is not None:
-        write_star(args.auxout, otherstar)
+    if args.auxout is not None and dfaux is not None:
+        write_star(args.auxout, dfaux)
 
     if args.output is not None:
-        write_star(args.output, star)
+        write_star(args.output, df)
     return 0
 
 
@@ -352,7 +362,7 @@ def write_star(starfile, star, reindex=True):
     star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
-def transform_star(star, r, t=None, inplace=False, rots=None):
+def transform_star(star, r, t=None, inplace=False, rots=None, invert=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -373,7 +383,10 @@ def transform_star(star, r, t=None, inplace=False, rots=None):
 
     if rots is None:
         rots = [euler2rot(*np.deg2rad(row[1])) for row in star[Relion.ANGLES].iterrows()]
- 
+
+    if invert:
+        r = r.T
+
     newrots = [ptcl.dot(r) for ptcl in rots]
     angles = [np.rad2deg(rot2euler(q)) for q in newrots]
     newstar[Relion.ANGLES] = angles
@@ -454,6 +467,7 @@ if __name__ == "__main__":
                         action="store_true")
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
+    parser.add_argument("--min-separation", help="Minimum distance between particle coordinates", type=float)
     parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
                         type=float)
     parser.add_argument("--scale-origins", help="Factor to rescale particle origins (rebin refined particles)",
