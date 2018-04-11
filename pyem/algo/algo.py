@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from scipy.spatial import cKDTree
 
 
 def bincorr(p1, p2, bins, minlength=0):
@@ -24,8 +25,23 @@ def bincorr(p1, p2, bins, minlength=0):
     fc = p1flat * np.conj(p2flat)
     fcr = np.bincount(bflat, fc.real, minlength=minlength)
     fcc = np.bincount(bflat, fc.imag, minlength=minlength)
-    mag = np.sqrt(np.bincount(bflat, np.abs(p1flat)**2, minlength=minlength) *
-                  np.bincount(bflat, np.abs(p2flat)**2, minlength=minlength))
+    mag = np.sqrt(
+        np.bincount(bflat, np.abs(p1flat) ** 2, minlength=minlength) *
+        np.bincount(bflat, np.abs(p2flat) ** 2, minlength=minlength))
     mag[-1] += 1e-17
-    frc = (fcr + fcc*1j) / mag
+    frc = (fcr + fcc * 1j) / mag
     return frc
+
+
+def query_cliques(kdt, maxdist):
+    if type(kdt) is not cKDTree:
+        kdt = cKDTree(kdt)
+    nb = np.full(kdt.n, np.nan)
+    pairs = kdt.query_pairs(maxdist)
+    for p in pairs:
+        for idx in p[1:]:
+            if np.isnan(nb[p[0]]):
+                nb[idx] = p[0]
+            else:
+                nb[idx] = nb[p[0]]
+    return nb
