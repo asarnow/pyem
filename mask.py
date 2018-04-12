@@ -47,7 +47,7 @@ def main(args):
             mask = binary_dilation(mask, structure=se, iterations=1)
         else:
             dt = distance_transform_edt(~mask)
-            mask = mask | (dt <= args.edge_width)
+            mask[dt <= args.edge_width] = True
     if args.close:
         se = binary_sphere(args.extend, False)
         mask = binary_closing(mask, structure=se, iterations=1)
