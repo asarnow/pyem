@@ -33,7 +33,7 @@ def bincorr(p1, p2, bins, minlength=0):
     return frc
 
 
-def query_cliques(kdt, maxdist):
+def query_connected(kdt, maxdist):
     if type(kdt) is not cKDTree:
         kdt = cKDTree(kdt)
     nb = np.full(kdt.n, np.nan)

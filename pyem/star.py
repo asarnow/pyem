@@ -27,7 +27,7 @@ import pandas as pd
 import json
 from glob import glob
 from math import modf
-from pyem.algo import query_cliques
+from pyem.algo import query_connected
 from pyem.util import rot2euler
 from pyem.util import euler2rot
 
@@ -198,7 +198,7 @@ def main(args):
         gb = df.groupby(Relion.MICROGRAPH_NAME)
         dupes = []
         for n, g in gb:
-            nb = query_cliques(g[Relion.COORDS], args.min_separation / calculate_apix(df))
+            nb = query_connected(g[Relion.COORDS], args.min_separation / calculate_apix(df))
             dupes.extend(g.index[~np.isnan(nb)])
         dfaux = df.loc[dupes]
         df.drop(dupes, inplace=True)
