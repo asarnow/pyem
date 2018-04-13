@@ -3,4 +3,4 @@
 from .util import *
 from .convert import *
 from .quat_numba import *
-
+from .quat import normq

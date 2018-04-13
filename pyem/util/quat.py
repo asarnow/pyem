@@ -50,3 +50,9 @@ def qslerp(q1, q2, t):
     b = np.sin(t * half_theta) / sin_half_theta
     return q1 * a + q2 * b
 
+
+def normq(q):
+    q = (q.T/np.linalg.norm(q, axis=1)).T
+    ang = np.dot(q, [1, 0, 0, 0]) < 0
+    q[ang] = -q[ang]
+    return q
