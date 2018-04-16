@@ -81,3 +81,24 @@ def nearest_good_box_size(n):
          5184, 5400, 5625, 5760, 5832, 6000, 6075, 6144, 6250, 6400, 6480,
          6750, 6912, 7200, 7290, 7500, 7680, 7776, 8000, 8100]
     return b[bisect.bisect(b, n) - 1]
+
+
+def chimera_xform(xform, o=None, apix=1.):
+    if o is None:
+        o = np.array([0, 0, 0])
+    r = xform[:, :3]
+    v = xform[:, 3] / apix
+    u = r.T.dot(o - v) - o
+    return r, u
+
+
+def chimera_xform2str(r, v):
+    transform_string = np.column_stack([r, v]).tolist().__repr__()
+    return transform_string
+
+
+def chimera_xform2target(t0, r, u, o=None, apix=1.):
+    if o is None:
+        o = np.array([0, 0, 0])
+    t1 = (r.dot(t0/apix - o) + u + o) * apix
+    return t1
