@@ -27,7 +27,7 @@ HEADER_LEN = 1024  # Bytes.
 
 
 def mrc_header(shape, dtype=np.float32, psz=1.0):
-    header = np.zeros(HEADER_LEN / np.dtype(np.int32).itemsize, dtype=np.int32)
+    header = np.zeros(int(HEADER_LEN / np.dtype(np.int32).itemsize), dtype=np.int32)
     header_f = header.view(np.float32)
     header[:3] = shape
     if np.dtype(dtype) not in MODE:

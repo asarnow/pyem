@@ -20,7 +20,7 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
 from pyfftw.interfaces.numpy_fft import rfftn
-from vop_numba import fill_ft
+from .vop_numba import fill_ft
 
 
 def ismask(vol):
