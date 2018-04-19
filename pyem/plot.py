@@ -76,34 +76,34 @@ def plot_fsc_curves(fsc, lgdtext=None, title=None, fname=None):
     return fg, ax
 
 
-def plot_angle_comparison(disc, whole, lgdtext=None, fname=None):
+def plot_angle_comparison(df1, df2, lgdtext=None, fname=None, maxrot=90):
     # if fname is not None:
     #     mpl.rc("savefig", dpi=300)
 
     if lgdtext is None:
-        lgdtext = [u"Disc-Only Angle (deg)", 'Whole TRPV1 Angle (deg)']
+        lgdtext = [u"Second (deg)", u"First (deg)"]
 
     sns.set(font_scale=3)
     f, ax = plt.subplots(1, 3, figsize=(30, 10))
-    sns.regplot(whole["rlnAngleRot"], disc["rlnAngleRot"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[0])
-    ax[0].set_xlim((-45, 45))
-    ax[0].set_ylim((-45, 45))
-    ax[0].set_xticks(np.arange(-45, 46, 15))
-    ax[0].set_yticks(np.arange(-45, 46, 15))
+    sns.regplot(df2["rlnAngleRot"], df1["rlnAngleRot"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[0])
+    ax[0].set_xlim((-maxrot, maxrot))
+    ax[0].set_ylim((-maxrot, maxrot))
+    ax[0].set_xticks(np.arange(-maxrot, maxrot+1, 15))
+    ax[0].set_yticks(np.arange(-maxrot, maxrot+1, 15))
     ax[0].xaxis.label.set_visible(False)
     ax[0].set_ylabel(lgdtext[0])
     ax[0].set_title(u"$\phi$ ( $Z$ )", y=1.01)
 
-    sns.regplot(whole["rlnAngleTilt"], disc["rlnAngleTilt"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[1])
+    sns.regplot(df2["rlnAngleTilt"], df1["rlnAngleTilt"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[1])
     ax[1].set_xlim((0, 180))
     ax[1].set_ylim((0, 180))
     ax[1].set_xticks(np.arange(0, 181, 30))
     ax[1].set_yticks(np.arange(0, 181, 30))
     ax[1].xaxis.label.set_visible(False)
     ax[1].yaxis.label.set_visible(False)
-    ax[1].set_title(u"$\theta$ ( $Y'$ )", y=1.01)
+    ax[1].set_title(u"$\\theta$ ( $Y'$ )", y=1.01)
 
-    sns.regplot(whole["rlnAnglePsi"], disc["rlnAnglePsi"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[2])
+    sns.regplot(df2["rlnAnglePsi"], df1["rlnAnglePsi"], fit_reg=False, scatter_kws={"s": 16}, ax=ax[2])
     ax[2].set_xlim((-180, 180))
     ax[2].set_ylim((-180, 180))
     ax[2].set_xticks(np.arange(-180, 181, 45))
