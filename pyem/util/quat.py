@@ -51,8 +51,18 @@ def qslerp(q1, q2, t):
     return q1 * a + q2 * b
 
 
-def normq(q):
+def normq(q, mu=None):
     q = (q.T/np.linalg.norm(q, axis=1)).T
-    ang = np.dot(q, [1, 0, 0, 0]) < 0
-    q[ang] = -q[ang]
+    if mu is not None:
+        ang = np.dot(q, mu) < 0
+        q[ang] = -q[ang]
     return q
+
+
+def meanq(q):
+    a = np.zeros((4, 4))
+    for i in range(q.shape[0]):
+        q = q[i, :]
+        a += np.outer(q, q)
+        a /= q.shape[0]
+    return np.linalg.eigh(a)[1][:, -1]
