@@ -73,6 +73,16 @@ def quat2aa(q):
     return theta * ax
 
 
+def aa2quat(ax, theta=None):
+    if theta is None:
+        theta = np.linalg.norm(ax)
+        ax = ax / theta
+    q = np.zeros(4, dtype=ax.dtype)
+    q[0] = np.cos(theta / 2)
+    q[1:] = ax * np.sin(theta / 2)
+    return q
+
+
 def quat2rot(q):
     aa = q[0] ** 2
     bb = q[1] ** 2
