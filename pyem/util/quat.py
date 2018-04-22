@@ -62,7 +62,7 @@ def normq(q, mu=None):
 def meanq(q):
     a = np.zeros((4, 4))
     for i in range(q.shape[0]):
-        q = q[i, :]
-        a += np.outer(q, q)
-        a /= q.shape[0]
+        qi = q[i, :]
+        a += np.outer(qi, qi)
+        a /= qi.shape[0]
     return np.linalg.eigh(a)[1][:, -1]
