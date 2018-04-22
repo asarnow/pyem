@@ -59,10 +59,8 @@ def normq(q, mu=None):
     return q
 
 
-def meanq(q):
-    a = np.zeros((4, 4))
-    for i in range(q.shape[0]):
-        qi = q[i, :]
-        a += np.outer(qi, qi)
-        a /= qi.shape[0]
-    return np.linalg.eigh(a)[1][:, -1]
+def meanq(q, w=None):
+    if w is None:
+        return np.linalg.eigh(np.einsum('ij,ik->...jk', q, q))[1][:, -1]
+    else:
+        return np.linalg.eigh(np.einsum('ij,ik,i->...jk', q, q, w))[1][:, -1]
