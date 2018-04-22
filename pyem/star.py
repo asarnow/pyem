@@ -141,6 +141,10 @@ def main(args):
             r = np.array(json.loads(args.transform))
         df = transform_star(df, r, inplace=True)
 
+    if args.invert_hand:
+        df[Relion.ANGLEROT] = -df[Relion.ANGLEROT]
+        df[Relion.ANGLETILT] = 180 - df[Relion.ANGLETILT]
+
     if args.copy_paths is not None:
         path_star = parse_star(args.copy_paths, keep_index=False)
         df[Relion.IMAGE_NAME] = path_star[Relion.IMAGE_NAME]
@@ -493,6 +497,8 @@ if __name__ == "__main__":
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
+    parser.add_argument("--invert-hand", help="Alter Euler angles to invert handedness of reconstruction",
+                        action="store_true")
     parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
