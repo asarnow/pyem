@@ -191,7 +191,7 @@ def main(args):
 def subtract_outer(*args, **kwargs):
     ft = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"],
                planner_effort="FFTW_ESTIMATE",
-               overwrite_input=True,
+               overwrite_input=False,
                auto_align_input=True,
                auto_contiguous=True)
     p1 = ft()
