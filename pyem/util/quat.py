@@ -38,6 +38,16 @@ def _qtimes(q1, q2, q3):
 qtimes = np.vectorize(_qtimes, signature="(m),(m)->(m)")
 
 
+def _qsqrt(q, p):
+    p[0] = q[0] + 1
+    p[1:] = q[1:]
+    p[:] = p[:] / np.sqrt(2 * (1 + q[0]))
+    return p
+
+
+qsqrt = np.vectorize(_qsqrt, signature="(m),(m)->(m)")
+
+
 def qslerp(q1, q2, t):
     cos_half_theta = np.dot(q1, q2)
     if cos_half_theta >= 1.0:

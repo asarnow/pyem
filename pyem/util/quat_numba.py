@@ -47,6 +47,20 @@ def qtimes(q1, q2, q3):
     _qtimes(q1, q2, q3)
 
 
+@numba.jit(nopython=True)
+def _qsqrt(q, p):
+    p[0] = q[0] + 1
+    p[1:] = q[1:]
+    p[:] = p[:] / np.sqrt(2 * (1 + q[0]))
+    return p
+
+
+@numba.guvectorize(["void(float64[:], float64[:])"],
+                   "(m)->(m)", nopython=True, cache=True)
+def qsqrt(q, p):
+    _qsqrt(q, p)
+
+
 @numba.jit(cache=True, nopython=True)
 def qslerp(q1, q2, t, longest=False):
     cos_half_theta = np.dot(q1, q2)
