@@ -12,6 +12,6 @@ setup(
     author='Daniel Asarnow',
     author_email='asarnow@msg.ucsf.edu',
     description='Python programs for electron microscopy',
-    install_requires=['numba', 'numpy', 'scipy', 'matplotlib', 'seaborn', 'pandas', 'pathos', 'pyfftw'],
+    install_requires=['future', 'numba', 'numpy', 'scipy', 'matplotlib', 'seaborn', 'pandas', 'pathos', 'pyfftw'],
     zip_safe=False
 )
