@@ -113,6 +113,8 @@ def main(args):
         mgraphs = df["rlnMicrographName"].unique()
         if args.subsample_micrographs < 1:
             args.subsample_micrographs = np.int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
+        else:
+            args.subsample_micrographs = np.int(args.subsample_micrographs)
         ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
         mask = df["rlnMicrographName"].isin(mgraphs[ind])
         if args.auxout is not None:
