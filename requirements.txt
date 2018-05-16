@@ -1,4 +1,3 @@
-future
 numba
 numpy>=1.13.1
 scipy
