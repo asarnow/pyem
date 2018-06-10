@@ -81,6 +81,9 @@ def main(args):
 
     if args.submap_ft is None:
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
+        if args.submask is not None:
+            submask = mrc.read(args.submap, inc_header=False, compat="relion")
+            submap *= submask
         submap_ft = vol_ft(submap, threads=min(args.threads, cpu_count()))
     else:
         log.debug("Loading %s" % args.submap_ft)
@@ -286,8 +289,9 @@ if __name__ == "__main__":
     parser.add_argument("--dest", "-d", type=str, help="Destination directory for subtracted particle stacks")
     parser.add_argument("--refmap", "-r", type=str, help="Map used to calculate reference projections")
     parser.add_argument("--submap", "-s", type=str, help="Map used to calculate subtracted projections")
-    parser.add_argument("--refmap_ft", type=str, help="Fourier transform used to calculate reference projections (.npy)")
-    parser.add_argument("--submap_ft", type=str, help="Fourier transform used to calculate subtracted projections (.npy)")
+    parser.add_argument("--refmap_ft", type=str, help=argparse.SUPPRESS)
+    parser.add_argument("--submap_ft", type=str, help=argparse.SUPPRESS)
+    parser.add_argument("--submask", type=str, help="Mask to apply to submap before subtracting")
     parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
     parser.add_argument("--io-thread-pairs", type=int, default=1)
     parser.add_argument("--io-queue-length", type=int, default=1000)
