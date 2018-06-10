@@ -42,7 +42,7 @@ def main(args):
         print("Please supply a map")
         return 1
 
-    f3d = vop.vol_ft(vol, threads=min(args.threads, cpu_count()))
+    f3d = vop.vol_ft(vol, threads=cpu_count)
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
