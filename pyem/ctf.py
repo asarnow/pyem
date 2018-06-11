@@ -55,9 +55,9 @@ def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, 
     :param lp:  Hard low-pass filter (Å), should usually be Nyquist.
     """
     angast = np.deg2rad(angast)
-    kv = kv * 1E3
-    cs = cs * 1E7
-    lamb = 12.2639 / np.sqrt(kv * (1. + kv * 0.978466E-6))
+    kv = kv * 1e3
+    cs = cs * 1e7
+    lamb = 12.2643247 / np.sqrt(kv * (1. + kv * 0.978466e-6))
     def_avg = -(def1 + def2) * 0.5
     def_dev = -(def1 - def2) * 0.5
     k1 = np.pi / 2. * 2 * lamb
