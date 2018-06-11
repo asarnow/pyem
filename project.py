@@ -36,7 +36,7 @@ def main(args):
     if args.map is not None:
         vol = mrc.read(args.map, inc_header=False, compat="relion")
         if args.mask is not None:
-            mask = mrc.read(args.map, inc_header=False, compat="relion")
+            mask = mrc.read(args.mask, inc_header=False, compat="relion")
             vol *= mask
     else:
         print("Please supply a map")
@@ -48,21 +48,28 @@ def main(args):
     s = np.sqrt(sx ** 2 + sy ** 2)
     a = np.arctan2(sy, sx)
 
+    ift = None
+
     with mrc.ZSliceWriter(args.output) as zsw:
         for i, p in df.iterrows():
             f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf)
-            ift = irfft2(f2d, threads=cpu_count(),
+            if ift is None:
+                ift = irfft2(f2d.copy(), threads=cpu_count(),
                          planner_effort="FFTW_ESTIMATE",
                          auto_align_input=True,
                          auto_contiguous=True)
-            proj = fftshift(ift())
+            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype)))
+            if args.subtract:
+                with mrc.ZSliceReader(p["ucsfImagePath"]) as zsr:
+                    img = zsr.read(p["ucsfImageIndex"])
+                proj = img - proj
             zsw.write(proj)
 
     if args.star is not None:
         df["ucsfImagePath"] = args.output
         df["ucsfImageIndex"] = np.arange(df.shape[0])
         star.simplify_star_ucsf(df)
-        star.write_star(args.output, df)
+        star.write_star(args.star, df)
     return 0
 
 
@@ -99,4 +106,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--star",
                         help="Output STAR file with projection metadata")
+    parser.add_argument("--subtract",
+                        help="Subtract projection from experimental images",
+                        action="store_true")
     sys.exit(main(parser.parse_args()))
