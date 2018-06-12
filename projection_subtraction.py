@@ -32,14 +32,11 @@ from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 from numpy.fft import fftshift
 from pyem import mrc
-from pyem.algo import bincorr_nb
-from pyem.ctf import eval_ctf
-from pyem.star import calculate_apix
-from pyem.star import parse_star
-from pyem.star import write_star
+from pyem import star
+from pyem import algo
+from pyem import ctf
+from pyem import vop
 from pyem.util.convert_numba import euler2rot
-from pyem.vop import interpolate_slice_numba
-from pyem.vop import vol_ft
 # from numpy.fft import rfft2
 # from numpy.fft import irfft2
 # from pyfftw.interfaces.numpy_fft import rfft2
@@ -60,23 +57,18 @@ def main(args):
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
     log.debug("Reading particle .star file")
-    df = parse_star(args.input, keep_index=False)
-    df.reset_index(inplace=True)
-    df["rlnImageOriginalName"] = df["rlnImageName"]
-    df["ucsfOriginalParticleIndex"], df["ucsfOriginalImagePath"] = \
-        df["rlnImageOriginalName"].str.split("@").str
-    df["ucsfOriginalParticleIndex"] = pd.to_numeric(
-        df["ucsfOriginalParticleIndex"])
-    df.sort_values("rlnImageOriginalName", inplace=True, kind="mergesort")
-    gb = df.groupby("ucsfOriginalImagePath")
-    df["ucsfParticleIndex"] = gb.cumcount() + 1
-    df["ucsfImagePath"] = df["ucsfOriginalImagePath"].map(
+    df = star.parse_star(args.input, keep_index=False)
+    star.augment_star_ucsf(df)
+    df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
+    df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
+    df.sort_values(star.UCSF.IMAGE_ORIGINAL_PATH, inplace=True, kind="mergesort")
+    gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
+    df[star.UCSF.IMAGE_INDEX] = gb.cumcount()
+    df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_ORIGINAL_PATH].map(
         lambda x: os.path.join(
             args.dest,
             args.prefix +
             os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
-    df["rlnImageName"] = df["ucsfParticleIndex"].map(
-        lambda x: "%.6d" % x).str.cat(df["ucsfImagePath"], sep="@")
     log.debug("Read particle .star file")
 
     if args.submap_ft is None:
@@ -84,7 +76,7 @@ def main(args):
         if args.submask is not None:
             submask = mrc.read(args.submap, inc_header=False, compat="relion")
             submap *= submask
-        submap_ft = vol_ft(submap, threads=min(args.threads, cpu_count()))
+        submap_ft = vop.vol_ft(submap, threads=min(args.threads, cpu_count()))
     else:
         log.debug("Loading %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
@@ -103,7 +95,7 @@ def main(args):
         coefs_method = 1
         if args.refmap_ft is None:
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
-            refmap_ft = vol_ft(refmap, threads=min(args.threads, cpu_count()))
+            refmap_ft = vop.vol_ft(refmap, threads=min(args.threads, cpu_count()))
         else:
             log.debug("Loading %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
@@ -111,29 +103,29 @@ def main(args):
     else:
         coefs_method = 0
         refmap_ft = np.empty(submap_ft.shape, dtype=submap_ft.dtype)
-    apix = calculate_apix(df)
+    apix = star.calculate_apix(df)
 
     log.debug("Constructing particle metadata references")
     # npart = df.shape[0]
-    idx = df["ucsfOriginalParticleIndex"].values
-    stack = df["ucsfOriginalImagePath"].values.astype(np.str, copy=False)
-    def1 = df["rlnDefocusU"].values
-    def2 = df["rlnDefocusV"].values
-    angast = df["rlnDefocusAngle"].values
-    phase = df["rlnPhaseShift"].values
-    kv = df["rlnVoltage"].values
-    ac = df["rlnAmplitudeContrast"].values
-    cs = df["rlnSphericalAberration"].values
-    az = df["rlnAngleRot"].values
-    el = df["rlnAngleTilt"].values
-    sk = df["rlnAnglePsi"].values
-    xshift = df["rlnOriginX"].values
-    yshift = df["rlnOriginY"].values
-    new_idx = df["ucsfParticleIndex"].values
-    new_stack = df["ucsfImagePath"].values.astype(np.str, copy=False)
+    # idx = df["ucsfOriginalParticleIndex"].values
+    # stack = df["ucsfOriginalImagePath"].values.astype(np.str, copy=False)
+    # def1 = df["rlnDefocusU"].values
+    # def2 = df["rlnDefocusV"].values
+    # angast = df["rlnDefocusAngle"].values
+    # phase = df["rlnPhaseShift"].values
+    # kv = df["rlnVoltage"].values
+    # ac = df["rlnAmplitudeContrast"].values
+    # cs = df["rlnSphericalAberration"].values
+    # az = df["rlnAngleRot"].values
+    # el = df["rlnAngleTilt"].values
+    # sk = df["rlnAnglePsi"].values
+    # xshift = df["rlnOriginX"].values
+    # yshift = df["rlnOriginY"].values
+    # new_idx = df["ucsfParticleIndex"].values
+    # new_stack = df["ucsfImagePath"].values.astype(np.str, copy=False)
 
     log.debug("Grouping particles by output stack")
-    gb = df.groupby("ucsfImagePath")
+    gb = df.groupby(star.UCSF.IMAGE_PATH)
 
     iothreads = threading.BoundedSemaphore(args.io_thread_pairs)
     qsize = args.io_queue_length
@@ -145,16 +137,14 @@ def main(args):
     threads = []
 
     try:
-        for fname, particles in gb.indices.iteritems():
+        for fname, particles in gb:
             log.debug("Instantiating queue")
             queue = Queue.Queue(maxsize=qsize)
             log.debug("Create producer for %s" % fname)
             prod = threading.Thread(
                 target=producer,
-                args=(pool, queue, submap_ft, refmap_ft, fname, particles, idx,
-                      stack, sx, sy, s, a, apix, def1, def2, angast, phase, kv,
-                      ac, cs, az, el, sk, xshift, yshift, new_idx, new_stack,
-                      coefs_method, r, nr, fftthreads))
+                args=(pool, queue, submap_ft, refmap_ft, fname, particles,
+                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads))
             log.debug("Create consumer for %s" % fname)
             cons = threading.Thread(
                 target=consumer,
@@ -180,42 +170,41 @@ def main(args):
     pool.join()
     pool.terminate()
 
-    df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
-            axis=1, inplace=True)
-
-    df.set_index("index", inplace=True)
-    df.sort_index(inplace=True, kind="mergesort")
-
-    write_star(args.output, df, reindex=True)
+    star.simplify_star_ucsf(df)
+    star.write_star(args.output, df, reindex=True)
 
     return 0
 
 
-def subtract_outer(*args, **kwargs):
+def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr, **kwargs):
     tls = threading.local()
     ft = getattr(tls, 'ft', None)
     if ft is None:
-        ft = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"],
-                planner_effort="FFTW_ESTIMATE",
-                overwrite_input=False,
-                auto_align_input=True,
-                auto_contiguous=True)
+        ft = rfft2(fftshift(p1r), threads=kwargs["fftthreads"],
+                   planner_effort="FFTW_ESTIMATE",
+                   overwrite_input=False,
+                   auto_align_input=True,
+                   auto_contiguous=True)
         tls.ft = ft
-    if args[20] >= 1:
-        p1 = ft(args[0], np.zeros(ft.output_shape, dtype=ft.output_dtype))
+    if coefs_method >= 1:
+        p1 = ft(p1r, np.zeros(ft.output_shape, dtype=ft.output_dtype))
     else:
         p1 = np.empty(ft.output_shape, ft.output_dtype)
-    
-    p1s = subtract(p1, *args[1:])
-    
+
+    p1s = subtract(p1, submap_ft, refmap_ft, sx, sy, s, a, apix,
+                   ptcl[star.Relion.DEFOCUSU], ptcl[star.Relion.DEFOCUSV], ptcl[star.Relion.DEFOCUSANGLE],
+                   ptcl[star.Relion.PHASESHIFT], star.Relion.VOLTAGE, star.Relion.AC, star.Relion.CS,
+                   ptcl[star.Relion.ANGLEROT], ptcl[star.Relion.ANGLETILT], ptcl[star.Relion.ANGLEPSI],
+                   ptcl[star.Relion.ORIGINX], ptcl[star.Relion.ORIGINY], coefs_method, r, nr)
+
     ift = getattr(tls, 'ift', None)
     if ift is None:
         ift = irfft2(p1s, threads=kwargs["fftthreads"],
-                 planner_effort="FFTW_ESTIMATE",
-                 auto_align_input=True,
-                 auto_contiguous=True)
+                     planner_effort="FFTW_ESTIMATE",
+                     auto_align_input=True,
+                     auto_contiguous=True)
         tls.ift = ift
-    new_image = args[0] - fftshift(ift(p1s, np.zeros(ift.output_shape, dtype=ift.output_dtype)))
+    new_image = p1r - fftshift(ift(p1s, np.zeros(ift.output_shape, dtype=ift.output_dtype)))
     return new_image
 
 
@@ -223,48 +212,41 @@ def subtract_outer(*args, **kwargs):
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
              az, el, sk, xshift, yshift, coefs_method, r, nr):
-    c = eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0,
-                 lp=2 * apix)
+    c = ctf.eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0, lp=2 * apix)
     orient = euler2rot(np.deg2rad(az), np.deg2rad(el), np.deg2rad(sk))
     pshift = np.exp(-2 * np.pi * 1j * (-xshift * sx + -yshift * sy))
-    p2 = interpolate_slice_numba(submap_ft, orient)
+    p2 = vop.interpolate_slice_numba(submap_ft, orient)
     p2 *= pshift
     if coefs_method < 1:
-        #p1s = p1 - p2 * c
+        # p1s = p1 - p2 * c
         p1s = p2 * c
     elif coefs_method == 1:
-        p3 = interpolate_slice_numba(refmap_ft, orient)
+        p3 = vop.interpolate_slice_numba(refmap_ft, orient)
         p3 *= pshift
-        frc = np.abs(bincorr_nb(p1, p3 * c, r, nr))
+        frc = np.abs(algo.bincorr_nb(p1, p3 * c, r, nr))
         coefs = np.take(frc, r)
-        #p1s = p1 - p2 * c * coefs
+        # p1s = p1 - p2 * c * coefs
         p1s = p2 * c * coefs
     return p1s
 
 
-def producer(pool, queue, submap_ft, refmap_ft, fname, particles, idx, stack,
-             sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
-             az, el, sk, xshift, yshift,
-             new_idx, new_stack, coefs_method, r, nr, fftthreads=1):
+def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
+             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1):
     log = logging.getLogger('root')
     log.debug("Producing %s" % fname)
-    zreader = mrc.ZSliceReader(stack[particles[0]])
-    for i in particles:
-        log.debug("Produce %d@%s" % (idx[i], stack[i]))
+    zreader = mrc.ZSliceReader(particles[star.UCSF.IMAGE_ORIGINAL_PATH].iloc[0])
+    for i, ptcl in particles.iterrows():
+        log.debug("Produce %d@%s" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH]))
         # p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
-        p1r = zreader.read(idx[i] - 1)
+        p1r = zreader.read(ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX])
         log.debug("Apply")
         ri = pool.apply_async(
             subtract_outer,
-            (p1r, submap_ft, refmap_ft,
-             sx, sy, s, a, apix,
-             def1[i], def2[i], angast[i],
-             phase[i], kv[i], ac[i], cs[i],
-             az[i], el[i], sk[i], xshift[i], yshift[i],
-             coefs_method, r, nr), {"fftthreads": fftthreads})
+            (p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr),
+            {"fftthreads": fftthreads})
         log.debug("Put")
-        queue.put((new_idx[i], ri), block=True)
-        log.debug("Queue for %s is size %d" % (stack[i], queue.qsize()))
+        queue.put((ptcl[star.UCSF.IMAGE_INDEX], ri), block=True)
+        log.debug("Queue for %s is size %d" % (ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], queue.qsize()))
     zreader.close()
     # Either the poison-pill-put blocks, we have multiple queues and
     # consumers, or the consumer knows maps results to multiple files.
