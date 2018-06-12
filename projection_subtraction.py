@@ -192,18 +192,30 @@ def main(args):
 
 
 def subtract_outer(*args, **kwargs):
-    ft = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"],
-               planner_effort="FFTW_ESTIMATE",
-               overwrite_input=False,
-               auto_align_input=True,
-               auto_contiguous=True)
-    p1 = ft()
+    tls = threading.local()
+    ft = getattr(tls, 'ft', None)
+    if ft is None:
+        ft = rfft2(fftshift(args[0]), threads=kwargs["fftthreads"],
+                planner_effort="FFTW_ESTIMATE",
+                overwrite_input=False,
+                auto_align_input=True,
+                auto_contiguous=True)
+        tls.ft = ft
+    if args[20] >= 1:
+        p1 = ft(args[0], np.zeros(ft.output_shape, dtype=ft.output_dtype))
+    else:
+        p1 = np.empty(ft.output_shape, ft.output_dtype)
+    
     p1s = subtract(p1, *args[1:])
-    ift = irfft2(p1s, threads=kwargs["fftthreads"],
+    
+    ift = getattr(tls, 'ift', None)
+    if ift is None:
+        ift = irfft2(p1s, threads=kwargs["fftthreads"],
                  planner_effort="FFTW_ESTIMATE",
                  auto_align_input=True,
                  auto_contiguous=True)
-    new_image = fftshift(ift())
+        tls.ift = ift
+    new_image = args[0] - fftshift(ift(p1s, np.zeros(ift.output_shape, dtype=ift.output_dtype)))
     return new_image
 
 
@@ -218,13 +230,15 @@ def subtract(p1, submap_ft, refmap_ft,
     p2 = interpolate_slice_numba(submap_ft, orient)
     p2 *= pshift
     if coefs_method < 1:
-        p1s = p1 - p2 * c
+        #p1s = p1 - p2 * c
+        p1s = p2 * c
     elif coefs_method == 1:
         p3 = interpolate_slice_numba(refmap_ft, orient)
         p3 *= pshift
         frc = np.abs(bincorr_nb(p1, p3 * c, r, nr))
         coefs = np.take(frc, r)
-        p1s = p1 - p2 * c * coefs
+        #p1s = p1 - p2 * c * coefs
+        p1s = p2 * c * coefs
     return p1s
 
 
