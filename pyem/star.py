@@ -43,19 +43,25 @@ class Relion:
     ANGLEROT = "rlnAngleRot"
     ANGLETILT = "rlnAngleTilt"
     ANGLEPSI = "rlnAnglePsi"
+    CLASS = "rlnClassNumber"
+    DEFOCUSU = "rlnDefocusU"
+    DEFOCUSV = "rlnDefocusV"
+    DEFOCUSANGLE = "rlnDefocusAngle"
+    CS = "rlnSphericalAberration"
+    PHASESHIFT = "rlnPhaseShift"
+    AC = "rlnAmplitudeContrast"
+    VOLTAGE = "rlnVoltage"
+    MAGNIFICATION = "rlnMagnification"
+    DETECTORPIXELSIZE = "rlnDetectorPixelSize"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
-    CTF_PARAMS = ["rlnDefocusU", "rlnDefocusV", "rlnDefocusAngle",
-                  "rlnSphericalAberration", "rlnCtfBfactor",
-                  "rlnCtfScaleFactor", "rlnPhaseShift", "rlnAmplitudeContrast",
-                  "rlnCtfMaxResolution",
+    CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
+                  "rlnCtfScaleFactor", "rlnCtfBfactor", "rlnCtfMaxResolution",
                   "rlnCtfFigureOfMerit"]
-    MICROSCOPE_PARAMS = ["rlnVoltage", "rlnMagnification",
-                         "rlnDetectorPixelSize"]
+    MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE]
     MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
-    PICK_PARAMS = MICROGRAPH_COORDS + ["rlnAnglePsi", "rlnClassNumber",
-                                       "rlnAutopickFigureOfMerit"]
+    PICK_PARAMS = MICROGRAPH_COORDS + [ANGLEPSI, CLASS, "rlnAutopickFigureOfMerit"]
 
 
 class UCSF:

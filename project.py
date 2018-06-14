@@ -1,4 +1,4 @@
-#! /usr/bin/python2.7
+#!/usr/bin/env python2.7
 # Copyright (C) 2016 Daniel Asarnow, Eugene Palovcak
 # University of California, San Francisco
 #
@@ -18,60 +18,85 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
+import numpy as np
 import sys
-import os.path
-from EMAN2 import EMData
-from pathos.multiprocessing import Pool
-from pyem.star import parse_star
-from pyem.particle import particles, make_proj
+from multiprocessing import cpu_count
+from pyem import ctf
+from pyem import mrc
+from pyem import star
+from pyem import util
+from pyem import vop
+from numpy.fft import fftshift
+from pyfftw.builders import irfft2
 
 
 def main(args):
-    dens = EMData(args.map)
-    star = parse_star(args.input, keep_index=False)
-    star[["ImageNumber", "ImageName"]] = star['rlnImageName'].str.split("@", expand=True)
-    grouped = star.groupby("ImageName")
-    pool = None
-    if args.nproc > 1:
-        pool = Pool(processes=args.nproc)
-        results = pool.imap(lambda x: project_stack(x, dens, args.dest), (group for name, group in grouped))
+    df = star.parse_star(args.input, keep_index=False)
+    star.augment_star_ucsf(df)
+    if args.map is not None:
+        vol = mrc.read(args.map, inc_header=False, compat="relion")
+        if args.mask is not None:
+            mask = mrc.read(args.map, inc_header=False, compat="relion")
+            vol *= mask
     else:
-        results = (project_stack(group, dens, args.dest) for name, group in grouped)
-    i = 0
-    t = 0
-    for r in results:
-        i += 1
-        t += r
-        sys.stdout.write("\rProjected %d particles in %d stacks" % (t, i))
-        sys.stdout.flush()
+        print("Please supply a map")
+        return 1
 
-    if pool is not None:
-        pool.close()
-        pool.join()
+    f3d = vop.vol_ft(vol, threads=cpu_count())
+    sz = f3d.shape[0] // 2 - 1
+    sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
+    s = np.sqrt(sx ** 2 + sy ** 2)
+    a = np.arctan2(sy, sx)
 
-    sys.stdout.write('\n')
-    sys.stdout.flush()
+    with mrc.ZSliceWriter(args.output) as zsw:
+        for i, p in df.iterrows():
+            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf)
+            ift = irfft2(f2d, threads=cpu_count(),
+                         planner_effort="FFTW_ESTIMATE",
+                         auto_align_input=True,
+                         auto_contiguous=True)
+            proj = fftshift(ift())
+            zsw.write(proj)
 
+    if args.star is not None:
+        df["ucsfImagePath"] = args.output
+        df["ucsfImageIndex"] = np.arange(df.shape[0])
+        star.simplify_star_ucsf(df)
+        star.write_star(args.output, df)
     return 0
 
 
-def project_stack(group, dens, dest):
-    ptcls = particles(group)
-    i = 0
-    for p, m in ptcls:
-        ctf_proj = make_proj(dens, m)
-        fname = os.path.join(dest, os.path.basename(m.name))
-        ctf_proj.write_image(fname, i)
-        i += 1
-    return i
+def project(f3d, p, s, sx, sy, a, apply_ctf=False):
+    orient = util.euler2rot(np.deg2rad(p[star.Relion.ANGLEROT]),
+                            np.deg2rad(p[star.Relion.ANGLETILT]),
+                            np.deg2rad(p[star.Relion.ANGLEPSI]))
+    pshift = np.exp(-2 * np.pi * 1j * (-p[star.Relion.ORIGINX] * sx +
+                                       -p[star.Relion.ORIGINY] * sy))
+    f2d = vop.interpolate_slice_numba(f3d, orient)
+    f2d *= pshift
+    if apply_ctf:
+        apix = star.calculate_apix(p)
+        c = ctf.eval_ctf(s / apix, a,
+                         p[star.Relion.DEFOCUSU], p[star.Relion.DEFOCUSV],
+                         p[star.Relion.DEFOCUSANGLE],
+                         p[star.Relion.PHASESHIFT], p[star.Relion.VOLTAGE],
+                         p[star.Relion.AC], p[star.Relion.CS], bf=0,
+                         lp=2 * apix)
+        f2d *= c
+    return f2d
 
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input", help="RELION .star file listing input particle image stack(s)")
+    parser.add_argument("input", help="STAR file with particle metadata")
+    parser.add_argument("output", help="Output particle stack")
     parser.add_argument("--map", help="Map used to calculate projections")
-    parser.add_argument("--nproc", help="Number of parallel processes",
-                        type=int, default=1)
-    parser.add_argument("dest", help="Destination directory for output image stack(s)")
+    parser.add_argument("--mask",
+                        help="Mask to apply to map before projection")
+    parser.add_argument("--ctf", help="Apply CTF to projections",
+                        action="store_true")
+    parser.add_argument("--star",
+                        help="Output STAR file with projection metadata")
     sys.exit(main(parser.parse_args()))
