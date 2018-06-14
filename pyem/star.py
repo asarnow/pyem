@@ -262,66 +262,66 @@ def merge_key(s1, s2):
     return None
 
 
-def is_particle_star(star):
-    return star.columns.intersection([Relion.IMAGE_NAME] + Relion.COORDS).size
+def is_particle_star(df):
+    return df.columns.intersection([Relion.IMAGE_NAME] + Relion.COORDS).size
 
 
-def calculate_apix(star):
+def calculate_apix(df):
     try:
-        if star.ndim == 2:
-            return 10000.0 * star.iloc[0]['rlnDetectorPixelSize'] / star.iloc[0]['rlnMagnification']
-        elif star.ndim == 1:
-            return 10000.0 * star['rlnDetectorPixelSize'] / star['rlnMagnification']
+        if df.ndim == 2:
+            return 10000.0 * df.iloc[0]['rlnDetectorPixelSize'] / df.iloc[0]['rlnMagnification']
+        elif df.ndim == 1:
+            return 10000.0 * df['rlnDetectorPixelSize'] / df['rlnMagnification']
         else:
             raise ValueError
     except KeyError:
         return None
 
 
-def select_classes(star, classes):
-    clsfields = [f for f in star.columns if "ClassNumber" in f]
+def select_classes(df, classes):
+    clsfields = [f for f in df.columns if "ClassNumber" in f]
     if len(clsfields) == 0:
         raise RuntimeError("No class labels found")
-    ind = star[clsfields[0]].isin(classes)
+    ind = df[clsfields[0]].isin(classes)
     if not np.any(ind):
         raise RuntimeError("Specified classes have no members")
-    return star.loc[ind]
+    return df.loc[ind]
 
 
-def split_micrographs(star):
-    gb = star.groupby("rlnMicrographName")
-    stars = {}
+def split_micrographs(df):
+    gb = df.groupby("rlnMicrographName")
+    dfs = {}
     for g in gb:
         g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
-        stars[g[0]] = g[1]
-    return stars
+        dfs[g[0]] = g[1]
+    return dfs
 
 
-def all_same_class(star, inplace=False):
-    vc = star[Relion.IMAGE_NAME].value_counts()
+def all_same_class(df, inplace=False):
+    vc = df[Relion.IMAGE_NAME].value_counts()
     n = vc.max()
-    si = star.set_index(["rlnImageName", "rlnClassNumber"], inplace=inplace)
+    si = df.set_index(["rlnImageName", "rlnClassNumber"], inplace=inplace)
     vci = si.index.value_counts()
     si.loc[vci[vci==n].index].reset_index(inplace=inplace)
     return si
 
 
-def recenter(star, inplace=False):
+def recenter(df, inplace=False):
     if inplace:
-        newstar = star
+        newstar = df
     else:
-        newstar = star.copy()
-    remxy, offsetxy = np.vectorize(modf)(star[Relion.ORIGINS])
+        newstar = df.copy()
+    remxy, offsetxy = np.vectorize(modf)(df[Relion.ORIGINS])
     newstar[Relion.ORIGINS] = remxy
     newstar[Relion.COORDS] = newstar[Relion.COORDS] - offsetxy
     return newstar
 
 
-def zero_origins(star, inplace=False):
+def zero_origins(df, inplace=False):
     if inplace:
-        newstar = star
+        newstar = df
     else:
-        newstar = star.copy()
+        newstar = df.copy()
     newstar["rlnCoordinateX"] = newstar["rlnCoordinateX"] - newstar["rlnOriginX"]
     newstar["rlnCoordinateY"] = newstar["rlnCoordinateY"] - newstar["rlnOriginY"]
     newstar["rlnOriginX"] = 0
@@ -348,33 +348,33 @@ def parse_star(starfile, keep_index=True):
             if foundheader and not lastheader:
                 break
             ln += 1
-    star = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
-    star.columns = headers
-    return star
+    df = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
+    df.columns = headers
+    return df
 
 
-def write_star(starfile, star, reindex=True):
+def write_star(starfile, df, reindex=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
-    indexed = re.search("#\d+$", star.columns[0]) is not None  # Check first column for '#N' index.
+    indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     with open(starfile, 'w') as f:
         f.write('\n')
         f.write("data_images" + '\n')
         f.write('\n')
         f.write("loop_" + '\n')
-        for i in range(len(star.columns)):
+        for i in range(len(df.columns)):
             if reindex and not indexed:  # No index present, append new, consecutive indices to each header line.
-                line = star.columns[i] + " #%d \n" % (i + 1)
+                line = df.columns[i] + " #%d \n" % (i + 1)
             elif reindex and indexed:  # Replace existing indices with new, consecutive indices.
-                line = star.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1)
+                line = df.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1)
             else:  # Use DataFrame column labels literally.
-                line = star.columns[i] + " \n"
+                line = df.columns[i] + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    star.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
+    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
-def transform_star(star, r, t=None, inplace=False, rots=None, invert=False):
+def transform_star(df, r, t=None, inplace=False, rots=None, invert=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -389,12 +389,12 @@ def transform_star(star, r, t=None, inplace=False, rots=None, invert=False):
     assert t is None or np.isscalar(t) or len(t) == 3
 
     if inplace:
-        newstar = star
+        newstar = df
     else:
-        newstar = star.copy()
+        newstar = df.copy()
 
     if rots is None:
-        rots = [euler2rot(*np.deg2rad(row[1])) for row in star[Relion.ANGLES].iterrows()]
+        rots = [euler2rot(*np.deg2rad(row[1])) for row in df[Relion.ANGLES].iterrows()]
 
     if invert:
         r = r.T
@@ -414,7 +414,7 @@ def transform_star(star, r, t=None, inplace=False, rots=None, invert=False):
                 tt = -np.vstack([q.dot(t) for q in rots])
             else:
                 tt = np.vstack([q.dot(t) for q in newrots])
-        newshifts = star[Relion.ORIGINS] + tt[:,:-1]
+        newshifts = df[Relion.ORIGINS] + tt[:, :-1]
         newstar[Relion.ORIGINS] = newshifts
 
     return newstar
