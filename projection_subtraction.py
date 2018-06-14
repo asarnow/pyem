@@ -177,6 +177,7 @@ def main(args):
 
 
 def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr, **kwargs):
+    log = logging.getLogger('root')
     tls = threading.local()
     ft = getattr(tls, 'ft', None)
     if ft is None:
@@ -193,7 +194,7 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
 
     p1s = subtract(p1, submap_ft, refmap_ft, sx, sy, s, a, apix,
                    ptcl[star.Relion.DEFOCUSU], ptcl[star.Relion.DEFOCUSV], ptcl[star.Relion.DEFOCUSANGLE],
-                   ptcl[star.Relion.PHASESHIFT], star.Relion.VOLTAGE, star.Relion.AC, star.Relion.CS,
+                   ptcl[star.Relion.PHASESHIFT], ptcl[star.Relion.VOLTAGE], ptcl[star.Relion.AC], ptcl[star.Relion.CS],
                    ptcl[star.Relion.ANGLEROT], ptcl[star.Relion.ANGLETILT], ptcl[star.Relion.ANGLEPSI],
                    ptcl[star.Relion.ORIGINX], ptcl[star.Relion.ORIGINY], coefs_method, r, nr)
 
