@@ -65,6 +65,17 @@ def interleave(dfs, drop=True):
     return pd.concat(dfs).sort_index(kind="mergesort").reset_index(drop=drop)
 
 
+def join_struct_arrays(arrays):
+    sizes = np.array([a.itemsize for a in arrays])
+    offsets = np.r_[0, sizes.cumsum()]
+    n = len(arrays[0])
+    joint = np.empty((n, offsets[-1]), dtype=np.uint8)
+    for a, size, offset in zip(arrays, sizes, offsets):
+        joint[:, offset:offset + size] = a.view(np.uint8).reshape(n, size)
+    dtype = sum((a.dtype.descr for a in arrays), [])
+    return joint.ravel().view(dtype)
+
+
 def nearest_good_box_size(n):
     b = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108,
          112, 120, 128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182,
@@ -100,5 +111,5 @@ def chimera_xform2str(r, v):
 def chimera_xform2target(t0, r, u, o=None, apix=1.):
     if o is None:
         o = np.array([0, 0, 0])
-    t1 = (r.dot(t0/apix - o) + u + o) * apix
+    t1 = (r.dot(t0 / apix - o) + u + o) * apix
     return t1
