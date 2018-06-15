@@ -59,7 +59,12 @@ model = {u'alignments.model.U': None,
 
 def main(args):
     if args.input.endswith(".cs"):
-        df = metadata.parse_cryosparc_2_cs(args.input, args.minphic)
+        cs = np.load(args.input)
+        if args.passthrough is None:
+            if u"blob/path" not in cs.dtype.names:
+                print("A passthrough file is required (found inside the cryoSPARC 2+ job directory)")
+                return 1
+        df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
     else:
         meta = metadata.parse_cryosparc_065_csv(args.input)  # Read cryosparc metadata file.
         df = metadata.cryosparc_065_csv2star(meta, args.minphic)
@@ -86,6 +91,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Cryosparc metadata .csv (v0.6.5) or .cs (v2+) file")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--passthrough", "-p", help="Passthrough file required for some Cryosparc 2+ job types")
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float, default=0)
