@@ -357,21 +357,26 @@ def write_star(starfile, df, reindex=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
+    if reindex and not indexed:  # No index present, append consecutive indices to sorted headers.
+        order = np.argsort(df.columns)
+        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
+    elif reindex and indexed:  # Replace existing indices with consecutive indices after sorting headers.
+        names = [c.split("#")[0].rstrip()for c in df.columns]
+        order = np.argsort(names)
+        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
+    else:
+        order = np.arange(df.shape[1])
+        names = df.columns
     with open(starfile, 'w') as f:
         f.write('\n')
         f.write("data_images" + '\n')
         f.write('\n')
         f.write("loop_" + '\n')
-        for i in range(len(df.columns)):
-            if reindex and not indexed:  # No index present, append new, consecutive indices to each header line.
-                line = df.columns[i] + " #%d \n" % (i + 1)
-            elif reindex and indexed:  # Replace existing indices with new, consecutive indices.
-                line = df.columns[i].split("#")[0].rstrip() + " #%d \n" % (i + 1)
-            else:  # Use DataFrame column labels literally.
-                line = df.columns[i] + " \n"
+        for name in names:
+            line = name + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
+    df[df.columns[order]].to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False):
