@@ -199,8 +199,11 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def parse_cryosparc_2_cs(csfile, minphic=0):
-    cs = np.load(csfile)
+def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
+    cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
+    if passthrough is not None:
+        pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
+        cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
     general = {u'uid': None,
                u'ctf/accel_kv': "rlnVoltage",
                u'blob/psize_A': "rlnDetectorPixelSize",
