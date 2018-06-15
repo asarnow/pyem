@@ -24,9 +24,8 @@ import json
 import numpy as np
 import pandas as pd
 from glob import glob
+from pyem import metadata
 from pyem import star
-from pyem.util import expmap
-from pyem.util import rot2euler
 
 
 general = {u'uid': None,
@@ -59,63 +58,14 @@ model = {u'alignments.model.U': None,
 
 
 def main(args):
-    meta = parse_metadata(args.input)  # Read cryosparc metadata file.
-    meta["data_input_idx"] = ["%.6d" % (i + 1) for i in meta["data_input_idx"]]  # Reformat particle idx for Relion.
-
-    if "data_input_relpath" not in meta.columns:
-        if args.data_path is None:
-            print("Data path missing, use --data-path to specify particle stack path")
-            return 1
-        meta["data_input_relpath"] = args.data_path
-
-    meta["data_input_relpath"] = meta["data_input_idx"].str.cat(
-        meta["data_input_relpath"], sep="@")  # Construct rlnImageName field.
-    # Take care of trivial mappings.
-    rlnheaders = [general[h] for h in meta.columns if h in general and general[h] is not None]
-    df = meta[[h for h in meta.columns if h in general and general[h] is not None]].copy()
-    df.columns = rlnheaders
-
-    if "rlnRandomSubset" in df.columns:
-        df["rlnRandomSubset"] = df["rlnRandomSubset"].apply(lambda x: ord(x) - 64)
-
-    if "rlnPhaseShift" in df.columns:
-        df["rlnPhaseShift"] = np.rad2deg(df["rlnPhaseShift"])
-
-    # Class assignments and other model parameters.
-    phic = meta[[h for h in meta.columns if "phiC" in h]]  # Posterior probability over class assignments.
-    if len(phic.columns) > 0:  # Check class assignments exist in input.
-        # phic.columns = [int(h[21]) for h in meta.columns if "phiC" in h]
-        phic.columns = range(len(phic.columns))
-        cls = phic.idxmax(axis=1)
-        for p in model:
-            if model[p] is not None:
-                pspec = p.split("model")[1]
-                param = meta[[h for h in meta.columns if pspec in h]]
-                if len(param.columns) > 0:
-                    param.columns = phic.columns
-                    df[model[p]] = param.lookup(param.index, cls)
-        df["rlnClassNumber"] = cls + 1  # Add one for Relion indexing.
+    if args.input.endswith(".cs"):
+        df = metadata.parse_cryosparc_2_cs(args.input, args.minphic)
     else:
-        for p in model:
-            if model[p] is not None and p in meta.columns:
-                df[model[p]] = meta[p]
-        df["rlnClassNumber"] = 1
+        meta = metadata.parse_cryosparc_065_csv(args.input)  # Read cryosparc metadata file.
+        df = metadata.cryosparc_065_csv2star(meta, args.minphic)
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
-
-    # Convert axis-angle representation to Euler angles (degrees).
-    if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
-        df[star.Relion.ANGLES] = np.rad2deg(
-            df[star.Relion.ANGLES].apply(lambda x: rot2euler(expmap(x)),
-                                         axis=1, raw=True, broadcast=True))
-
-    if args.minphic is not None:
-        mask = np.all(phic < args.minphic, axis=1)
-        if args.keep_bad:
-            df.loc[mask, "rlnClassNumber"] = 0
-        else:
-            df.drop(df[mask].index, inplace=True)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
@@ -132,35 +82,13 @@ def main(args):
     return 0
 
 
-def parse_metadata(csvfile):
-    with open(csvfile, 'rU') as f:
-        lines = enumerate(f)
-        idx = -1
-        headers = None
-        for i, l in lines:
-            if l.startswith("_header"):
-                _, headers = next(lines)
-                headers = headers.rstrip().split(",")
-            if l.startswith("_dtypes"):
-                _i, dtypes = next(lines)
-                dtypes = dtypes.rstrip().split(",")
-                idx = _i + 1
-                break
-    meta = pd.read_csv(csvfile, skiprows=idx, header=None, skip_blank_lines=True)
-    if headers is None:
-        return None
-    meta.columns = headers
-    return meta
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Input Cryosparc metadata .csv file")
+    parser.add_argument("input", help="Input Cryosparc metadata .csv (v0.6.5) or .cs (v2+) file")
     parser.add_argument("output", help="Output .star file")
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
-    parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float)
-    parser.add_argument("--keep-bad", help="Keep low-confidence particles and assign them to class 0 (incompatible with Relion)", action="store_true")
+    parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float, default=0)
     parser.add_argument("--data-path", help="Path to single particle stack", type=str)
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
