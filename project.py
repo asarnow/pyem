@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
+import logging
 import numpy as np
 import sys
 from multiprocessing import cpu_count
@@ -31,6 +32,10 @@ from pyfftw.builders import irfft2
 
 
 def main(args):
+    log = logging.getLogger('root')
+    hdlr = logging.StreamHandler(sys.stdout)
+    log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
     if args.map is not None:
@@ -64,6 +69,7 @@ def main(args):
                     img = zsr.read(p["ucsfImageIndex"])
                 proj = img - proj
             zsw.write(proj)
+            log.info("Wrote %d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i, df.shape[0]))
 
     if args.star is not None:
         df["ucsfImagePath"] = args.output
@@ -109,4 +115,5 @@ if __name__ == "__main__":
     parser.add_argument("--subtract",
                         help="Subtract projection from experimental images",
                         action="store_true")
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
