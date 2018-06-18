@@ -59,10 +59,11 @@ def main(args):
         for i, p in df.iterrows():
             f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf)
             if ift is None:
-                ift = irfft2(f2d.copy(), threads=cpu_count(),
-                         planner_effort="FFTW_ESTIMATE",
-                         auto_align_input=True,
-                         auto_contiguous=True)
+                ift = irfft2(f2d.copy(),
+                             threads=cpu_count(),
+                             planner_effort="FFTW_ESTIMATE",
+                             auto_align_input=True,
+                             auto_contiguous=True)
             proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype)))
             if args.subtract:
                 with mrc.ZSliceReader(p["ucsfImagePath"]) as zsr:
