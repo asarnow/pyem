@@ -47,7 +47,8 @@ def main(args):
         print("Please supply a map")
         return 1
 
-    f3d = vop.vol_ft(vol, threads=cpu_count())
+    pfac = 2
+    f3d = vop.vol_ft(vol, pfac=pfac, threads=cpu_count(), normfft=pfac**3 * vol.shape[0])
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
@@ -64,10 +65,12 @@ def main(args):
                              planner_effort="FFTW_ESTIMATE",
                              auto_align_input=True,
                              auto_contiguous=True)
-            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype)))
+            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype), normalise_idft=False, ortho=False))
+            log.debug("%f +/- %f" % (np.mean(proj), np.std(proj)))
             if args.subtract:
                 with mrc.ZSliceReader(p["ucsfImagePath"]) as zsr:
                     img = zsr.read(p["ucsfImageIndex"])
+                log.debug("%f +/- %f" % (np.mean(img), np.std(img)))
                 proj = img - proj
             zsw.write(proj)
             log.info("Wrote %d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i, df.shape[0]))
