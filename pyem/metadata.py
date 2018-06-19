@@ -233,7 +233,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
              u'class_posterior': None,
              u'class': "rlnClassNumber",
              u'class_ess': None}
-    names = [k for k in general if general[k] is not None and k in cs.dtype.names]
+    names = [str(k) for k in general if general[k] is not None and k in cs.dtype.names]
     df = pd.DataFrame.from_records(cs[names])
     df.columns = [general[k] for k in names]
     df.reset_index(inplace=True)
