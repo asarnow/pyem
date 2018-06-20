@@ -47,8 +47,7 @@ def main(args):
         print("Please supply a map")
         return 1
 
-    pfac = 2
-    f3d = vop.vol_ft(vol, pfac=pfac, threads=cpu_count(), normfft=pfac**3 * vol.shape[0])
+    f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
@@ -58,14 +57,14 @@ def main(args):
 
     with mrc.ZSliceWriter(args.output) as zsw:
         for i, p in df.iterrows():
-            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf)
+            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf, size=args.size)
             if ift is None:
                 ift = irfft2(f2d.copy(),
                              threads=cpu_count(),
                              planner_effort="FFTW_ESTIMATE",
                              auto_align_input=True,
                              auto_contiguous=True)
-            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype), normalise_idft=False, ortho=False))
+            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype)))
             log.debug("%f +/- %f" % (np.mean(proj), np.std(proj)))
             if args.subtract:
                 with mrc.ZSliceReader(p["ucsfImagePath"]) as zsr:
@@ -73,23 +72,26 @@ def main(args):
                 log.debug("%f +/- %f" % (np.mean(img), np.std(img)))
                 proj = img - proj
             zsw.write(proj)
-            log.info("Wrote %d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i, df.shape[0]))
+            log.info("%d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i + 1, df.shape[0]))
 
     if args.star is not None:
-        df["ucsfImagePath"] = args.output
-        df["ucsfImageIndex"] = np.arange(df.shape[0])
+        if args.subtract:
+            df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
+            df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
+        df[star.UCSF.IMAGE_PATH] = args.output
+        df[star.UCSF.IMAGE_INDEX] = np.arange(df.shape[0])
         star.simplify_star_ucsf(df)
         star.write_star(args.star, df)
     return 0
 
 
-def project(f3d, p, s, sx, sy, a, apply_ctf=False):
+def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None):
     orient = util.euler2rot(np.deg2rad(p[star.Relion.ANGLEROT]),
                             np.deg2rad(p[star.Relion.ANGLETILT]),
                             np.deg2rad(p[star.Relion.ANGLEPSI]))
     pshift = np.exp(-2 * np.pi * 1j * (-p[star.Relion.ORIGINX] * sx +
                                        -p[star.Relion.ORIGINY] * sy))
-    f2d = vop.interpolate_slice_numba(f3d, orient)
+    f2d = vop.interpolate_slice_numba(f3d, orient, size=size)
     f2d *= pshift
     if apply_ctf:
         apix = star.calculate_apix(p)
@@ -110,14 +112,14 @@ if __name__ == "__main__":
     parser.add_argument("input", help="STAR file with particle metadata")
     parser.add_argument("output", help="Output particle stack")
     parser.add_argument("--map", help="Map used to calculate projections")
-    parser.add_argument("--mask",
-                        help="Mask to apply to map before projection")
-    parser.add_argument("--ctf", help="Apply CTF to projections",
-                        action="store_true")
-    parser.add_argument("--star",
-                        help="Output STAR file with projection metadata")
-    parser.add_argument("--subtract",
-                        help="Subtract projection from experimental images",
-                        action="store_true")
-    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
+    parser.add_argument("--mask", help="Mask to apply to map before projection")
+    parser.add_argument("--ctf", help="Apply CTF to projections", action="store_true")
+    parser.add_argument("--pfac", help="Zero padding factor for 3D FFT (default: %(default)d)", type=int, default=2)
+    parser.add_argument("--size", help="Size of output projections", type=int)
+    parser.add_argument("--star", help="Output STAR file with projection metadata")
+    parser.add_argument("--subtract", help="Subtract projection from experimental images", action="store_true")
+    parser.add_argument("--threads", "-j", help="Number of threads for FFTs (default: CPU count = %(default)d)",
+                        metavar="N", type=int, default=cpu_count())
+    parser.add_argument("--level", "-l", help="Logging level and debug output", metavar="LEVEL", type=str,
+                        default="WARNING")
     sys.exit(main(parser.parse_args()))
