@@ -267,7 +267,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         df[star.Relion.ANGLES] = np.rad2deg(
                 df[star.Relion.ANGLES].apply(
                     lambda x: util.rot2euler(util.expmap(x)),
-                    axis=1, raw=True, broadcast=True))
+                    axis=1, raw=True, result_type='broadcast'))
     else:
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
 
