@@ -1,9 +1,9 @@
 future
 numba
-numpy>=1.13.1
+numpy>=1.14.0
 scipy
 matplotlib>=2.0.2
 seaborn
-pandas>=0.20.3
+pandas>=0.23.1
 pathos>=0.2.1
 pyfftw
