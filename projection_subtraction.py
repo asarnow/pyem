@@ -260,7 +260,7 @@ def consumer(queue, stack, apix=1.0, fftthreads=1, iothreads=None):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(version="projection_subtraction.py 2.0a")
+    parser = argparse.ArgumentParser(version="projection_subtraction.py 2.1b")
     parser.add_argument("input", type=str,
                         help="STAR file with original particles")
     parser.add_argument("output", type=str,
