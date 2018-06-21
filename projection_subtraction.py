@@ -23,8 +23,6 @@ import logging
 import numba
 import numpy as np
 import os.path
-import pandas as pd
-# import pyfftw
 import Queue
 import sys
 import threading
@@ -37,10 +35,6 @@ from pyem import algo
 from pyem import ctf
 from pyem import vop
 from pyem.util.convert_numba import euler2rot
-# from numpy.fft import rfft2
-# from numpy.fft import irfft2
-# from pyfftw.interfaces.numpy_fft import rfft2
-# from pyfftw.interfaces.numpy_fft import irfft2
 from pyfftw.builders import rfft2
 from pyfftw.builders import irfft2
 
@@ -74,7 +68,7 @@ def main(args):
     if args.submap_ft is None:
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
         if args.submask is not None:
-            submask = mrc.read(args.submap, inc_header=False, compat="relion")
+            submask = mrc.read(args.submask, inc_header=False, compat="relion")
             submap *= submask
         submap_ft = vop.vol_ft(submap, threads=min(args.threads, cpu_count()))
     else:
@@ -103,26 +97,9 @@ def main(args):
     else:
         coefs_method = 0
         refmap_ft = np.empty(submap_ft.shape, dtype=submap_ft.dtype)
-    apix = star.calculate_apix(df)
 
-    log.debug("Constructing particle metadata references")
-    # npart = df.shape[0]
-    # idx = df["ucsfOriginalParticleIndex"].values
-    # stack = df["ucsfOriginalImagePath"].values.astype(np.str, copy=False)
-    # def1 = df["rlnDefocusU"].values
-    # def2 = df["rlnDefocusV"].values
-    # angast = df["rlnDefocusAngle"].values
-    # phase = df["rlnPhaseShift"].values
-    # kv = df["rlnVoltage"].values
-    # ac = df["rlnAmplitudeContrast"].values
-    # cs = df["rlnSphericalAberration"].values
-    # az = df["rlnAngleRot"].values
-    # el = df["rlnAngleTilt"].values
-    # sk = df["rlnAnglePsi"].values
-    # xshift = df["rlnOriginX"].values
-    # yshift = df["rlnOriginY"].values
-    # new_idx = df["ucsfParticleIndex"].values
-    # new_stack = df["ucsfImagePath"].values.astype(np.str, copy=False)
+    apix = star.calculate_apix(df)
+    log.info("Computed pixel size is %f A" % apix)
 
     log.debug("Grouping particles by output stack")
     gb = df.groupby(star.UCSF.IMAGE_PATH)
@@ -130,10 +107,13 @@ def main(args):
     iothreads = threading.BoundedSemaphore(args.io_thread_pairs)
     qsize = args.io_queue_length
     fftthreads = args.fft_threads
-    # pyfftw.interfaces.cache.enable()
+
+    def init():
+        global tls
+        tls = threading.local()
 
     log.debug("Instantiating worker pool")
-    pool = Pool(processes=args.threads)
+    pool = Pool(processes=args.threads, initializer=init)
     threads = []
 
     try:
@@ -178,17 +158,17 @@ def main(args):
 
 def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr, **kwargs):
     log = logging.getLogger('root')
-    tls = threading.local()
+    log.info("%d@%s Exp %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r)))
     ft = getattr(tls, 'ft', None)
     if ft is None:
-        ft = rfft2(fftshift(p1r), threads=kwargs["fftthreads"],
+        ft = rfft2(fftshift(p1r.copy()), threads=kwargs["fftthreads"],
                    planner_effort="FFTW_ESTIMATE",
                    overwrite_input=False,
                    auto_align_input=True,
                    auto_contiguous=True)
         tls.ft = ft
     if coefs_method >= 1:
-        p1 = ft(p1r, np.zeros(ft.output_shape, dtype=ft.output_dtype))
+        p1 = ft(p1r.copy(), np.zeros(ft.output_shape, dtype=ft.output_dtype)).copy()
     else:
         p1 = np.empty(ft.output_shape, ft.output_dtype)
 
@@ -200,12 +180,14 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
 
     ift = getattr(tls, 'ift', None)
     if ift is None:
-        ift = irfft2(p1s, threads=kwargs["fftthreads"],
+        ift = irfft2(p1s.copy(), threads=kwargs["fftthreads"],
                      planner_effort="FFTW_ESTIMATE",
                      auto_align_input=True,
                      auto_contiguous=True)
         tls.ift = ift
-    new_image = p1r - fftshift(ift(p1s, np.zeros(ift.output_shape, dtype=ift.output_dtype)))
+    p1sr = fftshift(ift(p1s.copy(), np.zeros(ift.output_shape, dtype=ift.output_dtype)).copy())
+    log.info("%d@%s Exp %f +/- %f, Sub %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r), np.mean(p1sr), np.std(p1sr)))
+    new_image = p1r - p1sr
     return new_image
 
 
