@@ -18,6 +18,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from scipy.ndimage import binary_fill_holes
+from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import label
 from scipy.ndimage import labeled_comprehension
 
@@ -33,11 +35,37 @@ def binary_sphere(r, le=True):
 
 
 def binary_volume_opening(vol, minvol):
+    if minvol == 0:
+        return vol.copy()
     lb_vol, num_objs = label(vol)
     lbs = np.arange(1, num_objs + 1)
     v = labeled_comprehension(lb_vol > 0, lb_vol, lbs, np.sum, np.int, 0)
-    ix = np.isin(lb_vol, lbs[v >= minvol])
+    if minvol < 0:
+        ix = np.isin(lb_vol, np.argmax(v) + 1)
+    else:
+        ix = np.isin(lb_vol, lbs[v >= minvol])
     newvol = np.zeros(vol.shape, dtype=np.bool)
     newvol[ix] = vol[ix]
     return newvol
+
+
+def binary_dilate(vol, size, strel=False, dt=None):
+    if size == 0:
+        return vol.copy()
+    if not strel:
+        if dt is None:
+            dt = distance_transform_edt(~vol)
+        return vol | (dt <= size)
+    else:
+        se = binary_sphere(size, False)
+        return binary_dilation(mask, structure=se, iterations=1)
+
+
+def binarize_volume(vol, t, minvol=0, fill=False):
+    mask = vol >= t
+    if minvol != 0:
+        mask = binary_volume_opening(mask, minvol)
+    if fill:
+        mask = binary_fill_holes(mask)
+    return mask
 
