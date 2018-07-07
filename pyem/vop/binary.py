@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from scipy.ndimage import binary_dilation
 from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import distance_transform_edt
 from scipy.ndimage import label
@@ -41,7 +42,7 @@ def binary_volume_opening(vol, minvol):
     lbs = np.arange(1, num_objs + 1)
     v = labeled_comprehension(lb_vol > 0, lb_vol, lbs, np.sum, np.int, 0)
     if minvol < 0:
-        ix = np.isin(lb_vol, np.argmax(v) + 1)
+        ix = np.isin(lb_vol, lbs[np.argsort(v)[minvol:]])
     else:
         ix = np.isin(lb_vol, lbs[v >= minvol])
     newvol = np.zeros(vol.shape, dtype=np.bool)
@@ -58,7 +59,7 @@ def binary_dilate(vol, size, strel=False, dt=None):
         return vol | (dt <= size)
     else:
         se = binary_sphere(size, False)
-        return binary_dilation(mask, structure=se, iterations=1)
+        return binary_dilation(vol, structure=se, iterations=1)
 
 
 def binarize_volume(vol, t, minvol=0, fill=False):

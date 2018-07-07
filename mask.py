@@ -23,13 +23,10 @@ import sys
 from pyem.mrc import read
 from pyem.mrc import write
 from pyem.vop import binary_sphere
-from pyem.vop import binary_volume_opening
 from pyem.vop import binary_dilate
 from pyem.vop import binarize_volume
 from scipy.interpolate import interp1d
 from scipy.ndimage import binary_closing
-from scipy.ndimage import binary_dilation
-from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import distance_transform_edt
 
 
