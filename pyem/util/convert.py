@@ -67,7 +67,7 @@ def vec2rot(v):
 
 
 def quat2aa(q):
-    n = np.sqrt(np.sum(q[1:] ** 2))
+    n = np.linalg.norm(q[1:])
     ax = q[1:] / n if n > 0 else np.zeros(3, dtype=q.dtype)
     theta = 2 * np.arctan2(n, q[0])  # Or 2 * np.arccos(q[0])
     return theta * ax
@@ -76,7 +76,8 @@ def quat2aa(q):
 def aa2quat(ax, theta=None):
     if theta is None:
         theta = np.linalg.norm(ax)
-        ax = ax / theta
+        if theta != 0:
+            ax = ax / theta
     q = np.zeros(4, dtype=ax.dtype)
     q[0] = np.cos(theta / 2)
     q[1:] = ax * np.sin(theta / 2)
@@ -95,9 +96,9 @@ def quat2rot(q):
     yy = s * q[2] * q[2]
     yz = s * q[2] * q[3]
     zz = s * q[3] * q[3]
-    r = np.array([[1 - (yy + zz), xy - wz,       xz + wy],
-                  [xy + wz,       1 - (xx + zz), yz - wx],
-                  [xz - wy,       yz + wx,       1 - (xx + yy)]], dtype=q.dtype)
+    r = np.array([[1 - (yy + zz), xy + wz,       xz - wy],
+                  [xy - wz,       1 - (xx + zz), yz + wx],
+                  [xz + wy,       yz - wx,       1 - (xx + yy)]], dtype=q.dtype)
     return r
 
 
