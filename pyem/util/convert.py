@@ -20,7 +20,7 @@ import numpy as np
 
 def rot2euler(r):
     """Decompose rotation matrix into Euler angles"""
-    #assert(isrotation(r))
+    # assert(isrotation(r))
     # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
     epsilon = np.finfo(np.double).eps
     abs_sb = np.sqrt(r[0, 2] ** 2 + r[1, 2] ** 2)
