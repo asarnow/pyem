@@ -102,10 +102,13 @@ def quat2rot(q):
 
 
 def euler2quat(alpha, beta, gamma):
-    q = np.array([np.cos((alpha + gamma) / 2) * np.cos(beta / 2),
-                  np.cos((alpha - gamma) / 2) * np.sin(beta / 2),
-                  np.sin((alpha - gamma) / 2) * np.sin(beta / 2),
-                  np.sin((alpha + gamma) / 2) * np.cos(beta / 2)])
+    ha, hb, hg = alpha / 2, beta / 2, gamma / 2
+    ha_p_hg = ha + hg
+    hg_m_ha = hg - ha
+    q = np.array([np.cos(ha_p_hg) * np.cos(hb),
+                  np.sin(hg_m_ha) * np.sin(hb),
+                  np.cos(hg_m_ha) * np.sin(hb),
+                  np.sin(ha_p_hg) * np.cos(hb)])
     return q
 
 
