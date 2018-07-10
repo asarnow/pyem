@@ -102,6 +102,38 @@ def quat2rot(q):
     return r
 
 
+def rot2quat(r):
+    q = np.zeros(4, dtype=r.dtype)
+    tr = np.trace(r)
+    if tr > 0:
+        q[0] = np.sqrt(tr + 1) / 2
+        sinv = 1 / (q[0] * 4)
+        q[1] = sinv * (r[1, 2] - r[2, 1])
+        q[2] = sinv * (r[2, 0] - r[0, 2])
+        q[3] = sinv * (r[0, 1] - r[1, 0])
+    else:
+        mi = np.argmax(np.diag(r))
+        if mi == 0:
+            q[1] = np.sqrt(r[0, 0] - r[1, 1] - r[2, 2] + 1) / 2
+            sinv = 1 / (q[1] * 4)
+            q[0] = sinv * (r[1, 2] - r[2, 1])
+            q[2] = sinv * (r[0, 1] + r[1, 0])
+            q[3] = sinv * (r[0, 2] + r[2, 0])
+        elif mi == 1:
+            q[2] = np.sqrt(r[1, 1] - r[2, 2] - r[0, 0] + 1) / 2
+            sinv = 1 / (q[2] * 4)
+            q[0] = sinv * (r[2, 0] - r[0, 2])
+            q[1] = sinv * (r[0, 1] + r[1, 0])
+            q[3] = sinv * (r[1, 2] + r[2, 1])
+        else:
+            q[3] = np.sqrt(r[2, 2] - r[0, 0] - r[1, 1] + 1) / 2
+            sinv = 1 / (q[3] * 4)
+            q[0] = sinv * (r[0, 1] - r[1, 0])
+            q[1] = sinv * (r[0, 2] + r[2, 0])
+            q[2] = sinv * (r[1, 2] + r[2, 1])
+    return q
+
+
 def euler2quat(alpha, beta, gamma):
     ha, hb, hg = alpha / 2, beta / 2, gamma / 2
     ha_p_hg = ha + hg
