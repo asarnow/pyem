@@ -53,6 +53,7 @@ class Relion:
     VOLTAGE = "rlnVoltage"
     MAGNIFICATION = "rlnMagnification"
     DETECTORPIXELSIZE = "rlnDetectorPixelSize"
+    GROUPNUMBER = "rlnGroupNumber"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
@@ -83,19 +84,19 @@ def main(args):
         df = select_classes(df, args.cls)
 
     if args.info:
-        if is_particle_star(df) and "rlnClassNumber" in df.columns:
-            c = df["rlnClassNumber"].value_counts()
+        if is_particle_star(df) and Relion.CLASS in df.columns:
+            c = df[Relion.CLASS].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(df.shape[0]), len(c)))
             print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100.*s/c.sum())
                 for i,s in c.sort_index().iteritems()]))
         elif is_particle_star(df):
             print("%s particles" % "{:,}".format(df.shape[0]))
-        if "rlnMicrographName" in df.columns:
-            mgraphcnt = df["rlnMicrographName"].value_counts()
+        if Relion.MICROGRAPH_NAME in df.columns:
+            mgraphcnt = df[Relion.MICROGRAPH_NAME].value_counts()
             print("%s micrographs, %s +/- %s particles per micrograph" %
                     ("{:,}".format(len(mgraphcnt)), "{:,.3f}".format(np.mean(mgraphcnt)), "{:,.3f}".format(np.std(mgraphcnt))))
         try:
-            print("%f A/px (%sX magnification)" % (calculate_apix(df), "{:,.0f}".format(df["rlnMagnification"][0])))
+            print("%f A/px (%sX magnification)" % (calculate_apix(df), "{:,.0f}".format(df[Relion.MAGNIFICATION][0])))
         except KeyError:
             pass
         return 0
@@ -110,19 +111,19 @@ def main(args):
         df.drop(containing_fields, axis=1, inplace=True, errors="ignore")
 
     if args.offset_group is not None:
-        df["rlnGroupNumber"] += args.offset_group
+        df[Relion.GROUPNUMBER] += args.offset_group
 
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
             print("Only particle sampling allows bootstrapping")
             return 1
-        mgraphs = df["rlnMicrographName"].unique()
+        mgraphs = df[Relion.MICROGRAPH_NAME].unique()
         if args.subsample_micrographs < 1:
             args.subsample_micrographs = np.int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
         else:
             args.subsample_micrographs = np.int(args.subsample_micrographs)
         ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
-        mask = df["rlnMicrographName"].isin(mgraphs[ind])
+        mask = df[Relion.MICROGRAPH_NAME].isin(mgraphs[ind])
         if args.auxout is not None:
             dfaux = df.loc[~mask]
         df = df.loc[mask]
@@ -171,7 +172,7 @@ def main(args):
 
     if args.scale_origins:
         df[Relion.ORIGINS] = df[Relion.ORIGINS] * args.scale_origins
-        df["rlnMagnification"] = df["rlnMagnification"] * args.scale_origins
+        df[Relion.MAGNIFICATION] = df[Relion.MAGNIFICATION] * args.scale_origins
 
     if args.recenter:
         df = recenter(df, inplace=True)
@@ -269,9 +270,9 @@ def is_particle_star(df):
 def calculate_apix(df):
     try:
         if df.ndim == 2:
-            return 10000.0 * df.iloc[0]['rlnDetectorPixelSize'] / df.iloc[0]['rlnMagnification']
+            return 10000.0 * df.iloc[0][Relion.DETECTORPIXELSIZE] / df.iloc[0][Relion.MAGNIFICATION]
         elif df.ndim == 1:
-            return 10000.0 * df['rlnDetectorPixelSize'] / df['rlnMagnification']
+            return 10000.0 * df[Relion.DETECTORPIXELSIZE] / df[Relion.MAGNIFICATION]
         else:
             raise ValueError
     except KeyError:
@@ -279,7 +280,7 @@ def calculate_apix(df):
 
 
 def select_classes(df, classes):
-    clsfields = [f for f in df.columns if "ClassNumber" in f]
+    clsfields = [f for f in df.columns if Relion.CLASS in f]
     if len(clsfields) == 0:
         raise RuntimeError("No class labels found")
     ind = df[clsfields[0]].isin(classes)
@@ -289,10 +290,10 @@ def select_classes(df, classes):
 
 
 def split_micrographs(df):
-    gb = df.groupby("rlnMicrographName")
+    gb = df.groupby(Relion.MICROGRAPH_NAME)
     dfs = {}
     for g in gb:
-        g[1].drop("rlnMicrographName", axis=1, inplace=True, errors="ignore")
+        g[1].drop(Relion.MICROGRAPH_NAME, axis=1, inplace=True, errors="ignore")
         dfs[g[0]] = g[1]
     return dfs
 
@@ -300,7 +301,7 @@ def split_micrographs(df):
 def all_same_class(df, inplace=False):
     vc = df[Relion.IMAGE_NAME].value_counts()
     n = vc.max()
-    si = df.set_index(["rlnImageName", "rlnClassNumber"], inplace=inplace)
+    si = df.set_index([Relion.IMAGE_NAME, Relion.CLASS], inplace=inplace)
     vci = si.index.value_counts()
     si.loc[vci[vci==n].index].reset_index(inplace=inplace)
     return si
@@ -322,10 +323,10 @@ def zero_origins(df, inplace=False):
         newstar = df
     else:
         newstar = df.copy()
-    newstar["rlnCoordinateX"] = newstar["rlnCoordinateX"] - newstar["rlnOriginX"]
-    newstar["rlnCoordinateY"] = newstar["rlnCoordinateY"] - newstar["rlnOriginY"]
-    newstar["rlnOriginX"] = 0
-    newstar["rlnOriginY"] = 0
+    newstar[Relion.COORDX] = newstar[Relion.COORDX] - newstar[Relion.ORIGINX]
+    newstar[Relion.COORDY] = newstar[Relion.COORDY] - newstar[Relion.ORIGINY]
+    newstar[Relion.ORIGINX] = 0
+    newstar[Relion.ORIGINY] = 0
     return newstar
 
 
