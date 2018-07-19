@@ -452,8 +452,9 @@ def simplify_star_ucsf(df):
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
             axis=1, inplace=True)
-    df.set_index("index", inplace=True)
-    df.sort_index(inplace=True, kind="mergesort")
+    if "index" in df.columns:
+        df.set_index("index", inplace=True)
+        df.sort_index(inplace=True, kind="mergesort")
 
 
 if __name__ == "__main__":
