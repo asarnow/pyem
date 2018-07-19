@@ -23,7 +23,7 @@ from . import star
 from . import util
 
 
-def parse_par(fn):
+def parse_f9_par(fn):
     head_data = {"Input particle images": None,
            "Beam energy (keV)": None,
            "Spherical aberration (mm)": None,
@@ -73,35 +73,41 @@ def parse_par(fn):
     return par
 
 
-def par2star(par, v9=True):
+def parse_fx_par(fn):
+    df = pd.read_table(fn, delimiter="\s+", skipfooter=2, engine="python")
+    return df
+
+
+def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300):
     general = {"PHI": None,
             "THETA": None,
             "PSI": None,
             "SHX": None,
             "SHY": None,
-            "MAG": "rlnMagnification",
-            "FILM": "rlnGroupNumber",
-            "DF1": "rlnDefocusU",
-            "DF2": "rlnDefocusV",
-            "ANGAST": "rlnDefocusAngle",
-            "Beam energy (keV)": "rlnVoltage",
-            "Spherical aberration (mm)": "rlnSphericalAberration",
-            "Amplitude contrast": "rlnAmplitudeContrast",
+            "MAG": None,
+            "FILM": star.Relion.GROUPNUMBER,
+            "DF1": star.Relion.DEFOCUSU,
+            "DF2": star.Relion.DEFOCUSV,
+            "ANGAST": star.Relion.DEFOCUSANGLE,
             "C": None,
-            "Pixel size of images (A)": None
             }
     rlnheaders = [general[h] for h in par.columns if h in general and general[h] is not None]
-    star = par[[h for h in par.columns if h in general and general[h] is not None]].copy()
-    star.columns = rlnheaders
-    star["rlnImageName"] = ["%.6d" % (i + 1) for i in par["C"]]  # Reformat particle idx for Relion.
-    star["rlnImageName"] = star["rlnImageName"].str.cat(par["Input particle images"], sep="@")
-    star["rlnDetectorPixelSize"] = par["Pixel size of images (A)"] * par["MAG"] / 10000.0
-    star["rlnOriginX"] = par["SHX"] / par["Pixel size of images (A)"]
-    star["rlnOriginY"] = par["SHY"] / par["Pixel size of images (A)"]
-    star["rlnAngleRot"] = -par["PSI"]
-    star["rlnAngleTilt"] = -par["THETA"]
-    star["rlnAnglePsi"] = -par["PHI"]
-    return star
+    df = par[[h for h in par.columns if h in general and general[h] is not None]].copy()
+    df.columns = rlnheaders
+    df[star.UCSF.IMAGE_INDEX] = par["C"] - 1
+    df[star.UCSF.IMAGE_PATH] = data_path
+    df[star.Relion.DETECTORPIXELSIZE] = apix
+    df[star.Relion.MAGNIFICATION] = 10000.0
+    df[star.Relion.CS] = cs
+    df[star.Relion.AC] = ac
+    df[star.Relion.VOLTAGE] = kv
+    df[star.Relion.ORIGINX] = par["SHX"] / apix
+    df[star.Relion.ORIGINY] = par["SHY"] / apix
+    df[star.Relion.ANGLEROT] = -par["PSI"]
+    df[star.Relion.ANGLETILT] = -par["THETA"]
+    df[star.Relion.ANGLEPSI] = -par["PHI"]
+    star.simplify_star_ucsf(df)
+    return df
 
 
 def parse_cryosparc_065_csv(csvfile):
