@@ -32,6 +32,8 @@ def main(args):
         log.error("Please specify box size")
         return 1
     df = star.parse_star(args.input, keep_index=False)
+    if args.cls is not None:
+        df = star.select_classes(df, args.cls)
     if args.apix is None:
         args.apix = star.calculate_apix(df)
     nside = 2**args.healpix_order
@@ -91,4 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--height-scale", type=float, default=0.3)
     parser.add_argument("--width-scale", type=float, default=0.5)
     parser.add_argument("--loglevel", help="Log level", default="WARNING")
+    parser.add_argument("--class",
+                        help="Only use the specified class, may be passed multiple times",
+                        type=int, action="append", dest="cls")
     sys.exit(main(parser.parse_args()))
