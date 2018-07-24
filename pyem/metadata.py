@@ -211,18 +211,18 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
         cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
     general = {u'uid': None,
-               u'ctf/accel_kv': "rlnVoltage",
-               u'blob/psize_A': "rlnDetectorPixelSize",
-               u'ctf/ac': "rlnAmplitudeContrast",
-               u'ctf/cs_mm': "rlnSphericalAberration",
-               u'ctf/df1_A': "rlnDefocusU",
-               u'ctf/df2_A': "rlnDefocusV",
-               u'ctf/df_angle_rad': "rlnDefocusAngle",
-               u'ctf/phase_shift_rad': "rlnPhaseShift",
+               u'ctf/accel_kv': star.Relion.VOLTAGE,
+               u'blob/psize_A': star.Relion.DETECTORPIXELSIZE,
+               u'ctf/ac': star.Relion.AC,
+               u'ctf/cs_mm': star.Relion.CS,
+               u'ctf/df1_A': star.Relion.DEFOCUSU,
+               u'ctf/df2_A': star.Relion.DEFOCUSV,
+               u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
+               u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
                u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
                u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution",
-               u'blob/path': "ucsfImagePath",
-               u'blob/idx': "ucsfImageIndex"}
+               u'blob/path': star.UCSF.IMAGE_PATH,
+               u'blob/idx': star.UCSF.IMAGE_INDEX}
     model = {u'split': "rlnRandomSubset",
              u'shift': star.Relion.ORIGINS,
              u'pose': star.Relion.ANGLES,
@@ -237,15 +237,19 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
              u'pose_ess': None,
              u'shift_ess': None,
              u'class_posterior': None,
-             u'class': "rlnClassNumber",
+             u'class': star.Relion.CLASS,
              u'class_ess': None}
     names = [str(k) for k in general if general[k] is not None and k in cs.dtype.names]
     df = pd.DataFrame.from_records(cs[names])
     df.columns = [general[k] for k in names]
     df.reset_index(inplace=True)
-    df["rlnDefocusAngle"] = np.rad2deg(df["rlnDefocusAngle"])
-    df["rlnPhaseShift"] = np.rad2deg(df["rlnPhaseShift"])
-    df["rlnMagnification"] = 10000.0
+    if star.Relion.DEFOCUSANGLE in df:
+        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
+    else:
+        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSU], df[star.Relion.DEFOCUSV]))
+    if star.Relion.PHASESHIFT in df:
+        df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
+    df[star.Relion.MAGNIFICATION] = 10000.0
     star.simplify_star_ucsf(df)
 
     phic = [n for n in cs.dtype.names if "class_posterior" in n]
@@ -264,10 +268,10 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                 name = phic[0].replace("class_posterior", k)
                 df[model[k]] = pd.DataFrame(cs[name])
 
-    if "rlnRandomSubset" in df.columns:
-        df["rlnRandomSubset"] += 1
-    if "rlnClassNumber" in df.columns:
-        df["rlnClassNumber"] += 1
+    if star.Relion.RANDOMSUBSET in df.columns:
+        df[star.Relion.RANDOMSUBSET] += 1
+    if star.Relion.CLASS in df.columns:
+        df[star.Relion.CLASS] += 1
 
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
         df[star.Relion.ANGLES] = np.rad2deg(
