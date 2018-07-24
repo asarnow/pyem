@@ -246,7 +246,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     if star.Relion.DEFOCUSANGLE in df:
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     else:
-        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSU], df[star.Relion.DEFOCUSV]))
+        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSV], df[star.Relion.DEFOCUSU]))
     if star.Relion.PHASESHIFT in df:
         df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
     df[star.Relion.MAGNIFICATION] = 10000.0
