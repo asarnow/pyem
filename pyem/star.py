@@ -54,6 +54,7 @@ class Relion:
     MAGNIFICATION = "rlnMagnification"
     DETECTORPIXELSIZE = "rlnDetectorPixelSize"
     GROUPNUMBER = "rlnGroupNumber"
+    RANDOMSUBSET = "rlnRandomSubset"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
