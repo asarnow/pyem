@@ -252,20 +252,24 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     df[star.Relion.MAGNIFICATION] = 10000.0
     star.simplify_star_ucsf(df)
 
-    phic = [n for n in cs.dtype.names if "class_posterior" in n]
-    if len(phic) > 1:
-        cls = np.argmax([cs[p] for p in phic], axis=0)
+    phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
+    if len(phic_names) > 1:
+        phic = np.array([cs[p] for p in phic_names])
+        cls = np.argmax(phic, axis=0)
+        cls_prob = np.choose(cls, phic)
         for k in model:
             if model[k] is not None:
                 names = [n for n in cs.dtype.names if n.endswith(k)]
                 df[model[k]] = pd.DataFrame(np.array(
                         [cs[names[c]][i] for i, c in enumerate(cls)]))
+        if minphic > 0:
+            df.drop(df.loc[cls_prob < minphic].index, inplace=True)
     else:
-        if "alignments2D" in phic[0]:
+        if "alignments2D" in phic_names[0]:
             model["pose"] = star.Relion.ANGLEPSI
         for k in model:
             if model[k] is not None:
-                name = phic[0].replace("class_posterior", k)
+                name = phic_names[0].replace("class_posterior", k)
                 df[model[k]] = pd.DataFrame(cs[name])
 
     if star.Relion.RANDOMSUBSET in df.columns:
