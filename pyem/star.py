@@ -168,12 +168,23 @@ def main(args):
             (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
         df = smart_merge(df, coord_star, fields=Relion.MICROGRAPH_COORDS)
 
-    if args.scale_coordinates is not None:
-        df[Relion.COORDS] = df[Relion.COORDS] * args.scale_coordinates
+    if args.scale is not None:
+        scale_coordinates(df, args.scale)
+        scale_origins(df, args.scale)
+        scale_magnification(df, args.scale)
 
-    if args.scale_origins:
-        df[Relion.ORIGINS] = df[Relion.ORIGINS] * args.scale_origins
-        df[Relion.MAGNIFICATION] = df[Relion.MAGNIFICATION] * args.scale_origins
+    if args.scale_particles is not None:
+        scale_origins(df, args.scale)
+        scale_magnification(df, args.scale)
+
+    if args.scale_coordinates is not None:
+        scale_coordinates(df, args.scale_coordinates)
+
+    if args.scale_origins is not None:
+        scale_origins(df, args.scale_origins)
+
+    if args.scale_magnification is not None:
+        scale_magnification(df, args.scale_magnfication)
 
     if args.recenter:
         df = recenter(df, inplace=True)
@@ -329,6 +340,18 @@ def zero_origins(df, inplace=False):
     newstar[Relion.ORIGINX] = 0
     newstar[Relion.ORIGINY] = 0
     return newstar
+
+
+def scale_coordinates(df, factor):
+    df[Relion.COORDS] = df[Relion.COORDS] * factor
+
+
+def scale_origins(df, factor):
+    df[Relion.ORIGINS] = df[Relion.ORIGINS] * factor
+
+
+def scale_magnification(df, factor):
+    df[Relion.MAGNIFICATION] = df[Relion.MAGNIFICATION] * factor
 
 
 def parse_star(starfile, keep_index=True):
@@ -496,9 +519,16 @@ if __name__ == "__main__":
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
     parser.add_argument("--min-separation", help="Minimum distance between particle coordinates", type=float)
+    parser.add_argument("--scale", help="Factor to rescale particle coordinates, origins, and magnification",
+                        type=float)
+    parser.add_argument("--scale-particles",
+                        help="Factor to rescale particle origins and magnification (rebin refined particles)",
+                        type=float)
     parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
                         type=float)
-    parser.add_argument("--scale-origins", help="Factor to rescale particle origins (rebin refined particles)",
+    parser.add_argument("--scale-origins", help="Factor to rescale particle origins",
+                        type=float)
+    parser.add_argument("--scale-magnification", help="Factor to rescale magnification (pixel size)",
                         type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
