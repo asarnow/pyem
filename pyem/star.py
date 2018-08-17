@@ -68,8 +68,10 @@ class Relion:
 
 class UCSF:
     IMAGE_PATH = "ucsfImagePath"
+    IMAGE_BASENAME = "ucsfImageBasename"
     IMAGE_INDEX = "ucsfImageIndex"
     IMAGE_ORIGINAL_PATH = "ucsfImageOriginalPath"
+    IMAGE_ORIGINAL_BASENAME = "ucsfImageOriginalBasename"
     IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
 
 
@@ -242,8 +244,9 @@ def main(args):
     return 0
 
 
-def smart_merge(s1, s2, fields):
-    key = merge_key(s1, s2)
+def smart_merge(s1, s2, fields, key=None):
+    if key is None:
+        key = merge_key(s1, s2)
     s2 = s2.set_index(key, drop=False)
     s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=key, right_index=True, suffixes=["_x", ""])
     x = [c for c in s1.columns if "_x" in c]
@@ -456,6 +459,7 @@ def augment_star_ucsf(df):
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
             df[Relion.IMAGE_NAME].str.split("@").str
         df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
+        df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_PATH].apply(os.path.basename)
 
         if Relion.IMAGE_ORIGINAL_NAME not in df:
             df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
@@ -464,6 +468,7 @@ def augment_star_ucsf(df):
         df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
             df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
         df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
+        df[UCSF.IMAGE_ORIGINAL_BASENAME] = df[UCSF.IMAGE_ORIGINAL_PATH].apply(os.path.basename)
 
 
 def simplify_star_ucsf(df):
