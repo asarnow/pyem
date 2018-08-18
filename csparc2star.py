@@ -76,7 +76,15 @@ def main(args):
         coord_star = pd.concat(
             (star.parse_star(inp, keep_index=False) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
-        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS)
+        star.augment_star_ucsf(coord_star)
+        star.augment_star_ucsf(df)
+        key = star.merge_key(df, coord_star)
+        if args.cached or key == star.Relion.IMAGE_NAME:
+            fields = star.Relion.MICROGRAPH_COORDS
+        else:
+            fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_INDEX, star.UCSF.IMAGE_PATH]
+        df = star.smart_merge(df, coord_star, fields=fields, key=key)
+        star.simplify_star_ucsf(df)
 
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
@@ -99,6 +107,8 @@ if __name__ == "__main__":
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
+    parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
+                        action="store_true")
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
