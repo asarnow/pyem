@@ -266,6 +266,11 @@ def merge_key(s1, s2):
         shared = sum(c[i] for i in set(s2[Relion.IMAGE_NAME]))
         if shared > s1.shape[0] * 0.5:
             return Relion.IMAGE_NAME
+        if UCSF.IMAGE_BASENAME in inter:
+            c = Counter(s1[UCSF.IMAGE_BASENAME])
+            shared = sum(c[i] for i in set(s2[UCSF.IMAGE_BASENAME]))
+            if shared > s1.shape[0] * 0.5:
+                return [UCSF.IMAGE_BASENAME, UCSF.IMAGE_INDEX]
     mgraph_coords = inter.intersection(Relion.MICROGRAPH_COORDS)
     if Relion.MICROGRAPH_NAME in mgraph_coords:
         c = Counter(s1[Relion.MICROGRAPH_NAME])
