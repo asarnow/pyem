@@ -38,17 +38,15 @@ def main(args):
     mask = binarize_volume(data, args.threshold, minvol=args.minvol, fill=args.fill)
     if args.base_map is not None:
         base_map = read(args.base_map, inc_header=False)
-        base_map = base_map - data
         base_mask = binarize_volume(base_map, args.threshold, minvol=args.minvol, fill=args.fill)
         total_width = args.extend + args.edge_width
         excl_mask = binary_dilate(mask, args.extend+args.edge_width, strel=args.relion)
-        mask = binary_dilate(mask, args.extend, strel=args.relion)
-        incl_mask = binary_dilate(base_mask, args.overlap+args.extend, strel=args.relion) & mask
-        incl_mask_outer = binary_dilate(base_mask, args.extend, strel=args.relion)
-        mask = base_mask &~ excl_mask
-        mask = mask | incl_mask | incl_mask_outer
+        base_mask = binary_dilate(base_mask, args.extend, strel=args.relion)
+        base_mask = base_mask &~ excl_mask
         if args.overlap > 0:
-            mask = binary_closing(mask, structure=binary_sphere(args.overlap), iterations=1)
+            incl_mask = binary_dilate(base_mask, args.overlap, strel=args.relion) & excl_mask
+            base_mask = base_mask | incl_mask
+        mask = base_mask
     elif args.extend > 0:
         mask = binary_dilate(mask, args.extend, strel=args.relion)
     if args.close:
