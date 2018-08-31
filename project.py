@@ -120,6 +120,6 @@ if __name__ == "__main__":
     parser.add_argument("--subtract", help="Subtract projection from experimental images", action="store_true")
     parser.add_argument("--threads", "-j", help="Number of threads for FFTs (default: CPU count = %(default)d)",
                         metavar="N", type=int, default=cpu_count())
-    parser.add_argument("--level", "-l", help="Logging level and debug output", metavar="LEVEL", type=str,
+    parser.add_argument("--loglevel", "-l", help="Logging level and debug output", metavar="LEVEL", type=str,
                         default="WARNING")
     sys.exit(main(parser.parse_args()))
