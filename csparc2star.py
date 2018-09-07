@@ -64,7 +64,12 @@ def main(args):
             if u"blob/path" not in cs.dtype.names:
                 print("A passthrough file is required (found inside the cryoSPARC 2+ job directory)")
                 return 1
-        df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
+        try:
+            df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
+        except KeyError as e:
+            print("Missing key: %s" % e.message)
+            print("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
+            return 1
     else:
         meta = metadata.parse_cryosparc_065_csv(args.input)  # Read cryosparc metadata file.
         df = metadata.cryosparc_065_csv2star(meta, args.minphic)
