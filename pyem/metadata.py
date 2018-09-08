@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 import numpy as np
 import pandas as pd
 from . import star
@@ -206,9 +207,12 @@ def cryosparc_065_csv2star(meta, minphic=0):
 
 
 def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
+    log = logging.getLogger('root')
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
     if passthrough is not None:
+        log.debug("Reading passthrough file")
         pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
+        log.debug("Concatenating passthrough recarray fields")
         cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
     general = {u'uid': None,
                u'ctf/accel_kv': star.Relion.VOLTAGE,
@@ -243,17 +247,25 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     df = pd.DataFrame.from_records(cs[names])
     df.columns = [general[k] for k in names]
     df.reset_index(inplace=True)
-    if star.Relion.DEFOCUSANGLE in df:
-        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
-    else:
-        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSV], df[star.Relion.DEFOCUSU]))
-    if star.Relion.PHASESHIFT in df:
-        df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
-    df[star.Relion.MAGNIFICATION] = 10000.0
     star.simplify_star_ucsf(df)
+    df[star.Relion.MAGNIFICATION] = 10000.0
+    log.info("Directly copied fields: %s" % ", ".join(df.columns))
+
+    if star.Relion.DEFOCUSANGLE in df:
+        log.debug("Converting DEFOCUSANGLE from degrees to radians")
+        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
+    elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
+        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSV], df[star.Relion.DEFOCUSU]))
+        log.info("Calculated missing defocus angle")
+    else:
+        log.info("Defocus values not found")
+    if star.Relion.PHASESHIFT in df:
+        log.debug("Converting PHASESHIFT from degrees to radians")
+        df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
 
     phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
     if len(phic_names) > 1:
+        log.debug("Collecting particle parameters from most likely classes")
         phic = np.array([cs[p] for p in phic_names])
         cls = np.argmax(phic, axis=0)
         cls_prob = np.choose(cls, phic)
@@ -264,26 +276,34 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                         [cs[names[c]][i] for i, c in enumerate(cls)]))
         if minphic > 0:
             df.drop(df.loc[cls_prob < minphic].index, inplace=True)
-    else:
+    elif len(phic_names) == 1:
+        log.debug("Assigning parameters from 2D classes")
         if "alignments2D" in phic_names[0]:
             model["pose"] = star.Relion.ANGLEPSI
         for k in model:
             if model[k] is not None:
                 name = phic_names[0].replace("class_posterior", k)
                 df[model[k]] = pd.DataFrame(cs[name])
+    else:
+        log.info("Classification parameters not found")
 
     if star.Relion.RANDOMSUBSET in df.columns:
+        log.debug("Changing RANDOMSUBSET to 1-based index")
         df[star.Relion.RANDOMSUBSET] += 1
     if star.Relion.CLASS in df.columns:
+        log.debug("Changing CLASS to 1-based index")
         df[star.Relion.CLASS] += 1
 
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
+        log.debug("Converting Rodrigues coordinates to Euler angles")
         df[star.Relion.ANGLES] = np.rad2deg(
                 df[star.Relion.ANGLES].apply(
                     lambda x: util.rot2euler(util.expmap(x)),
                     axis=1, raw=True, result_type='broadcast'))
-    else:
+        log.info("Converted Rodrigues coordinates to Euler angles")
+    elif star.Relion.ANGLEPSI in df:
+        log.debug("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
-
+    else:
+        log.info("Angular alignment parameters not found")
     return df
-

@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import argparse
+import logging
 import sys
 import json
 import numpy as np
@@ -58,6 +59,11 @@ model = {u'alignments.model.U': None,
 
 
 def main(args):
+    log = logging.getLogger('root')
+    hdlr = logging.StreamHandler(sys.stdout)
+    log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
+
     if args.input.endswith(".cs"):
         cs = np.load(args.input)
         if args.passthrough is None:
@@ -117,4 +123,5 @@ if __name__ == "__main__":
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
