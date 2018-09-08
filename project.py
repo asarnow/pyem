@@ -57,7 +57,7 @@ def main(args):
 
     with mrc.ZSliceWriter(args.output) as zsw:
         for i, p in df.iterrows():
-            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf, size=args.size)
+            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf, size=args.size, flip_phase=args.flip)
             if ift is None:
                 ift = irfft2(f2d.copy(),
                              threads=cpu_count(),
@@ -85,7 +85,7 @@ def main(args):
     return 0
 
 
-def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None):
+def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None, flip_phase=False):
     orient = util.euler2rot(np.deg2rad(p[star.Relion.ANGLEROT]),
                             np.deg2rad(p[star.Relion.ANGLETILT]),
                             np.deg2rad(p[star.Relion.ANGLEPSI]))
@@ -93,7 +93,7 @@ def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None):
                                        -p[star.Relion.ORIGINY] * sy))
     f2d = vop.interpolate_slice_numba(f3d, orient, size=size)
     f2d *= pshift
-    if apply_ctf:
+    if apply_ctf or flip_phase:
         apix = star.calculate_apix(p)
         c = ctf.eval_ctf(s / apix, a,
                          p[star.Relion.DEFOCUSU], p[star.Relion.DEFOCUSV],
@@ -101,6 +101,8 @@ def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None):
                          p[star.Relion.PHASESHIFT], p[star.Relion.VOLTAGE],
                          p[star.Relion.AC], p[star.Relion.CS], bf=0,
                          lp=2 * apix)
+        if flip_phase:
+            c = np.sign(c)
         f2d *= c
     return f2d
 
@@ -114,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--map", help="Map used to calculate projections")
     parser.add_argument("--mask", help="Mask to apply to map before projection")
     parser.add_argument("--ctf", help="Apply CTF to projections", action="store_true")
+    parser.add_argument("--flip", help="Only flip phases when applying CTF to projections", action="store_true")
     parser.add_argument("--pfac", help="Zero padding factor for 3D FFT (default: %(default)d)", type=int, default=2)
     parser.add_argument("--size", help="Size of output projections", type=int)
     parser.add_argument("--star", help="Output STAR file with projection metadata")
