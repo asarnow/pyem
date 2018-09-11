@@ -20,6 +20,7 @@
 import logging
 import numpy as np
 import pandas as pd
+from math import modf
 from . import star
 from . import util
 
@@ -226,7 +227,11 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
                u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution",
                u'blob/path': star.UCSF.IMAGE_PATH,
-               u'blob/idx': star.UCSF.IMAGE_INDEX}
+               u'blob/idx': star.UCSF.IMAGE_INDEX,
+               u'location/center_x_frac': None,
+               u'location/center_y_frac': None,
+               u'location/micrograph_path': None,
+               u'location/micrograph_shape': None}
     model = {u'split': "rlnRandomSubset",
              u'shift': star.Relion.ORIGINS,
              u'pose': star.Relion.ANGLES,
@@ -251,6 +256,17 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     df[star.Relion.MAGNIFICATION] = 10000.0
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
+    if u'location/center_x_frac' in cs.dtype.names:
+        log.debug("Converting normalized particle coordinates to absolute")
+        df[star.Relion.COORDX] = cs[u'location/center_x_frac']
+        df[star.Relion.COORDY] = cs[u'location/center_y_frac']
+        df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
+        remxy, df[star.Relion.COORDS] = np.vectorize(modf)(
+            df[star.Relion.COORDS] * cs['location/micrograph_shape'])
+        df[star.Relion.ORIGINX] = remxy[:, 0]
+        df[star.Relion.ORIGINY] = remxy[:, 1]
+        log.info("Converted particle coordinates from normalized to absolute with subpixel origin")
+
     if star.Relion.DEFOCUSANGLE in df:
         log.debug("Converting DEFOCUSANGLE from degrees to radians")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
@@ -259,6 +275,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         log.info("Calculated missing defocus angle")
     else:
         log.info("Defocus values not found")
+
     if star.Relion.PHASESHIFT in df:
         log.debug("Converting PHASESHIFT from degrees to radians")
         df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
@@ -290,6 +307,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     if star.Relion.RANDOMSUBSET in df.columns:
         log.debug("Changing RANDOMSUBSET to 1-based index")
         df[star.Relion.RANDOMSUBSET] += 1
+
     if star.Relion.CLASS in df.columns:
         log.debug("Changing CLASS to 1-based index")
         df[star.Relion.CLASS] += 1
