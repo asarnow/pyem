@@ -171,22 +171,22 @@ def main(args):
         df = smart_merge(df, coord_star, fields=Relion.MICROGRAPH_COORDS)
 
     if args.scale is not None:
-        scale_coordinates(df, args.scale)
-        scale_origins(df, args.scale)
-        scale_magnification(df, args.scale)
+        scale_coordinates(df, args.scale, inplace=True)
+        scale_origins(df, args.scale, inplace=True)
+        scale_magnification(df, args.scale, inplace=True)
 
     if args.scale_particles is not None:
-        scale_origins(df, args.scale)
-        scale_magnification(df, args.scale)
+        scale_origins(df, args.scale, inplace=True)
+        scale_magnification(df, args.scale, inplace=True)
 
     if args.scale_coordinates is not None:
-        scale_coordinates(df, args.scale_coordinates)
+        scale_coordinates(df, args.scale_coordinates, inplace=True)
 
     if args.scale_origins is not None:
-        scale_origins(df, args.scale_origins)
+        scale_origins(df, args.scale_origins, inplace=True)
 
     if args.scale_magnification is not None:
-        scale_magnification(df, args.scale_magnfication)
+        scale_magnification(df, args.scale_magnfication, inplace=True)
 
     if args.recenter:
         df = recenter(df, inplace=True)
@@ -220,6 +220,9 @@ def main(args):
         outside = list(range(0,m)) + list(range(n,len(mg)))
         dfaux = df.loc[mg[outside]].reset_index()
         df = df.loc[mg[m:n]].reset_index()
+
+    if args.micrograph_path is not None:
+        df = replace_micrograph_path(df, args.micrograph_path, inplace=True)
 
     if args.min_separation is not None:
         gb = df.groupby(Relion.MICROGRAPH_NAME)
@@ -318,6 +321,13 @@ def split_micrographs(df):
     return dfs
 
 
+def replace_micrograph_path(df, path, inplace=False):
+    df = df if inplace else df.copy()
+    df[Relion.MICROGRAPH_NAME] = df[Relion.MICROGRAPH_NAME].apply(
+        lambda x: os.path.join(path, os.path.basename(x)))
+    return df
+
+
 def all_same_class(df, inplace=False):
     vc = df[Relion.IMAGE_NAME].value_counts()
     n = vc.max()
@@ -328,38 +338,38 @@ def all_same_class(df, inplace=False):
 
 
 def recenter(df, inplace=False):
-    if inplace:
-        newstar = df
-    else:
-        newstar = df.copy()
+    df = df if inplace else df.copy()
     remxy, offsetxy = np.vectorize(modf)(df[Relion.ORIGINS])
-    newstar[Relion.ORIGINS] = remxy
-    newstar[Relion.COORDS] = newstar[Relion.COORDS] - offsetxy
-    return newstar
+    df[Relion.ORIGINS] = remxy
+    df[Relion.COORDS] = df[Relion.COORDS] - offsetxy
+    return df
 
 
 def zero_origins(df, inplace=False):
-    if inplace:
-        newstar = df
-    else:
-        newstar = df.copy()
-    newstar[Relion.COORDX] = newstar[Relion.COORDX] - newstar[Relion.ORIGINX]
-    newstar[Relion.COORDY] = newstar[Relion.COORDY] - newstar[Relion.ORIGINY]
-    newstar[Relion.ORIGINX] = 0
-    newstar[Relion.ORIGINY] = 0
-    return newstar
+    df = df if inplace else df.copy()
+    df[Relion.COORDX] = df[Relion.COORDX] - df[Relion.ORIGINX]
+    df[Relion.COORDY] = df[Relion.COORDY] - df[Relion.ORIGINY]
+    df[Relion.ORIGINX] = 0
+    df[Relion.ORIGINY] = 0
+    return df
 
 
-def scale_coordinates(df, factor):
+def scale_coordinates(df, factor, inplace=False):
+    df = df if inplace else df.copy()
     df[Relion.COORDS] = df[Relion.COORDS] * factor
+    return df
 
 
-def scale_origins(df, factor):
+def scale_origins(df, factor, inplace=False):
+    df = df if inplace else df.copy()
     df[Relion.ORIGINS] = df[Relion.ORIGINS] * factor
+    return df
 
 
-def scale_magnification(df, factor):
+def scale_magnification(df, factor, inplace=False):
+    df = df if inplace else df.copy()
     df[Relion.MAGNIFICATION] = df[Relion.MAGNIFICATION] * factor
+    return df
 
 
 def parse_star(starfile, keep_index=True):
@@ -552,6 +562,7 @@ if __name__ == "__main__":
                         type=str, default="")
     parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
                         action="store_true")
+    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
