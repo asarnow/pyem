@@ -422,7 +422,7 @@ def write_star(starfile, df, reindex=True):
     df[df.columns[order]].to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
-def transform_star(df, r, t=None, inplace=False, rots=None, invert=False):
+def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -448,8 +448,9 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False):
         r = r.T
 
     newrots = [ptcl.dot(r) for ptcl in rots]
-    angles = [np.rad2deg(rot2euler(q)) for q in newrots]
-    newstar[Relion.ANGLES] = angles
+    if rotate:
+        angles = [np.rad2deg(rot2euler(q)) for q in newrots]
+        newstar[Relion.ANGLES] = angles
 
     if t is not None and np.linalg.norm(t) > 0:
         if np.isscalar(t):
