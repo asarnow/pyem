@@ -19,43 +19,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import argparse
+import json
 import logging
 import sys
-import json
+import traceback
 import numpy as np
 import pandas as pd
 from glob import glob
 from pyem import metadata
 from pyem import star
-
-
-general = {u'uid': None,
-           u'split': "rlnRandomSubset",
-           u'ctf_params.akv': "rlnVoltage",
-           u'ctf_params.angast_deg': "rlnDefocusAngle",
-           u'ctf_params.angast_rad': None,
-           u'ctf_params.cs': "rlnSphericalAberration",
-           u'ctf_params.detector_psize': "rlnDetectorPixelSize",
-           u'ctf_params.df1': "rlnDefocusU",
-           u'ctf_params.df2': "rlnDefocusV",
-           u'ctf_params.mag': "rlnMagnification",
-           u'ctf_params.phase_shift': "rlnPhaseShift",
-           u'ctf_params.psize': None,
-           u'ctf_params.wgh': "rlnAmplitudeContrast",
-           u'data_input_relpath': "rlnImageName",
-           u'data_input_idx': None}
-
-model = {u'alignments.model.U': None,
-         u'alignments.model.dr': None,
-         u'alignments.model.dt': None,
-         u'alignments.model.ess_R': None,
-         u'alignments.model.ess_S': None,
-         u'alignments.model.phiC': None,
-         u'alignments.model.r.0': "rlnAngleRot",
-         u'alignments.model.r.1': "rlnAngleTilt",
-         u'alignments.model.r.2': "rlnAnglePsi",
-         u'alignments.model.t.0': "rlnOriginX",
-         u'alignments.model.t.1': "rlnOriginY"}
 
 
 def main(args):
@@ -76,6 +48,7 @@ def main(args):
         except KeyError as e:
             log.error("Missing key: %s" % e.message)
             log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
+            log.debug(traceback.print_exc(e))
             return 1
     else:
         log.debug("Detected CryoSPARC 0.6.5 .csv file")
@@ -99,12 +72,16 @@ def main(args):
         df = star.smart_merge(df, coord_star, fields=fields, key=key)
         star.simplify_star_ucsf(df)
 
+    if args.micrograph_path is not None:
+        df = star.replace_micrograph_path(df, args.micrograph_path, inplace=True)
+
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
 
     # Write Relion .star file with correct headers.
     star.write_star(args.output, df, reindex=True)
+    log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 
 
@@ -116,7 +93,8 @@ if __name__ == "__main__":
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float, default=0)
-    parser.add_argument("--data-path", help="Path to single particle stack", type=str)
+    parser.add_argument("--stack-path", help="Path to single particle stack", type=str)
+    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
