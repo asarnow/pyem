@@ -39,10 +39,6 @@ def main(args):
     if args.input.endswith(".cs"):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input)
-        if args.passthrough is None:
-            if u"blob/path" not in cs.dtype.names:
-                log.error("A passthrough file is required (found inside the cryoSPARC 2+ job directory)")
-                return 1
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
         except KeyError as e:
