@@ -22,7 +22,6 @@ import argparse
 import json
 import logging
 import sys
-import traceback
 import numpy as np
 import pandas as pd
 from glob import glob
@@ -41,10 +40,10 @@ def main(args):
         cs = np.load(args.input)
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
-        except KeyError as e:
-            log.error("Missing key: %s" % e.message)
+        except (KeyError, ValueError) as e:
+            log.error(e.message)
             log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
-            log.debug(traceback.print_exc(e))
+            log.debug(e, exc_info=True)
             return 1
     else:
         log.debug("Detected CryoSPARC 0.6.5 .csv file")
