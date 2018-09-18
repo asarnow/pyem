@@ -328,6 +328,17 @@ def replace_micrograph_path(df, path, inplace=False):
     return df
 
 
+def set_original_fields(df, inplace=False):
+    df = df if inplace else df.copy()
+    if Relion.IMAGE_NAME in df:
+        df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
+    if UCSF.IMAGE_INDEX in df:
+        df[UCSF.IMAGE_INDEX] = df[UCSF.IMAGE_ORIGINAL_INDEX]
+    if UCSF.IMAGE_PATH in df:
+        df[UCSF.IMAGE_PATH] = df[UCSF.IMAGE_ORIGINAL_PATH]
+    return df
+
+
 def all_same_class(df, inplace=False):
     vc = df[Relion.IMAGE_NAME].value_counts()
     n = vc.max()
