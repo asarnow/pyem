@@ -258,6 +258,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
 
     if passthrough is None:
+        log.debug("Creating particle DataFrame from recarray")
         df = util.dataframe_from_records_mapped(cs, general)
     else:
         log.debug("Reading passthrough file")
@@ -266,10 +267,13 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
             log.info("Particle passthrough detected")
             log.debug("Concatenating passthrough recarray fields")
             cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
+            log.debug("Creating particle DataFrame from concatenated recarray")
             df = util.dataframe_from_records_mapped(cs, general)
         else:
             log.info("Micrograph passthrough detected")
+            log.debug("Creating micrograph DataFrame from recarray")
             pt = util.dataframe_from_records_mapped(pt, micrograph)
+            log.debug("Creating particle DataFrame from recarray")
             df = util.dataframe_from_records_mapped(cs, general)
             fields = [c for c in pt.columns if c not in df.columns]
             key = star.Relion.MICROGRAPH_NAME
