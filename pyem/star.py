@@ -333,9 +333,9 @@ def set_original_fields(df, inplace=False):
     if Relion.IMAGE_NAME in df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
     if UCSF.IMAGE_INDEX in df:
-        df[UCSF.IMAGE_INDEX] = df[UCSF.IMAGE_ORIGINAL_INDEX]
+        df[UCSF.IMAGE_ORIGINAL_INDEX] = df[UCSF.IMAGE_INDEX]
     if UCSF.IMAGE_PATH in df:
-        df[UCSF.IMAGE_PATH] = df[UCSF.IMAGE_ORIGINAL_PATH]
+        df[UCSF.IMAGE_ORIGINAL_PATH] = df[UCSF.IMAGE_PATH]
     return df
 
 
