@@ -21,6 +21,7 @@ import logging
 import numpy as np
 import pandas as pd
 import sys
+from pyem import metadata
 from pyem import mrc
 from pyem import star
 
@@ -34,8 +35,8 @@ def main(args):
 
     for fn in args.input:
         if not (fn.endswith(".star") or fn.endswith(".mrcs") or
-                fn.endswith(".mrc")):
-            log.error("Only .star, .mrc, and .mrcs files supported")
+                fn.endswith(".mrc") or fn.endswith(".par")):
+            log.error("Only .star, .mrc, .mrcs, and .par files supported")
             return 1
 
     first_ptcl = 0
@@ -45,6 +46,7 @@ def main(args):
             if fn.endswith(".star"):
                 df = star.parse_star(fn, keep_index=False)
                 star.augment_star_ucsf(df)
+                star.set_original_fields(df, inplace=True)
                 df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
                                      star.UCSF.IMAGE_ORIGINAL_INDEX])
                 gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
@@ -52,14 +54,28 @@ def main(args):
                     with mrc.ZSliceReader(name) as reader:
                         for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX].values:
                             writer.write(reader.read(i))
+            elif fn.endswith(".par"):
+                if args.stack_path is None:
+                    log.error(".par file input requires --stack-path")
+                    return 1
+                df = metadata.par2star(metadata.parse_fx_par(fn), data_path=args.stack_path)
+                # star.set_original_fields(df, inplace=True)  # Redundant.
+                star.augment_star_ucsf(df)
+            elif fn.endswith(".csv"):
+                return 1
+            elif fn.endswith(".cs"):
+                return 1
             else:
-                with mrc.ZSliceReader(fn) as reader:
-                    for img in reader:
-                        writer.write(img)
-                    df = pd.DataFrame(
-                        {star.UCSF.IMAGE_ORIGINAL_INDEX: np.arange(reader.nz)})
-                df[star.UCSF.IMAGE_ORIGINAL_PATH] = fn
-
+                if fn.endswith(".mrcs"):
+                    with mrc.ZSliceReader(fn) as reader:
+                        for img in reader:
+                            writer.write(img)
+                        df = pd.DataFrame(
+                            {star.UCSF.IMAGE_ORIGINAL_INDEX: np.arange(reader.nz)})
+                    df[star.UCSF.IMAGE_ORIGINAL_PATH] = fn
+                else:
+                    print("Unrecognized input file type")
+                    return 1
             if args.star is not None:
                 df[star.UCSF.IMAGE_INDEX] = np.arange(first_ptcl,
                                                       first_ptcl + df.shape[0])
@@ -86,6 +102,7 @@ if __name__ == "__main__":
                         nargs="*")
     parser.add_argument("output", help="Output stack")
     parser.add_argument("--star", help="Optional composite .star output file")
+    parser.add_argument("--stack-path", help="(PAR file only) Particle stack for input file")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
