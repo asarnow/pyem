@@ -208,13 +208,19 @@ def cryosparc_065_csv2star(meta, minphic=0):
 
 
 def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
-    log = logging.getLogger('root')
-    cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
-    if passthrough is not None:
-        log.debug("Reading passthrough file")
-        pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
-        log.debug("Concatenating passthrough recarray fields")
-        cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
+    micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
+                  u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
+                  u'mscope_params/accel_kv': None,
+                  u'mscope_params/cs_mm': None,
+                  u'ctf/accel_kv': star.Relion.VOLTAGE,
+                  u'ctf/amp_contrast': star.Relion.AC,
+                  u'ctf/cs_mm': star.Relion.CS,
+                  u'ctf/df1_A': star.Relion.DEFOCUSU,
+                  u'ctf/df2_A': star.Relion.DEFOCUSV,
+                  u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
+                  u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
+                  u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
+                  u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution"}
     general = {u'uid': None,
                u'ctf/accel_kv': star.Relion.VOLTAGE,
                u'blob/psize_A': star.Relion.DETECTORPIXELSIZE,
@@ -230,7 +236,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                u'blob/idx': star.UCSF.IMAGE_INDEX,
                u'location/center_x_frac': None,
                u'location/center_y_frac': None,
-               u'location/micrograph_path': None,
+               u'location/micrograph_path': star.Relion.MICROGRAPH_NAME,
                u'location/micrograph_shape': None}
     model = {u'split': "rlnRandomSubset",
              u'shift': star.Relion.ORIGINS,
@@ -248,10 +254,28 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
              u'class_posterior': None,
              u'class': star.Relion.CLASS,
              u'class_ess': None}
-    names = [str(k) for k in general if general[k] is not None and k in cs.dtype.names]
-    df = pd.DataFrame.from_records(cs[names])
-    df.columns = [general[k] for k in names]
-    df.reset_index(inplace=True)
+    log = logging.getLogger('root')
+    cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
+
+    if passthrough is None:
+        df = util.dataframe_from_records_mapped(cs, general)
+    else:
+        log.debug("Reading passthrough file")
+        pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
+        if len(pt) == len(cs):
+            log.info("Particle passthrough detected")
+            log.debug("Concatenating passthrough recarray fields")
+            cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
+            df = util.dataframe_from_records_mapped(cs, general)
+        else:
+            log.info("Micrograph passthrough detected")
+            pt = util.dataframe_from_records_mapped(pt, micrograph)
+            df = util.dataframe_from_records_mapped(cs, general)
+            fields = [c for c in pt.columns if c not in df.columns]
+            key = star.Relion.MICROGRAPH_NAME
+            log.debug("Merging micrograph fields: %s" % ", ".join(fields))
+            df = star.smart_merge(df, pt, fields=fields, key=key)
+
     star.simplify_star_ucsf(df)
     df[star.Relion.MAGNIFICATION] = 10000.0
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
@@ -260,7 +284,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         log.debug("Converting normalized particle coordinates to absolute")
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
-        df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
+        # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
         remxy, df[star.Relion.COORDS] = np.vectorize(modf)(
             df[star.Relion.COORDS] * cs['location/micrograph_shape'])
         df[star.Relion.ORIGINX] = remxy[:, 0]
