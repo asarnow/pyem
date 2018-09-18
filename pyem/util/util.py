@@ -76,6 +76,13 @@ def join_struct_arrays(arrays):
     return joint.ravel().view(dtype)
 
 
+def dataframe_from_records_mapped(rec, field_dict):
+    names = [str(k) for k in field_dict if field_dict[k] is not None and k in rec.dtype.names]
+    df = pd.DataFrame.from_records(rec[names])
+    df.columns = [field_dict[k] for k in names]
+    return df
+
+
 def nearest_good_box_size(n):
     b = [32, 36, 40, 48, 52, 56, 64, 66, 70, 72, 80, 84, 88, 100, 104, 108,
          112, 120, 128, 130, 132, 140, 144, 150, 160, 162, 168, 176, 180, 182,
