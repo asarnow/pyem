@@ -265,9 +265,13 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         pt = passthrough if type(passthrough) is np.ndarray else np.load(passthrough)
         if len(pt) == len(cs):
             log.info("Particle passthrough detected")
-            log.debug("Concatenating passthrough recarray fields")
-            cs = util.join_struct_arrays([cs, pt[[n for n in pt.dtype.names if n != 'uid']]])
-            log.debug("Creating particle DataFrame from concatenated recarray")
+            names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
+            if len(names) > 0:
+                log.debug("Concatenating passthrough recarray fields")
+                cs = util.join_struct_arrays([cs, pt[names]])
+            else:
+                log.info("Passthrough file contains no new information and will be ignored")
+            log.debug("Creating particle DataFrame from recarray")
             df = util.dataframe_from_records_mapped(cs, general)
         else:
             log.info("Micrograph passthrough detected")
