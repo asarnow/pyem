@@ -60,6 +60,7 @@ def main(args):
         star.augment_star_ucsf(coord_star)
         star.augment_star_ucsf(df)
         key = star.merge_key(df, coord_star)
+        log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
             fields = star.Relion.MICROGRAPH_COORDS
         else:
