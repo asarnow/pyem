@@ -267,7 +267,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
             log.info("Particle passthrough detected")
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
-                log.debug("Concatenating passthrough recarray fields")
+                log.debug("Concatenating passthrough fields: %s" % ", ".join(names))
                 cs = util.join_struct_arrays([cs, pt[names]])
             else:
                 log.info("Passthrough file contains no new information and will be ignored")
@@ -326,8 +326,9 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         if minphic > 0:
             df.drop(df.loc[cls_prob < minphic].index, inplace=True)
     elif len(phic_names) == 1:
-        log.debug("Assigning parameters from 2D classes")
+        log.debug("Assigning parameters 2D classes or single 3D class")
         if "alignments2D" in phic_names[0]:
+            log.debug("Assigning skew angle from 2D classification")
             model["pose"] = star.Relion.ANGLEPSI
         for k in model:
             if model[k] is not None:
