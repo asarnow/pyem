@@ -350,6 +350,15 @@ def all_same_class(df, inplace=False):
 
 def recenter(df, inplace=False):
     df = df if inplace else df.copy()
+    intoff = np.round(df[Relion.ORIGINS]).values
+    diffxy = df[Relion.ORIGINS] - intoff
+    df[Relion.COORDS] = df[Relion.COORDS] - intoff
+    df[Relion.ORIGINS] = diffxy
+    return df
+
+
+def recenter_modf(df, inplace=False):
+    df = df if inplace else df.copy()
     remxy, offsetxy = np.vectorize(modf)(df[Relion.ORIGINS])
     df[Relion.ORIGINS] = remxy
     df[Relion.COORDS] = df[Relion.COORDS] - offsetxy
@@ -383,7 +392,7 @@ def scale_magnification(df, factor, inplace=False):
     return df
 
 
-def parse_star(starfile, keep_index=True):
+def parse_star(starfile, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
@@ -480,7 +489,8 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
     return newstar
 
 
-def augment_star_ucsf(df):
+def augment_star_ucsf(df, inplace=True):
+    df = df if inplace else df.copy()
     df.reset_index(inplace=True)
     if Relion.IMAGE_NAME in df:
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
@@ -496,9 +506,11 @@ def augment_star_ucsf(df):
             df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
         df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
         df[UCSF.IMAGE_ORIGINAL_BASENAME] = df[UCSF.IMAGE_ORIGINAL_PATH].apply(os.path.basename)
+    return df
 
 
-def simplify_star_ucsf(df):
+def simplify_star_ucsf(df, inplace=True):
+    df = df if inplace else df.copy()
     if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH in df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[UCSF.IMAGE_ORIGINAL_INDEX].map(
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_ORIGINAL_PATH],
@@ -511,6 +523,7 @@ def simplify_star_ucsf(df):
     if "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
+    return df
 
 
 if __name__ == "__main__":
