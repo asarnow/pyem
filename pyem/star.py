@@ -563,7 +563,7 @@ if __name__ == "__main__":
                         action="store_true")
     #    parser.add_argument("--seed", help="Seed for random number generators",
     #                        type=int)
-    parser.add_argument("--min-separation", help="Minimum distance between particle coordinates", type=float)
+    parser.add_argument("--min-separation", help="Minimum distance in Angstroms between particle coordinates", type=float)
     parser.add_argument("--scale", help="Factor to rescale particle coordinates, origins, and magnification",
                         type=float)
     parser.add_argument("--scale-particles",

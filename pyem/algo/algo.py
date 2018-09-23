@@ -45,3 +45,4 @@ def query_connected(kdt, maxdist):
             else:
                 nb[idx] = nb[p[0]]
     return nb
+
