@@ -225,6 +225,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                u'ctf/accel_kv': star.Relion.VOLTAGE,
                u'blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                u'ctf/ac': star.Relion.AC,
+               u'ctf/amp_contrast': star.Relion.AC,
                u'ctf/cs_mm': star.Relion.CS,
                u'ctf/df1_A': star.Relion.DEFOCUSU,
                u'ctf/df2_A': star.Relion.DEFOCUSV,
