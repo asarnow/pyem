@@ -79,8 +79,8 @@ def main(args):
     if args.info:
         args.input.append(args.output)
 
-    df = pd.concat((parse_star(inp, keep_index=False) for inp in args.input), join="inner")
-
+    df = pd.concat((parse_star(inp, augment=args.augment) for inp in args.input), join="inner")
+    
     dfaux = None
 
     if args.cls is not None:
@@ -143,7 +143,7 @@ def main(args):
         df = df.loc[mask]
 
     if args.copy_angles is not None:
-        angle_star = parse_star(args.copy_angles, keep_index=False)
+        angle_star = parse_star(args.copy_angles, augment=args.augment)
         df = smart_merge(df, angle_star, fields=Relion.ANGLES)
 
     if args.transform is not None:
@@ -158,16 +158,16 @@ def main(args):
         df[Relion.ANGLETILT] = 180 - df[Relion.ANGLETILT]
 
     if args.copy_paths is not None:
-        path_star = parse_star(args.copy_paths, keep_index=False)
+        path_star = parse_star(args.copy_paths)
         df[Relion.IMAGE_NAME] = path_star[Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
-        ctf_star = pd.concat((parse_star(inp, keep_index=False) for inp in glob(args.copy_ctf)), join="inner")
+        ctf_star = pd.concat((parse_star(inp, augment=args.augment) for inp in glob(args.copy_ctf)), join="inner")
         df = smart_merge(df, ctf_star, Relion.CTF_PARAMS)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
-            (parse_star(inp, keep_index=False) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
+            (parse_star(inp, augment=args.augment) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
         df = smart_merge(df, coord_star, fields=Relion.MICROGRAPH_COORDS)
 
     if args.scale is not None:
@@ -240,10 +240,10 @@ def main(args):
         return 0
 
     if args.auxout is not None and dfaux is not None:
-        write_star(args.auxout, dfaux)
+        write_star(args.auxout, dfaux, simplify=args.augment)
 
     if args.output is not None:
-        write_star(args.output, df)
+        write_star(args.output, df, simplify=args.augment)
     return 0
 
 
@@ -392,7 +392,7 @@ def scale_magnification(df, factor, inplace=False):
     return df
 
 
-def parse_star(starfile, keep_index=False):
+def parse_star(starfile, keep_index=False, augment=False):
     headers = []
     foundheader = False
     ln = 0
@@ -413,12 +413,16 @@ def parse_star(starfile, keep_index=False):
             ln += 1
     df = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
     df.columns = headers
+    if augment:
+        augment_star_ucsf(df, inplace=True)
     return df
 
 
-def write_star(starfile, df, reindex=True):
+def write_star(starfile, df, reindex=True, simplify=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
+    if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
+        df = simplify_star_ucsf(df)
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     if reindex and not indexed:  # No index present, append consecutive indices to sorted headers.
         order = np.argsort(df.columns)
@@ -532,6 +536,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
                         type=str)
+    parser.add_argument("--augment", help="Always augment inputs and simplify outputs",
+                        action="store_true")
     parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
                         type=int, default=None)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
