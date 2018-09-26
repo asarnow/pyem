@@ -61,23 +61,22 @@ def main(args):
         except:
             log.error("Origin must be comma-separated list of x,y,z coordinates")
             return 1
+    
+    if args.sym is not None:
+        args.sym = util.relion_symmetry_group(args.sym)
 
     df = star.parse_star(args.input)
 
     if args.apix is None:
-        args.apix = star.calculate_apix(star)
+        args.apix = star.calculate_apix(df)
         if args.apix is None:
             log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
             args.apix = 1.0
+            df[star.Relion.MAGNIFICATION] = 10000
+            df[star.DETECTORPIXELSIZE] = 1.0
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
-
-    if args.sym is not None:
-        args.sym = star.relion_symmetry_group(args.sym)
-        dfs = list(subparticle_expansion(df, args.sym, -args.displacement / args.apix))
-    else:
-        dfs = [df]
 
     if args.target is not None:
         if args.origin is not None:
@@ -88,9 +87,15 @@ def main(args):
         c = args.target - args.origin
         c = np.where(np.abs(c) < 1, 0, c)  # Ignore very small coordinates.
         d = np.linalg.norm(c)
-        ax = marker / d
-        op = util.euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
-        dfs = map(lambda x: star.transform(x, op.T, -d, invert=args.target_invert), dfs)
+        ax = c / d
+        cm = util.euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
+        ops = [op.dot(cm) for op in args.sym] if args.sym is not None else [cm]
+        dfs = [star.transform_star(df, op.T, -d, invert=args.target_invert, adjust_defocus=args.adjust_defocus) for op in ops]
+    elif args.sym is not None:
+        dfs = list(subparticle_expansion(df, args.sym, -args.displacement / args.apix))
+    else:
+        log.error("At least a target or symmetry group must be provided via --target or --sym")
+        return 1
  
     if args.recenter:
         for s in dfs:
@@ -138,10 +143,10 @@ if __name__ == "__main__":
     parser.add_argument("--psi", help="Additional in-plane rotation of target in degrees", type=float, default=0)
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
                                            "extracting outside Relion)", action="store_true")
+    parser.add_argument("--adjust-defocus", help="Add Z component of shifts to defocus", action="store_true")
     parser.add_argument("--quiet", help="Don't print info messages", action="store_true")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
-    parser.add_argument("--skip-origins", help="Skip update of particle origins", action="store_true")
     parser.add_argument("--suffix", help="Suffix for multiple output files")
     parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles ("
                                       "Relion conventions)")
