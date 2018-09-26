@@ -46,6 +46,7 @@ class Relion:
     CLASS = "rlnClassNumber"
     DEFOCUSU = "rlnDefocusU"
     DEFOCUSV = "rlnDefocusV"
+    DEFOCUS = [DEFOCUSU, DEFOCUSV]
     DEFOCUSANGLE = "rlnDefocusAngle"
     CS = "rlnSphericalAberration"
     PHASESHIFT = "rlnPhaseShift"
@@ -446,7 +447,7 @@ def write_star(starfile, df, reindex=True, simplify=True):
     df[df.columns[order]].to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
-def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True):
+def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -489,6 +490,10 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
                 tt = np.vstack([q.dot(t) for q in newrots])
         newshifts = df[Relion.ORIGINS] + tt[:, :-1]
         newstar[Relion.ORIGINS] = newshifts
+        if adjust_defocus:
+            newstar[Relion.DEFOCUSU] += tt[:, -1] * calculate_apix(df)
+            newstar[Relion.DEFOCUSV] += tt[:, -1] * calculate_apix(df)
+            newstar[Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(newstar[Relion.DEFOCUSV], newstar[Relion.DEFOCUSV]))
 
     return newstar
 
