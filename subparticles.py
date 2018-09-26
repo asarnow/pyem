@@ -25,16 +25,8 @@ import os
 import os.path
 import sys
 import xml.etree.cElementTree as etree
-from pyem.star import calculate_apix
-from pyem.star import parse_star
-from pyem.star import write_star
-from pyem.star import transform_star
-from pyem.star import select_classes
-from pyem.star import recenter
-from pyem.star import Relion
-from pyem.util import euler2rot
-from pyem.util import relion_symmetry_group
-from pyem.util import interleave
+from pyem import star
+from pyem import util
 
 
 def main(args):
@@ -47,15 +39,12 @@ def main(args):
         hdlr.setLevel(logging.INFO)
     log.addHandler(hdlr)
 
-    if args.markers is None and args.target is None and args.sym is None:
-        log.error("A marker or symmetry group must be provided via --target, --markers, or --sym")
+    if args.target is None and args.sym is None:
+        log.error("At least a target or symmetry group must be provided via --target or --sym")
         return 1
-    elif args.sym is None and args.markers is None and args.boxsize is None and args.origin is None:
-        log.error("An origin must be provided via --boxsize, --origin, or --markers")
+    elif args.target is not None and args.boxsize is None and args.origin is None:
+        log.error("An origin must be provided via --boxsize or --origin")
         return 1
-    elif args.sym is not None and args.markers is None and args.target is None and \
-            (args.boxsize is not None or args.origin is not None):
-        log.warn("Symmetry expansion alone will ignore --target or --origin")
 
     if args.target is not None:
         try:
@@ -73,103 +62,63 @@ def main(args):
             log.error("Origin must be comma-separated list of x,y,z coordinates")
             return 1
 
-    if args.marker_sym is not None:
-        args.marker_sym = relion_symmetry_group(args.marker_sym)
-
-    star = parse_star(args.input, keep_index=False)
+    df = star.parse_star(args.input)
 
     if args.apix is None:
-        args.apix = calculate_apix(star)
+        args.apix = star.calculate_apix(star)
         if args.apix is None:
             log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
             args.apix = 1.0
 
     if args.cls is not None:
-        star = select_classes(star, args.cls)
+        df = star.select_classes(df, args.cls)
 
-    cmms = []
+    if args.sym is not None:
+        args.sym = star.relion_symmetry_group(args.sym)
+        dfs = list(subparticle_expansion(df, args.sym, -args.displacement / args.apix))
+    else:
+        dfs = [df]
 
-    if args.markers is not None:
-        cmmfiles = glob.glob(args.markers)
-        for cmmfile in cmmfiles:
-            for cmm in parse_cmm(cmmfile):
-                cmms.append(cmm / args.apix)
-    
     if args.target is not None:
-        cmms.append(args.target / args.apix)
-
-    stars = []
-
-    if len(cmms) > 0:
         if args.origin is not None:
             args.origin /= args.apix
         elif args.boxsize is not None:
             args.origin = np.ones(3) * args.boxsize / 2
-        else:
-            log.warn("Using first marker as origin")
-            if len(cmms) == 1:
-                log.error("Using first marker as origin, expected at least two markers")
-                return 1
-            args.origin = cmms[0]
-            cmms = cmms[1:]
-
-        markers = [cmm - args.origin for cmm in cmms]
-        markers = [np.where(np.abs(m) < 1, 0, m) for m in markers]
-
-        if args.marker_sym is not None and len(markers) == 1:
-            markers = [op.dot(markers[0]) for op in args.marker_sym]
-        elif args.marker_sym is not None:
-            log.error("Exactly one marker is required for symmetry-derived subparticles")
-            return 1
-        
-        rots = [euler2rot(*np.deg2rad(r[1])) for r in star[Relion.ANGLES].iterrows()]
-        #origins = star[ORIGINS].copy()
-        for m in markers:
-            d = np.linalg.norm(m)
-            ax = m / d
-            op = euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
-            stars.append(transform_star(star, op.T, -d, rots=rots, invert=args.target_invert))
-        
-    if args.sym is not None:
-        args.sym = relion_symmetry_group(args.sym)
-        if len(stars) > 0:
-            stars = [se for s in stars for se in subparticle_expansion(s, args.sym, -args.displacement / args.apix)]
-        else:
-            stars = list(subparticle_expansion(star, args.sym, -args.displacement / args.apix))
+        args.target /= args.apix
+        c = args.target - args.origin
+        c = np.where(np.abs(c) < 1, 0, c)  # Ignore very small coordinates.
+        d = np.linalg.norm(c)
+        ax = marker / d
+        op = util.euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
+        dfs = map(lambda x: star.transform(x, op.T, -d, invert=args.target_invert), dfs)
  
     if args.recenter:
-        for s in stars:
-            recenter(s, inplace=True)
+        for s in dfs:
+            star.recenter(s, inplace=True)
     
     if args.suffix is None and not args.skip_join:
-        if len(stars) > 1:
-            star = interleave(stars)
+        if len(dfs) > 1:
+            df = util.interleave(dfs)
         else:
-            star = stars[0]
-        write_star(args.output, star)
+            df = dfs[0]
+        star.write_star(args.output, df)
     else:
-        for i, star in enumerate(stars):
-            write_star(os.path.join(args.output, args.suffix + "_%d" % i), star)
+        for i, s in enumerate(dfs):
+            star.write_star(os.path.join(args.output, args.suffix + "_%d" % i), s)
     return 0
-
-
-def parse_cmm(cmmfile):
-    tree = etree.parse(cmmfile)
-    cmms = [np.array([np.double(cm.get(ax)) for ax in ['x', 'y', 'z']]) for cm in tree.findall("marker")]
-    return cmms
 
 
 def subparticle_expansion(s, ops=[np.eye(3)], dists=None, rots=None):
     if rots is None:
-        rots = [euler2rot(*np.deg2rad(r[1])) for r in s[Relion.ANGLES].iterrows()]
+        rots = [util.euler2rot(*np.deg2rad(r[1])) for r in s[star.Relion.ANGLES].iterrows()]
     if dists is not None:
         if np.isscalar(dists):
             dists = [dists] * len(ops)
         for i in range(len(ops)):
-            yield transform_star(s, ops[i], dists[i], rots=rots)
+            yield star.transform_star(s, ops[i], dists[i], rots=rots)
     else:
         for op in ops:
-            yield transform_star(s, op, rots=rots)
+            yield star.transform_star(s, op, rots=rots)
 
 
 if __name__ == "__main__":
@@ -187,8 +136,6 @@ if __name__ == "__main__":
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
     parser.add_argument("--psi", help="Additional in-plane rotation of target in degrees", type=float, default=0)
-    parser.add_argument("--markers", help="Marker file from Chimera, or *quoted* file glob")
-    parser.add_argument("--marker-sym", help="Symmetry group for symmetry-derived subparticles (Relion conventions)")
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
                                            "extracting outside Relion)", action="store_true")
     parser.add_argument("--quiet", help="Don't print info messages", action="store_true")
