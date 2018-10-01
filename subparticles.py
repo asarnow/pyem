@@ -90,7 +90,7 @@ def main(args):
         ax = c / d
         cm = util.euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
         ops = [op.dot(cm) for op in args.sym] if args.sym is not None else [cm]
-        dfs = [star.transform_star(df, op.T, -d, invert=args.target_invert, adjust_defocus=args.adjust_defocus) for op in ops]
+        dfs = [star.transform_star(df, op.T, -d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus) for op in ops]
     elif args.sym is not None:
         dfs = list(subparticle_expansion(df, args.sym, -args.displacement / args.apix))
     else:
@@ -144,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
                                            "extracting outside Relion)", action="store_true")
     parser.add_argument("--adjust-defocus", help="Add Z component of shifts to defocus", action="store_true")
+    parser.add_argument("--shift-only", help="Keep original view axis after target transformation", action="store_false")
     parser.add_argument("--quiet", help="Don't print info messages", action="store_true")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
