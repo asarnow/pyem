@@ -480,9 +480,9 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
     if t is not None and np.linalg.norm(t) > 0:
         if np.isscalar(t):
             if invert:
-                tt = -np.vstack([np.squeeze(q[:,2]) * t for q in rots])
+                tt = -np.vstack([np.squeeze(q[:, 2]) * t for q in rots])
             else:
-                tt = np.vstack([np.squeeze(q[:,2]) * t for q in newrots])
+                tt = np.vstack([np.squeeze(q[:, 2]) * t for q in newrots])
         else:
             if invert:
                 tt = -np.vstack([q.dot(t) for q in rots])
