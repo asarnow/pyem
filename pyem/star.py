@@ -234,6 +234,19 @@ def main(args):
         dfaux = df.loc[dupes]
         df.drop(dupes, inplace=True)
 
+    if args.merge_source is not None:
+        if args.merge_fields is not None:
+            if "," in args.merge_fields:
+                args.merge_fields = args.merge_fields.split(",")
+        else:
+            print("Merge fields must be specified using --merge-fields")
+            return 1
+        if args.merge_key is not None:
+            if "," in args.merge_key:
+                args.merge_key = args.merge_key.split(",")
+        merge_star = parse_star(args.merge_source, augment=args.augment)
+        df = smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key)
+
     if args.split_micrographs:
         dfs = split_micrographs(df)
         for mg in dfs:
@@ -555,6 +568,10 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
                         type=str)
+    parser.add_argument("--merge-source", help="Source .star for merge")
+    parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
+    parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
+                        metavar="f1,f2...fN", type=str)
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
