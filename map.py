@@ -32,6 +32,7 @@ from pyem.vop import resample_volume
 from pyem.vop import vol_ft
 from scipy.ndimage import affine_transform
 from scipy.ndimage import shift
+from scipy.ndimage import zoom
 
 
 def main(args):
@@ -98,7 +99,7 @@ def main(args):
         args.origin = center
         log.info("Origin set to box center, %s" % (args.origin * args.apix))
 
-    if not (args.target is None and args.euler is None and args.matrix is None) \
+    if not (args.target is None and args.euler is None and args.matrix is None and args.boxsize is None) \
             and ismask(data) and args.spline_order != 0:
         log.warn("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
 
@@ -144,6 +145,11 @@ def main(args):
         args.translate -= args.origin
         data = shift(data, -args.translate, order=args.spline_order)
 
+    if args.boxsize is not None:
+        args.boxsize = np.double(args.boxsize)
+        data = zoom(data, args.boxsize / box, order=args.spline_order)
+        args.apix = args.apix * box[0] / args.boxsize
+
     if final is None:
         final = data
 
@@ -170,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--matrix",
                         help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
+    parser.add_argument("--boxsize", help="Set the output box dimensions, accounting for pixel size", type=int)
     parser.add_argument("--spline-order",
                         help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
                         type=int, default=3, choices=np.arange(6))
