@@ -29,7 +29,8 @@ def main(args):
         args.data_path = args.input.rstrip(".par") + ".mrcs"
         print("No stack path provided, using %s" % args.data_path)
     df = parse_fx_par(args.input)
-    df = par2star(df, data_path=args.data_path, apix=args.apix, cs=args.cs, ac=args.ac, kv=args.voltage)
+    df = par2star(df, data_path=args.data_path, apix=args.apix, cs=args.cs,
+                  ac=args.ac, kv=args.voltage, invert_eulers=args.relion)
     write_star(args.output, df, reindex=True)
     return 0
 
@@ -44,5 +45,6 @@ if __name__ == "__main__":
     parser.add_argument("--ac", help="Amplitude contrast", type=float)
     parser.add_argument("--cs", help="Spherical abberation", type=float)
     parser.add_argument("--voltage", "--kv", "-v", help="Acceleration voltage (kV)", type=float)
+    parser.add_argument("--relion", help="Use if .par file came from importing .star in cisTEM", action="store_false")
     sys.exit(main(parser.parse_args()))
 
