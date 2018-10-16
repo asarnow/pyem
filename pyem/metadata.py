@@ -130,6 +130,8 @@ def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=Tr
         df[star.Relion.ANGLEROT] = -par["PSI"]
         df[star.Relion.ANGLETILT] = -par["THETA"]
         df[star.Relion.ANGLEPSI] = -par["PHI"]
+    else:
+        df[star.Relion.ANGLES] = par[["PHI", "THETA", "PSI"]]
     star.simplify_star_ucsf(df)
     return df
 
