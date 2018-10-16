@@ -103,8 +103,8 @@ def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300):
     df[star.Relion.CS] = cs
     df[star.Relion.AC] = ac
     df[star.Relion.VOLTAGE] = kv
-    df[star.Relion.ORIGINX] = par["SHX"] / apix
-    df[star.Relion.ORIGINY] = par["SHY"] / apix
+    df[star.Relion.ORIGINX] = -par["SHX"] / apix
+    df[star.Relion.ORIGINY] = -par["SHY"] / apix
     df[star.Relion.ANGLEROT] = -par["PSI"]
     df[star.Relion.ANGLETILT] = -par["THETA"]
     df[star.Relion.ANGLEPSI] = -par["PHI"]
