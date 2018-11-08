@@ -358,7 +358,7 @@ def all_same_class(df, inplace=False):
     n = vc.max()
     si = df.set_index([Relion.IMAGE_NAME, Relion.CLASS], inplace=inplace)
     vci = si.index.value_counts()
-    si.loc[vci[vci==n].index].reset_index(inplace=inplace)
+    si = si.loc[vci[vci == n].index].reset_index(inplace=inplace)
     return si
 
 
