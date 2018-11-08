@@ -318,10 +318,8 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
-        remxy, df[star.Relion.COORDS] = np.vectorize(modf)(
-            df[star.Relion.COORDS] * cs['location/micrograph_shape'])
-        df[star.Relion.ORIGINX] = remxy[:, 0]
-        df[star.Relion.ORIGINY] = remxy[:, 1]
+        # x and y dimensions are reversed in cryosparc's micrograph shape
+        df[star.Relion.COORDS] = np.round(np.array(df[star.Relion.COORDS]) * cs['location/micrograph_shape'][:, [1, 0]])
         log.info("Converted particle coordinates from normalized to absolute with subpixel origin")
 
     if star.Relion.DEFOCUSANGLE in df:
