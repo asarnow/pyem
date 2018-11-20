@@ -74,3 +74,19 @@ def meanq(q, w=None):
         return np.linalg.eigh(np.einsum('ij,ik->...jk', q, q))[1][:, -1]
     else:
         return np.linalg.eigh(np.einsum('ij,ik,i->...jk', q, q, w))[1][:, -1]
+
+
+def pdistq(q1, q2=None):
+    if q2 is None:
+        q2 = q1
+    d = np.abs(q1.dot(q2.T))
+    # dots[dots > 1.0] = 1.0
+    np.clip(d, 0, 1.0, out=d)
+    np.arccos(d, out=d)
+    d *= 2
+    d_over_pi_half = d > np.pi/2
+    d[d_over_pi_half] = np.pi - d[d_over_pi_half]
+    d += 1e-6
+    d **= 2
+    d *= -0.5
+    return d

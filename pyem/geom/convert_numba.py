@@ -143,3 +143,47 @@ def expmap(e):
                   [-w[1], w[0], 0]], dtype=e.dtype)
     r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
     return r.T
+
+
+def parallel_convert_func(f):
+    @numba.jit(nopython=True, parallel=True)
+    def g(arr, out):
+        for i in numba.prange(len(arr)):
+            out[i] = f(arr[i])
+        return out
+    return g
+
+
+@numba.jit(nopython=True, nogil=True, fastmath=True)
+def e2r_vec(eu, out=None):
+    eu = np.atleast_2d(eu)
+    if out is None:
+        out = np.zeros((len(eu), 3, 3))
+    for i in range(len(eu)):
+        ca = np.cos(eu[i, 0])
+        cb = np.cos(eu[i, 1])
+        cg = np.cos(eu[i, 2])
+        sa = np.sin(eu[i, 0])
+        sb = np.sin(eu[i, 1])
+        sg = np.sin(eu[i, 2])
+        cc = cb * ca
+        cs = cb * sa
+        sc = sb * ca
+        ss = sb * sa
+        out[i, 0, :] = cg * cc - sg * sa, cg * cs + sg * ca, -cg * sb
+        out[i, 1, :] = -sg * cc - cg * sa, -sg * cs + cg * ca, sg * sb
+        out[i, 2, :] = sc, ss, cb
+    return out
+
+
+@numba.jit(nopython=True, nogil=True, fastmath=True)
+def e2q_vec(eu, out=None):
+    eu = np.atleast_2d(eu)
+    if out is None:
+        out = np.zeros((len(eu), 4))
+    for i in range(len(eu)):
+        out[i, 0] = np.cos((eu[i, 0] + eu[i, 2]) / 2) * np.cos(eu[i, 1] / 2)
+        out[i, 1] = np.cos((eu[i, 0] - eu[i, 2]) / 2) * np.sin(eu[i, 1] / 2)
+        out[i, 2] = np.sin((eu[i, 0] - eu[i, 2]) / 2) * np.sin(eu[i, 1] / 2)
+        out[i, 3] = np.sin((eu[i, 0] + eu[i, 2]) / 2) * np.cos(eu[i, 1] / 2)
+    return out

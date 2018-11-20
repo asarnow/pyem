@@ -27,7 +27,7 @@ def _qconj(q, p):
 
 
 @numba.guvectorize(["void(float64[:], float64[:])"],
-        "(m)->(m)", nopython=True, cache=True)
+                   "(m)->(m)", nopython=True, cache=True)
 def qconj(q, p):
     _qconj(q, p)
 
@@ -41,8 +41,8 @@ def _qtimes(q1, q2, q3):
     return q3
 
 
-@numba.guvectorize(["void(float64[:], float64[:], float64[:])"], 
-        "(m),(m)->(m)", nopython=True, cache=True)
+@numba.guvectorize(["void(float64[:], float64[:], float64[:])"],
+                   "(m),(m)->(m)", nopython=True, cache=True)
 def qtimes(q1, q2, q3):
     _qtimes(q1, q2, q3)
 
@@ -61,7 +61,7 @@ def qsqrt(q, p):
     _qsqrt(q, p)
 
 
-@numba.jit(cache=True, nopython=True)
+@numba.jit(cache=True, nopython=True, nogil=True)
 def qslerp(q1, q2, t, longest=False):
     cos_half_theta = np.dot(q1, q2)
     if cos_half_theta >= 1.0:
@@ -81,3 +81,29 @@ def qslerp(q1, q2, t, longest=False):
     b = np.sin(t * half_theta)
     return (q1 * a + q2 * b) / sin_half_theta
 
+
+@numba.jit(cache=False, nopython=True, parallel=True)
+def pdistq(q1, q2=None, out=None):
+    if q2 is None:
+        q2 = q1
+    if out is None:
+        d = np.zeros((len(q1), len(q2)))
+    else:
+        d = out
+        assert len(d) == len(q1)
+        assert len(d[0]) == len(q2)
+    pi_half = np.pi / 2
+    for i in numba.prange(d.shape[0]):
+        for j in range(d.shape[1]):
+            v = np.abs(np.sum(q1[i] * q2[j]))
+            if v > 1.0:
+                v = 1.0
+            v = np.arccos(v)
+            v *= 2
+            if v > pi_half:
+                v = np.pi - v
+            v += 1e-6
+            v **= 2
+            v *= -0.5
+            d[i, j] = v
+    return d
