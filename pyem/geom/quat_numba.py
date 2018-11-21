@@ -83,15 +83,15 @@ def qslerp(q1, q2, t, longest=False):
 
 
 @numba.jit(cache=False, nopython=True, parallel=True)
-def pdistq(q1, q2=None, out=None):
-    if q2 is None:
-        q2 = q1
-    if out is None:
-        d = np.zeros((len(q1), len(q2)))
-    else:
-        d = out
-        assert len(d) == len(q1)
-        assert len(d[0]) == len(q2)
+def cdistq(q1, q2, d):
+    # if q2 is None:
+    #     q2 = q1
+    # if out is None:
+    # d = np.zeros((len(q1), len(q2)), dtype=q1.dtype)
+    # else:
+    #     d = out
+    #     assert len(d) == len(q1)
+    #     assert len(d[0]) == len(q2)
     pi_half = np.pi / 2
     for i in numba.prange(d.shape[0]):
         for j in range(d.shape[1]):
@@ -102,8 +102,28 @@ def pdistq(q1, q2=None, out=None):
             v *= 2
             if v > pi_half:
                 v = np.pi - v
-            v += 1e-6
+            # v += 1e-6
             v **= 2
             v *= -0.5
             d[i, j] = v
+    return d
+
+
+@numba.jit(cache=False, nopython=True, parallel=True)
+def pdistq(q1, d):
+    pi_half = np.pi / 2
+    for i in numba.prange(d.shape[0]):
+        d[i, i] = 0.0
+        for j in range(i + 1, d.shape[1]):
+            v = np.abs(np.sum(q1[i] * q1[j]))
+            if v > 1.0:
+                v = 1.0
+            v = np.arccos(v)
+            v *= 2
+            if v > pi_half:
+                v = np.pi - v
+            # v += 1e-6
+            v **= 2
+            v *= -0.5
+            d[i, j] = d[j, i] = v
     return d
