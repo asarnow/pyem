@@ -34,7 +34,7 @@ from pyem import star
 from pyem import algo
 from pyem import ctf
 from pyem import vop
-from pyem.util.convert_numba import euler2rot
+from pyem.geom.convert_numba import euler2rot
 from pyfftw.builders import rfft2
 from pyfftw.builders import irfft2
 
