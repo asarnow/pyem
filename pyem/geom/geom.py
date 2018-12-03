@@ -29,7 +29,11 @@ def double_center(arr, reference=None, inplace=False):
         mu = np.mean(reference)
     mu1 = np.mean(arr, axis=1, keepdims=True)
     if inplace:
-        arr -= - mu0 - mu1 + mu
+        arr -= mu0
+        arr -= mu1
+        arr += mu
     else:
-        arr = arr - mu0 - mu1 + mu
+        arr = arr - mu0
+        arr -= mu1
+        arr += mu
     return arr
