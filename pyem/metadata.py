@@ -81,7 +81,7 @@ def parse_fx_par(fn):
 
 
 def write_fx_par(fn, df):
-    formatters = {"C": "%d",
+    formatters = {"C": lambda x: "%d" % d,
                   "PSI": lambda x: "%0.2f" % x,
                   "THETA": lambda x: "%0.2f" % x,
                   "PHI": lambda x: "%0.2f" % x,
@@ -98,7 +98,8 @@ def write_fx_par(fn, df):
                   "SIGMA": lambda x: "%0.4f" % x,
                   "SCORE": lambda x: "%0.2f" % x,
                   "CHANGE": lambda x: "%0.2f" % x}
-    df.to_csv(fn, sep="\s", formatters=formatters, index=False)
+    with open(fn, 'w') as f:
+        f.write(df.to_string(formatters=formatters, index=False))
 
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
