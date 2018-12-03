@@ -28,14 +28,6 @@ def cent2edge(bins):
     return np.r_[-np.Inf, 0.5 * (bins[:-1] + bins[1:]), np.Inf]
 
 
-def isrotation(r, tol=1e-4):
-    """Check for valid rotation matrix"""
-    check = np.identity(3, dtype=r.dtype) - np.dot(r.T, r)
-    if tol is None:
-        return check
-    return np.linalg.norm(check) < tol
-
-
 def relion_symmetry_group(sym):
     relion = which("relion_refine")
     if relion is None:

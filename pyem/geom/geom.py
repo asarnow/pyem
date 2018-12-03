@@ -37,3 +37,11 @@ def double_center(arr, reference=None, inplace=False):
         arr -= mu1
         arr += mu
     return arr
+
+
+def isrotation(r, tol=1e-6):
+    """Check for valid rotation matrix"""
+    check = np.identity(3, dtype=r.dtype) - np.dot(r.T, r)
+    if tol is None:
+        return check
+    return np.linalg.norm(check) < tol
