@@ -76,3 +76,52 @@ def eval_ctf(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, 
         ctf *= np.exp(-k4 * s_2)
     return ctf
 
+
+@numba.jit(cache=True, nopython=True, nogil=True)
+def eval_ctf_between(n, apix, def1, def2, lores=0, hires=0, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, out=None):
+    if out is None:
+        out = np.zeros((n, n // 2 + 1))
+    ctf = out.view()
+    ctf.shape = (ctf.size,)
+    d = 1. / (apix * n)
+    kv = kv * 1e3
+    cs = cs * 1e7
+    lamb = 12.2643247 / np.sqrt(kv * (1. + kv * 0.978466e-6))
+    def_avg = -(def1 + def2) * 0.5  # Sign convention for underfocused imaging.
+    def_dev = -(def1 - def2) * 0.5
+    k1 = np.pi / 2. * 2 * lamb
+    k2 = np.pi / 2. * cs * lamb**3
+    k3 = np.sqrt(1 - ac**2)
+    k4 = bf / 4.  # B-factor, follows RELION convention.
+    k5 = np.deg2rad(phase)  # Phase shift.
+    rmin = int(lores * apix * n)
+    rmin2 = rmin**2
+    rmax = int(min(n // 2 - 1, hires * apix * n))
+    rmax2 = rmax**2
+    cnt = int(0)
+    for i in range(n):
+        if i <= rmax:
+            yp = i
+        elif i >= n - rmax:
+            yp = i - n
+        else:
+            continue
+        yp2 = yp ** 2
+        for j in range(rmax + 1):
+            xp = j
+            r = xp ** 2 + yp2
+            if r < rmin2 or r > rmax2:
+                continue
+            s = np.sqrt(xp**2 + yp**2) * d
+            a = np.arctan2(yp, xp)
+            s2 = s**2
+            s4 = s**4
+            dz = def_avg + def_dev * (np.cos(2 * (a - angast)))
+            gamma = (k1 * dz * s2) + (k2 * s4) - k5
+            # ctf[i, j] = -(k3 * np.sin(gamma) - ac * np.cos(gamma))
+            ctf[cnt] = -(k3 * np.sin(gamma) - ac * np.cos(gamma))
+            if bf != 0:  # Enforce envelope.
+                # ctf[i, j] *= np.exp(-k4 * s2)
+                ctf[cnt] *= np.exp(-k4 * s2)
+            cnt += 1
+    return out
