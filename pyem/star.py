@@ -2,7 +2,7 @@
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
-# Simple program for parsing and altering Relion .star files.
+# Library for parsing and altering Relion .star files.
 # See help text and README file for more information.
 #
 # This program is free software: you can redistribute it and/or modify
