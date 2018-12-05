@@ -17,63 +17,68 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import numpy as np
 import sys
 from pyem.star import parse_star
 from pyem.star import write_star
 
+
 def main(args):
-    star = parse_star(args.input, keep_index=False)
+    df = parse_star(args.input, keep_index=False)
 
     if args.cls is not None:
-        clsfields = [f for f in star.columns if "ClassNumber" in f]
+        clsfields = [f for f in df.columns if "ClassNumber" in f]
         if len(clsfields) == 0:
             print("No class labels found")
             return 1
-        ind = star[clsfields[0]].isin(args.cls)
+        ind = df[clsfields[0]].isin(args.cls)
         if not np.any(ind):
             print("Specified class has no members")
             return 1
-        star = star.loc[ind]
+        df = df.loc[ind]
 
     if args.max_astigmatism is not None:
-        astigmatism = star["rlnDefocusU"] - star["rlnDefocusV"]
+        astigmatism = df["rlnDefocusU"] - df["rlnDefocusV"]
         ind = astigmatism <= args.max_astigmatism
-        star = star.loc[ind]
+        df = df.loc[ind]
 
     if args.max_resolution is not None:
-        if "rlnFinalResolution" in star.columns:
-            ind = star["rlnFinalResolution"] <= args.max_resolution
-        elif "rlnCtfMaxResolution" in star.columns:
-            ind = star["rlnCtfMaxResolution"] <= args.max_resolution
+        if "rlnFinalResolution" in df.columns:
+            ind = df["rlnFinalResolution"] <= args.max_resolution
+        elif "rlnCtfMaxResolution" in df.columns:
+            ind = df["rlnCtfMaxResolution"] <= args.max_resolution
         else:
             print("No CTF resolution field found in input")
             return 1
-        star = star.loc[ind]
+        df = df.loc[ind]
 
     if args.max_ctf_fom is not None:
-        ind = star["rlnCtfFigureOfMerit"] <= args.max_ctf_fom
-        star = star.loc[ind]
+        ind = df["rlnCtfFigureOfMerit"] <= args.max_ctf_fom
+        df = df.loc[ind]
 
     if args.min_ctf_fom is not None:
-        ind = star["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
-        star = star.loc[ind]
+        ind = df["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
+        df = df.loc[ind]
     
     if args.min_particles is not None:
-        counts = star["rlnMicrographName"].value_counts()
-        subset = star.set_index("rlnMicrographName").loc[counts.index[counts > args.min_particles]]
-        star = subset.reset_index()
+        counts = df["rlnMicrographName"].value_counts()
+        subset = df.set_index("rlnMicrographName").loc[counts.index[counts > args.min_particles]]
+        df = subset.reset_index()
 
     if args.subsample is not None:
         if args.subsample < 1:
-            args.subsample = np.max(np.round(args.subsample * star.shape[0]), 1)
+            args.subsample = np.max(np.round(args.subsample * df.shape[0]), 1)
         if args.bootstrap is not None:
             print("Not implemented yet")
             return 1
-            inds = np.random.choice(star.shape[0], size=(np.int(args.subsample), star.shape[0]/np.int(args.subsample)), replace=True)
+            inds = np.random.choice(df.shape[0],
+                                    size=(np.int(args.subsample),
+                                    df.shape[0]/np.int(args.subsample)),
+                                    replace=True)
         else:
-            star = star.sample(np.int(args.subsample), random_state=args.seed)
+            df = df.sample(np.int(args.subsample), random_state=args.seed)
 
-    write_star(args.output, star)
+    write_star(args.output, df)
     return 0
 
 
