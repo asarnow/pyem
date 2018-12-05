@@ -5,3 +5,4 @@ from .geom import *
 from .quat_numba import *
 from .quat import normq
 from .quat import meanq
+from .quat import distq
