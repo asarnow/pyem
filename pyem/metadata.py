@@ -81,7 +81,7 @@ def parse_fx_par(fn):
 
 
 def write_fx_par(fn, df):
-    formatters = {"C": "%d",
+    formatters = {"C": lambda x: "%d" % d,
                   "PSI": lambda x: "%0.2f" % x,
                   "THETA": lambda x: "%0.2f" % x,
                   "PHI": lambda x: "%0.2f" % x,
@@ -98,7 +98,8 @@ def write_fx_par(fn, df):
                   "SIGMA": lambda x: "%0.4f" % x,
                   "SCORE": lambda x: "%0.2f" % x,
                   "CHANGE": lambda x: "%0.2f" % x}
-    df.to_csv(fn, sep="\s", formatters=formatters, index=False)
+    with open(fn, 'w') as f:
+        f.write(df.to_string(formatters=formatters, index=False))
 
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
@@ -318,12 +319,9 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
-        remxy, df[star.Relion.COORDS] = np.vectorize(modf)(
-            df[star.Relion.COORDS] * cs['location/micrograph_shape'][:, ::-1])
-        df[star.Relion.ORIGINX] = remxy[:, 0]
-        df[star.Relion.ORIGINY] = remxy[:, 1]
-        # df[star.Relion.COORDS] = np.floor(df[star.Relion.COORDS] * cs['location/micrograph_shape'][:, ::-1])
-        log.info("Converted particle coordinates from normalized to absolute with subpixel origin")
+        df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
+                                          cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
+        log.info("Converted particle coordinates from normalized to absolute")
 
     if star.Relion.DEFOCUSANGLE in df:
         log.debug("Converting DEFOCUSANGLE from degrees to radians")

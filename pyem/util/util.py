@@ -16,24 +16,20 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from __future__ import absolute_import
 import bisect
 import numpy as np
 import pandas as pd
 import subprocess
 from distutils.spawn import find_executable as which
+from .. import geom
+from .. import mrc
+from .. import vop
 
 
 def cent2edge(bins):
     """Convert bin centers to bin edges"""
     return np.r_[-np.Inf, 0.5 * (bins[:-1] + bins[1:]), np.Inf]
-
-
-def isrotation(r, tol=1e-4):
-    """Check for valid rotation matrix"""
-    check = np.identity(3, dtype=r.dtype) - np.dot(r.T, r)
-    if tol is None:
-        return check
-    return np.linalg.norm(check) < tol
 
 
 def relion_symmetry_group(sym):
@@ -120,3 +116,10 @@ def chimera_xform2target(t0, r, u, o=None, apix=1.):
         o = np.array([0, 0, 0])
     t1 = (r.dot(t0 / apix - o) + u + o) * apix
     return t1
+
+
+def write_q_series(vol, qarr, basename, psz=1., order=1):
+    for i, q in enumerate(qarr):
+        r = geom.quat2rot(q / np.linalg.norm(q))
+        decoy = vop.resample_volume(vol, r=r, order=order)
+        mrc.write(basename % i, decoy, psz=psz)

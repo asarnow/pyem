@@ -102,7 +102,7 @@ def cdistq(q1, q2, d):
             v *= 2
             if v > pi_half:
                 v = np.pi - v
-            # v += 1e-6
+#             v += 1e-6
             v **= 2
             v *= -0.5
             d[i, j] = v
@@ -122,7 +122,7 @@ def pdistq(q1, d):
             v *= 2
             if v > pi_half:
                 v = np.pi - v
-            # v += 1e-6
+#             v += 1e-6
             v **= 2
             v *= -0.5
             d[i, j] = d[j, i] = v

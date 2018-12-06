@@ -17,7 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import print_function
 import numpy as np
 import sys
 from pyem import mrc
@@ -27,18 +26,15 @@ def main(args):
     x = mrc.read(args.input[0])
     sigma = np.zeros(x.shape)
     mu = x.copy()
-    
     for i, f in enumerate(args.input[1:]):
         x = mrc.read(f)
         olddif = x - mu
         mu += (x - mu) / (i + 1)
         sigma += olddif * (x - mu)
-        sigma_sq = np.power(sigma, 2)
-        mrc.write(args.output, sigma_sq)
-
+    sigma_sq = np.power(sigma, 2)
+    mrc.write(args.output, sigma_sq)
     if args.mean is not None:
         mrc.write(args.mean, mu)
-
     return 0
 
 
@@ -49,4 +45,3 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Variance map output path")
     parser.add_argument("--mean", help="Mean map output path")
     sys.exit(main(parser.parse_args()))
-
