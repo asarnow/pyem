@@ -127,3 +127,23 @@ def pdistq(q1, d):
             v *= -0.5
             d[i, j] = d[j, i] = v
     return d
+
+
+@numba.guvectorize(["void(complex128[:], complex128[:], complex128[:])"],
+                   "(m),(m)->(m)", nopython=True, cache=False)
+def dqtimes(q1, q2, q3):
+    # Dual part = dual1 * real2 + real1 * dual2
+    _qtimes(q1.imag, q2.real, q3.real)  # Store 1st dual term in real.
+    _qtimes(q1.real, q2.imag, q3.imag)  # Store 2nd dual term in imag.
+    tmp = q3.imag  # Workaround Numba typing error.
+    tmp += q3.real  # Sum terms into imag.
+    # Real part = real1 * real2
+    _qtimes(q1.real, q2.real, q3.real)  # Overwrite real with real part.
+    return
+
+
+@numba.guvectorize(["void(complex128[:], complex128[:])"],
+                   "(m)->(m)", nopython=True, cache=False)
+def dqconj(q, p):
+    _qconj(q.real, p.real)
+    _qconj(q.imag, p.imag)

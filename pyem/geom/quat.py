@@ -95,3 +95,11 @@ def pdistq(q1, q2=None):
     d *= -0.5
     return d
 
+
+def normdq(q, mu=None):
+    mag = np.linalg.norm(q.real, axis=1)
+    if mu is not None:
+        ang = np.dot(q.real, mu) < 0
+        q.real[ang] = -q.real[ang]
+    return q / mag.reshape(q.shape[0], 1)
+

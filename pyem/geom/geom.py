@@ -20,6 +20,7 @@ import numpy as np
 from .quat import distq
 from .quat import meanq
 from .quat_numba import qslerp
+from .quat_numba import qtimes
 
 
 def double_center(arr, reference=None, inplace=False):
@@ -74,3 +75,12 @@ def findkeyq(qarr, kpcs, nkey=10, pc_cyl_ptile=25, pc_ptile=99, pc=0):
         kq = meanq(qarr[mask, :][idx == i, :])
         keyq.append(kq)
     return np.array(keyq)
+
+
+def dualquat(q, t):
+    assert q.shape[0] == t.shape[0]
+    dq = np.zeros(q.shape, dtype=np.complex128)
+    dq.real = q
+    dq.imag[:, 1:] = t
+    dq.imag = qtimes(dq.imag, dq.real) * 0.5
+    return dq
