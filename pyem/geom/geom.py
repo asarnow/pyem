@@ -20,6 +20,7 @@ import numpy as np
 from .quat import distq
 from .quat import meanq
 from .quat_numba import qslerp
+from .quat_numba import qconj
 from .quat_numba import qtimes
 
 
@@ -84,3 +85,19 @@ def dualquat(q, t):
     dq.imag[:, 1:] = t
     dq.imag = qtimes(dq.imag, dq.real) * 0.5
     return dq
+
+
+def dq2sc(q):
+    theta = 2 * np.arccos(q[0].real)
+    nr = 1 / np.linalg.norm(q[1:].real)
+    d = -2 * q[0].imag * nr
+    l = q[1:].real * nr
+    m = (q[1:].imag - l * d * q[0].real * 0.5) * nr
+    return theta, d, l, m
+
+
+def dqdist(q1, q2):
+    q = qtimes(qconj(q1), q2)
+    theta, d, l, m = dq2sc(q)
+    r2 = np.sum(m**2)
+    return np.sqrt(d**2 + theta**2 * r2)
