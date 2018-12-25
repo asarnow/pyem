@@ -27,9 +27,7 @@ from pyem.mrc import write
 from pyem.util import euler2rot
 from pyem.util import rot2euler
 from pyem.util import vec2rot
-from pyem.vop import ismask
-from pyem.vop import resample_volume
-from pyem.vop import vol_ft
+from pyem import vop
 from scipy.ndimage import affine_transform
 from scipy.ndimage import shift
 from scipy.ndimage import zoom
@@ -53,7 +51,7 @@ def main(args):
     center = box // 2
 
     if args.fft:
-        data_ft = vol_ft(data.T, threads=args.threads)
+        data_ft = vop.vol_ft(data.T, threads=args.threads)
         np.save(args.output, data_ft)
         return 0
 
@@ -68,11 +66,9 @@ def main(args):
     if args.normalize:
         if args.reference is not None:
             ref, refhdr = read(args.reference, inc_header=True)
-            sigma = np.std(ref)
+            final, mu, sigma = vop.normalize(data, ref=ref, return_stats=True)
         else:
-            sigma = np.std(data)
-
-        mu = np.mean(data)
+            final, mu, sigma = vop.normalize(data, return_stats=True)
         final = (data - mu) / sigma
         if args.verbose:
             log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
@@ -100,7 +96,7 @@ def main(args):
         log.info("Origin set to box center, %s" % (args.origin * args.apix))
 
     if not (args.target is None and args.euler is None and args.matrix is None and args.boxsize is None) \
-            and ismask(data) and args.spline_order != 0:
+            and vop.ismask(data) and args.spline_order != 0:
         log.warn("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
 
     if args.matrix is not None:
@@ -109,7 +105,7 @@ def main(args):
         except:
             log.error("Matrix format is incorrect")
             return 1
-        data = resample_volume(data, r=r, t=None, ori=None, order=args.spline_order)
+        data = vop.resample_volume(data, r=r, t=None, ori=None, order=args.spline_order)
 
     if args.target is not None:
         try:
@@ -123,7 +119,7 @@ def main(args):
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
-        data = resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.target_invert)
+        data = vop.resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.target_invert)
 
     if args.euler is not None:
         try:

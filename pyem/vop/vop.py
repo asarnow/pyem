@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+import numpy.ma as ma
 from scipy.ndimage import map_coordinates
 from pyfftw.interfaces.numpy_fft import rfftn
 from .vop_numba import fill_ft
@@ -118,3 +119,24 @@ def vol_ft(vol, pfac=2, threads=1, normfft=1):
     ftc = np.zeros((ft.shape[0] + 3, ft.shape[1] + 3, ft.shape[2]), dtype=np.complex128)
     fill_ft(ft, ftc, vol.shape[0], normfft=normfft)
     return ftc
+
+
+def normalize(vol, ref=None, return_stats=False):
+    volm = vol.view(ma.MaskedArray)
+    sz = volm.shape[0]
+    rng = np.arange(-sz/2, sz)
+    x, y, z = np.meshgrid(rng, rng, rng)
+    r2 = x**2 + y**2 + z**2
+    mask = r2 > sz**2
+    volm.mask = mask
+    if ref is not None:
+        ref = ref.view(ma.MaskedArray)
+        ref.mask = mask
+        sigma = np.std(ref)
+        mu = np.mean(ref)
+    else:
+        sigma = np.std(volm)
+        mu = np.mean(volm)
+    if return_stats:
+        return (vol - mu) / sigma, mu, sigma
+    return (vol - mu) / sigma
