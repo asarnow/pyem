@@ -227,7 +227,7 @@ def parse_star(starfile, keep_index=False, augment=False):
     ln = 0
     with open(starfile, 'rU') as f:
         for l in f:
-            if l.startswith("_rln"):
+            if l.startswith("_"):
                 foundheader = True
                 lastheader = True
                 if keep_index:
