@@ -149,6 +149,10 @@ def main(args):
     if final is None:
         final = data
 
+    if args.final_mask is not None:
+        final_mask = read(args.final_mask)
+        final *= final_mask
+
     write(args.output, final, psz=args.apix)
     return 0
 
@@ -160,6 +164,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
+    parser.add_argument("--mask", help="Final mask to apply after any operations", dest="final_mask")
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
