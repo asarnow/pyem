@@ -54,14 +54,20 @@ class Relion:
     VOLTAGE = "rlnVoltage"
     MAGNIFICATION = "rlnMagnification"
     DETECTORPIXELSIZE = "rlnDetectorPixelSize"
+    BEAMTILTX = "rlnBeamTiltX"
+    BEAMTILTY = "rlnBeamTiltY"
+    CTFSCALEFACTOR = "rlnCtfScaleFactor"
+    CTFBFACTOR = "rlnCtfBFactor"
+    CTFMAXRESOLUTION = "rlnCtfMaxResolution"
+    CTFFIGUREOFMERIT = "rlnCtfFigureOfMerit"
     GROUPNUMBER = "rlnGroupNumber"
     RANDOMSUBSET = "rlnRandomSubset"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
-                  "rlnCtfScaleFactor", "rlnCtfBfactor", "rlnCtfMaxResolution",
-                  "rlnCtfFigureOfMerit"]
+                  BEAMTILTX, BEAMTILTY, CTFSCALEFACTOR, CTFBFACTOR,
+                  CTFMAXRESOLUTION, CTFFIGUREOFMERIT]
     MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE]
     MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
     PICK_PARAMS = MICROGRAPH_COORDS + [ANGLEPSI, CLASS, "rlnAutopickFigureOfMerit"]
