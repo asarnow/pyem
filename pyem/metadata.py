@@ -20,6 +20,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import sys
 from math import modf
 from . import star
 from . import util
@@ -309,6 +310,10 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
             key = star.Relion.MICROGRAPH_NAME
             log.debug("Merging micrograph fields: %s" % ", ".join(fields))
             df = star.smart_merge(df, pt, fields=fields, key=key)
+
+    if sys.version_info >= (3, 0):
+        df[star.Relion.MICROGRAPH_NAME] = df[star.Relion.MICROGRAPH_NAME].apply(lambda x: x.decode('UTF-8'))
+        df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
     star.simplify_star_ucsf(df)
     df[star.Relion.MAGNIFICATION] = 10000.0
