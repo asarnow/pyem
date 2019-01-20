@@ -312,8 +312,10 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
             df = star.smart_merge(df, pt, fields=fields, key=key)
 
     if sys.version_info >= (3, 0):
-        df[star.Relion.MICROGRAPH_NAME] = df[star.Relion.MICROGRAPH_NAME].apply(lambda x: x.decode('UTF-8'))
-        df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
+        if star.Relion.MICROGRAPH_NAME in df:
+            df[star.Relion.MICROGRAPH_NAME] = df[star.Relion.MICROGRAPH_NAME].apply(lambda x: x.decode('UTF-8'))
+        if star.UCSF.IMAGE_PATH in df:
+            df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
     star.simplify_star_ucsf(df)
     df[star.Relion.MAGNIFICATION] = 10000.0
