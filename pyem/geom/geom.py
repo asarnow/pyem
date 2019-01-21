@@ -22,6 +22,8 @@ from .quat import meanq
 from .quat_numba import qslerp
 from .quat_numba import qconj
 from .quat_numba import qtimes
+from .quat_numba import dqtimes
+from .quat_numba import dqconj
 
 
 def double_center(arr, reference=None, inplace=False):
@@ -97,7 +99,8 @@ def dq2sc(q):
 
 
 def dqdist(q1, q2):
-    q = qtimes(qconj(q1), q2)
+    q = dqtimes(dqconj(q1), q2)
     theta, d, l, m = dq2sc(q)
     r2 = np.sum(m**2)
     return np.sqrt(d**2 + theta**2 * r2)
+
