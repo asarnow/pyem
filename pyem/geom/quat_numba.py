@@ -147,3 +147,4 @@ def dqtimes(q1, q2, q3):
 def dqconj(q, p):
     _qconj(q.real, p.real)
     _qconj(q.imag, p.imag)
+
