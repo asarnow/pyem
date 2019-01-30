@@ -148,3 +148,13 @@ def dqconj(q, p):
     _qconj(q.real, p.real)
     _qconj(q.imag, p.imag)
 
+
+@numba.guvectorize(["void(complex128[:], complex128[:])"],
+                   "(m)->(m), (m), (m), (m)", nopython=True, cache=False)
+def dq2sc(q):
+    theta = 2 * np.arccos(q[:, 0].real)
+    nr = 1 / np.linalg.norm(q[:, 1:].real, axis=1)
+    d = -2 * q[:, 0].imag * nr
+    l = q[:, 1:].real * nr
+    m = (q[:, 1:].imag - l * d * q[:, 0].real * 0.5) * nr
+    return theta, d, l, m
