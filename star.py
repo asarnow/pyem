@@ -116,12 +116,12 @@ def main(args):
         df[star.Relion.IMAGE_NAME] = path_star[star.Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
-        ctf_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob(args.copy_ctf)), join="inner")
+        ctf_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_ctf)), join="inner")
         df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
-            (star.parse_star(inp, augment=args.augment) for inp in glob(args.copy_micrograph_coordinates)), join="inner")
+            (star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_micrograph_coordinates)), join="inner")
         df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS)
 
     if args.scale is not None:
