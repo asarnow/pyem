@@ -149,12 +149,26 @@ def dqconj(q, p):
     _qconj(q.imag, p.imag)
 
 
-@numba.guvectorize(["void(complex128[:], complex128[:])"],
-                   "(m)->(m), (m), (m), (m)", nopython=True, cache=False)
-def dq2sc(q):
-    theta = 2 * np.arccos(q[:, 0].real)
-    nr = 1 / np.linalg.norm(q[:, 1:].real, axis=1)
-    d = -2 * q[:, 0].imag * nr
-    l = q[:, 1:].real * nr
-    m = (q[:, 1:].imag - l * d * q[:, 0].real * 0.5) * nr
-    return theta, d, l, m
+@numba.jit(nopython=True, cache=False)
+def dq2sc_nb(q):
+    theta = 2 * np.arccos(q[0].real)
+#     nr = 1 / np.linalg.norm(q[1:].real)
+    nr = 1 / np.sin(theta / 2)
+    l = q[1:].real * nr
+#    d = -2 * q[0].imag * nr
+    d = np.sum(2 * qtimes(q.imag, qconj(q.real)) * l)
+#    m = (q[1:].imag - l * d * q[0].real * 0.5) * nr
+    return theta, d, l
+
+
+@numba.jit(nopython=True, cache=False, parallel=True)
+def pdistdq(q, d):
+    for i in numba.prange(d.shape[0]):
+        relq = dqtimes(dqconj(q[i, :]), q)
+        for j in range(i + 1, d.shape[1]):
+            theta, dax, l = dq2sc_nb(relq[j])
+            r2 = np.sum(m**2)
+            v = np.sqrt(dax**2 + theta**2 * r2)
+            d[i, j] = d[j, i] = v
+    return d
+
