@@ -98,7 +98,4 @@ if __name__ == "__main__":
     parser.add_argument("--zero-origin", help="Subtract particle origin from particle coordinates in output")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
-    args = parser.parse_args()
-    #logger = logging.getLogger(__name__)
-    #logger.setLevel(logging.getLevelName(args.loglevel.upper()))
-    sys.exit(main(args))
+    sys.exit(main(parser.parse_args()))
