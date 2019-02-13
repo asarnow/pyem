@@ -171,4 +171,3 @@ def pdistdq(q, d):
             v = np.sqrt(dax**2 + theta**2 * r2)
             d[i, j] = d[j, i] = v
     return d
-
