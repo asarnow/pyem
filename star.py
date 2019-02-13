@@ -192,6 +192,8 @@ def main(args):
         if args.merge_fields is not None:
             if "," in args.merge_fields:
                 args.merge_fields = args.merge_fields.split(",")
+            else:
+                args.merge_fields = [args.merge_fields]
         else:
             print("Merge fields must be specified using --merge-fields")
             return 1
