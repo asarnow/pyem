@@ -103,4 +103,3 @@ def dqdist(q1, q2):
     theta, d, l, m = dq2sc(q)
     r2 = np.sum(m**2)
     return np.sqrt(d**2 + theta**2 * r2)
-

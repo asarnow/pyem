@@ -113,7 +113,9 @@ def main(args):
     return 0
 
 
-def subparticle_expansion(s, ops=[np.eye(3)], dists=None, rots=None):
+def subparticle_expansion(s, ops=None, dists=None, rots=None):
+    if ops is None:
+        ops = [np.eye(3)]
     if rots is None:
         rots = [util.euler2rot(*np.deg2rad(r[1])) for r in s[star.Relion.ANGLES].iterrows()]
     if dists is not None:
