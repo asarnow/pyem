@@ -247,7 +247,7 @@ def parse_star(starfile, keep_index=False, augment=False):
             if foundheader and not lastheader:
                 break
             ln += 1
-    df = pd.read_table(starfile, skiprows=ln, delimiter='\s+', header=None)
+    df = pd.read_csv(starfile, skiprows=ln, delimiter='\s+', header=None)
     df.columns = headers
     if augment:
         augment_star_ucsf(df, inplace=True)
