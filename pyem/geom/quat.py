@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from .geom_numba import cross3
 
 
 def _qconj(q, p):
@@ -46,6 +47,10 @@ def _qsqrt(q, p):
 
 
 qsqrt = np.vectorize(_qsqrt, signature="(m),(m)->(m)")
+
+
+def qrotate(q, v):
+    return v + cross3(2 * q[:, 1:], cross3(q[:, 1:], v) + q[:, 0].reshape(-1, 1) * v)
 
 
 def qslerp(q1, q2, t):
