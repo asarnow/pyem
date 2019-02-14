@@ -2,5 +2,6 @@
 # University of California, San Francisco
 from .convert_numba import *
 from .geom import *
-from .quat_numba import *
+from .geom_numba import *
 from .quat import *
+from .quat_numba import *

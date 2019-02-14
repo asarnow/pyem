@@ -17,6 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numba
+import numpy as np
 
 
 @numba.guvectorize(["void(float64[:], float64[:], float64[:])"],
@@ -25,3 +26,12 @@ def cross3(u, v, w):
     w[0] = u[1] * v[2] - u[2] * v[1]
     w[1] = u[2] * v[0] - u[0] * v[2]
     w[2] = u[0] * v[1] - u[1] * v[0]
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def cross3_sca(u, v):
+    w = np.zeros_like(u)
+    w[0] = u[1] * v[2] - u[2] * v[1]
+    w[1] = u[2] * v[0] - u[0] * v[2]
+    w[2] = u[0] * v[1] - u[1] * v[0]
+    return w
