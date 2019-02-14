@@ -21,17 +21,17 @@ def qrotate(q, v):
     return v + cross3(2 * q[:, 1:], cross3(q[:, 1:], v) + q[:, 0].reshape(-1, 1) * v)
 
 
-def qslerp(q1, q2, t):
-    cos_half_theta = np.dot(q1, q2)
-    if cos_half_theta >= 1.0:
-        return q1.copy()
-    half_theta = np.arccos(cos_half_theta)
-    sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
-    if np.abs(sin_half_theta) < 1E-12:
-        return (q1 + q2) / 2
-    a = np.sin((1 - t) * half_theta) / sin_half_theta
-    b = np.sin(t * half_theta) / sin_half_theta
-    return q1 * a + q2 * b
+# def qslerp(q1, q2, t):
+#     cos_half_theta = np.dot(q1, q2)
+#     if cos_half_theta >= 1.0:
+#         return q1.copy()
+#     half_theta = np.arccos(cos_half_theta)
+#     sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
+#     if np.abs(sin_half_theta) < 1E-12:
+#         return (q1 + q2) / 2
+#     a = np.sin((1 - t) * half_theta) / sin_half_theta
+#     b = np.sin(t * half_theta) / sin_half_theta
+#     return q1 * a + q2 * b
 
 
 def normq(q, mu=None):
