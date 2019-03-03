@@ -79,11 +79,10 @@ def quat2aa(q):
 
 
 @numba.jit(nopython=True, nogil=True)
-def aa2quat(ax, theta=None):
-    if theta is None:
-        theta = np.linalg.norm(ax)
-        if theta != 0:
-            ax = ax / theta
+def aa2quat(ax):
+    theta = np.linalg.norm(ax)
+    if theta != 0:
+        ax = ax / theta
     q = np.zeros(4, dtype=ax.dtype)
     q[0] = np.cos(theta / 2)
     q[1:] = ax * np.sin(theta / 2)
@@ -102,9 +101,17 @@ def quat2rot(q):
     bc = q[1] * q[2]
     bd = q[1] * q[3]
     cd = q[2] * q[3]
-    r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
-                  [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
-                  [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
+    # These formulas are equivalent forms taken from Wikipedia, but are incorrect.
+    # r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
+    #               [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
+    #               [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
+    # r = np.array([[1 - 2 * (cc + dd), 2 * (bc - ad), 2 * (bd + ac)],
+    #               [2 * (bc + ad), 1 - 2 * (bb + dd), 2 * (cd - ab)],
+    #               [2 * (bd - ac), 2 * (cd + ab), 1 - 2 * (bb + cc)]], dtype=q.dtype)
+    # This formula is correct:
+    r = np.array([[1 - 2 * (bb + dd), 2 * (ad - bc), -2 * (cd + ab)],
+                  [-2 * (bc + ad), 1 - 2 * (cc + dd), 2 * (bd - ac)],
+                  [2 * (ab - cd), 2 * (bd + ac), 1 - 2 * (bb + cc)]], dtype=q.dtype)
     return r
 
 
@@ -188,6 +195,11 @@ def expmap(e):
                   [w[1], -w[0], 0]], dtype=e.dtype)
     r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
     return r
+
+
+@numba.jit(nopython=True, nogil=True)
+def aa2rot(e):
+    return expmap(e)
 
 
 def parallel_convert_func(f):
