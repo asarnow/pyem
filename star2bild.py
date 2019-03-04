@@ -19,7 +19,9 @@ import logging
 import numpy as np
 import sys
 from healpy import pix2ang
+from pyem import geom
 from pyem import star
+from pyem import util
 from scipy.spatial import cKDTree
 
 
@@ -36,6 +38,11 @@ def main(args):
         df = star.select_classes(df, args.cls)
     if args.apix is None:
         args.apix = star.calculate_apix(df)
+    if args.sym is not None:
+        args.sym = util.relion_symmetry_group(args.sym)
+        qarr = geom.e2q_vec(np.deg2rad(df[star.Relion.ANGLES].values))
+        idx = np.argmin(d, axis=1)
+        df[star.Relion.ANGLES] = np.rad2deg([geom.quat2euler(q) for q in qnew])
     nside = 2**args.healpix_order
     angular_sampling = np.sqrt(3 / np.pi) * 60 / nside
     theta, phi = pix2ang(nside, np.arange(12 * nside ** 2))
@@ -96,4 +103,5 @@ if __name__ == "__main__":
     parser.add_argument("--class",
                         help="Only use the specified class, may be passed multiple times",
                         type=int, action="append", dest="cls")
+    parser.add_argument("--sym", help="Symmetry group to impose on distribution (Relion conventions)")
     sys.exit(main(parser.parse_args()))
