@@ -91,16 +91,16 @@ def aa2quat(ax):
 
 @numba.jit(nopython=True, nogil=True)
 def quat2rot(q):
-    aa = q[0] ** 2
+    # aa = q[0] ** 2
     bb = q[1] ** 2
     cc = q[2] ** 2
     dd = q[3] ** 2
-    ab = q[0] * q[1]
-    ac = q[0] * q[2]
-    ad = q[0] * q[3]
-    bc = q[1] * q[2]
-    bd = q[1] * q[3]
-    cd = q[2] * q[3]
+    ab = 2 * q[0] * q[1]
+    ac = 2 * q[0] * q[2]
+    ad = 2 * q[0] * q[3]
+    bc = 2 * q[1] * q[2]
+    bd = 2 * q[1] * q[3]
+    cd = 2 * q[2] * q[3]
     # These formulas are equivalent forms taken from Wikipedia, but are incorrect.
     # r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
     #               [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
@@ -109,9 +109,13 @@ def quat2rot(q):
     #               [2 * (bc + ad), 1 - 2 * (bb + dd), 2 * (cd - ab)],
     #               [2 * (bd - ac), 2 * (cd + ab), 1 - 2 * (bb + cc)]], dtype=q.dtype)
     # This formula is correct:
-    r = np.array([[1 - 2 * (bb + dd), 2 * (ad - bc), -2 * (cd + ab)],
-                  [-2 * (bc + ad), 1 - 2 * (cc + dd), 2 * (bd - ac)],
-                  [2 * (ab - cd), 2 * (bd + ac), 1 - 2 * (bb + cc)]], dtype=q.dtype)
+    # r = np.array([[1 - 2 * (bb + dd), 2 * (ad - bc), -2 * (cd + ab)],
+    #               [-2 * (bc + ad), 1 - 2 * (cc + dd), 2 * (bd - ac)],
+    #               [2 * (ab - cd), 2 * (bd + ac), 1 - 2 * (bb + cc)]], dtype=q.dtype)
+    # This assumes the multiplications by 2 are done first:
+    r = np.array([[1 - (bb + dd), (ad - bc), -(cd + ab)],
+                  [-(bc + ad), 1 - (cc + dd), (bd - ac)],
+                  [(ab - cd), (bd + ac), 1 - (bb + cc)]], dtype=q.dtype)
     return r
 
 
