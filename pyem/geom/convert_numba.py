@@ -206,6 +206,29 @@ def aa2rot(e):
     return expmap(e)
 
 
+@numba.jit(nopython=True, nogil=True)
+def logmap(r):
+    angle = np.arccos((np.trace(r) - 1) * 0.5)
+    ax = np.zeros(3, dtype=r.dtype)
+    if angle < 1e-12:
+        return ax
+    if np.abs(angle - np.pi) < 1e-12:
+        ax[:3] = np.sqrt(0.5 * (np.diag(r) + 1.0))
+    else:
+        maginv = 0.5 * angle
+        maginv /= np.sin(angle)
+        ax[0] = r[2, 1] - r[1, 2]
+        ax[1] = r[0, 2] - r[2, 0]
+        ax[2] = r[1, 0] - r[0, 1]
+        ax *= maginv
+    return ax
+
+
+@numba.jit(nopython=True, nogil=True)
+def rot2aa(r):
+    return logmap(r)
+
+
 def parallel_convert_func(f):
     @numba.jit(nopython=True, parallel=True)
     def g(arr, out):
