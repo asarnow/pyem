@@ -35,3 +35,8 @@ def cross3_sca(u, v):
     w[1] = u[2] * v[0] - u[0] * v[2]
     w[2] = u[0] * v[1] - u[1] * v[0]
     return w
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def dualcos(r, d):
+    return np.cos(r), -d * np.sin(r)
