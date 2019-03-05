@@ -79,21 +79,77 @@ def quat2aa(q):
 
 
 @numba.jit(nopython=True, nogil=True)
+def aa2quat(ax):
+    theta = np.linalg.norm(ax)
+    if theta != 0:
+        ax = ax / theta
+    q = np.zeros(4, dtype=ax.dtype)
+    q[0] = np.cos(theta / 2)
+    q[1:] = ax * np.sin(theta / 2)
+    return q
+
+
+@numba.jit(nopython=True, nogil=True)
 def quat2rot(q):
-    aa = q[0] ** 2
+    # aa = q[0] ** 2
     bb = q[1] ** 2
     cc = q[2] ** 2
     dd = q[3] ** 2
-    ab = q[0] * q[1]
-    ac = q[0] * q[2]
-    ad = q[0] * q[3]
-    bc = q[1] * q[2]
-    bd = q[1] * q[3]
-    cd = q[2] * q[3]
-    r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
-                  [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
-                  [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
+    ab = 2 * q[0] * q[1]
+    ac = 2 * q[0] * q[2]
+    ad = 2 * q[0] * q[3]
+    bc = 2 * q[1] * q[2]
+    bd = 2 * q[1] * q[3]
+    cd = 2 * q[2] * q[3]
+    # These formulas are equivalent forms taken from Wikipedia, but are incorrect.
+    # r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
+    #               [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
+    #               [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
+    # r = np.array([[1 - 2 * (cc + dd), 2 * (bc - ad), 2 * (bd + ac)],
+    #               [2 * (bc + ad), 1 - 2 * (bb + dd), 2 * (cd - ab)],
+    #               [2 * (bd - ac), 2 * (cd + ab), 1 - 2 * (bb + cc)]], dtype=q.dtype)
+    # This formula is correct:
+    # r = np.array([[1 - 2 * (bb + dd), 2 * (ad - bc), -2 * (cd + ab)],
+    #               [-2 * (bc + ad), 1 - 2 * (cc + dd), 2 * (bd - ac)],
+    #               [2 * (ab - cd), 2 * (bd + ac), 1 - 2 * (bb + cc)]], dtype=q.dtype)
+    # This assumes the multiplications by 2 are done first:
+    r = np.array([[1 - (bb + dd), (ad - bc), -(cd + ab)],
+                  [-(bc + ad), 1 - (cc + dd), (bd - ac)],
+                  [(ab - cd), (bd + ac), 1 - (bb + cc)]], dtype=q.dtype)
     return r
+
+
+@numba.jit(nopython=True, nogil=True)
+def rot2quat(r):
+    q = np.zeros(4, dtype=r.dtype)
+    tr = np.trace(r)
+    if tr > 0:
+        q[0] = np.sqrt(tr + 1) / 2
+        sinv = 1 / (q[0] * 4)
+        q[1] = sinv * (r[1, 2] - r[2, 1])
+        q[2] = sinv * (r[2, 0] - r[0, 2])
+        q[3] = sinv * (r[0, 1] - r[1, 0])
+    else:
+        mi = np.argmax(np.diag(r))
+        if mi == 0:
+            q[1] = np.sqrt(r[0, 0] - r[1, 1] - r[2, 2] + 1) / 2
+            sinv = 1 / (q[1] * 4)
+            q[0] = sinv * (r[1, 2] - r[2, 1])
+            q[2] = sinv * (r[0, 1] + r[1, 0])
+            q[3] = sinv * (r[0, 2] + r[2, 0])
+        elif mi == 1:
+            q[2] = np.sqrt(r[1, 1] - r[2, 2] - r[0, 0] + 1) / 2
+            sinv = 1 / (q[2] * 4)
+            q[0] = sinv * (r[2, 0] - r[0, 2])
+            q[1] = sinv * (r[0, 1] + r[1, 0])
+            q[3] = sinv * (r[1, 2] + r[2, 1])
+        else:
+            q[3] = np.sqrt(r[2, 2] - r[0, 0] - r[1, 1] + 1) / 2
+            sinv = 1 / (q[3] * 4)
+            q[0] = sinv * (r[0, 1] - r[1, 0])
+            q[1] = sinv * (r[0, 2] + r[2, 0])
+            q[2] = sinv * (r[1, 2] + r[2, 1])
+    return q
 
 
 @numba.jit(nopython=True, nogil=True)
@@ -138,11 +194,39 @@ def expmap(e):
     if theta < 1e-16:
         return np.identity(3, dtype=e.dtype)
     w = e / theta
-    k = np.array([[0, -w[2], w[1]],
-                  [w[2], 0, -w[0]],
-                  [-w[1], w[0], 0]], dtype=e.dtype)
+    k = np.array([[0, w[2], -w[1]],
+                  [-w[2], 0, w[0]],
+                  [w[1], -w[0], 0]], dtype=e.dtype)
     r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
-    return r.T
+    return r
+
+
+@numba.jit(nopython=True, nogil=True)
+def aa2rot(e):
+    return expmap(e)
+
+
+@numba.jit(nopython=True, nogil=True)
+def logmap(r):
+    angle = np.arccos((np.trace(r) - 1) * 0.5)
+    ax = np.zeros(3, dtype=r.dtype)
+    if angle < 1e-12:
+        return ax
+    if np.abs(angle - np.pi) < 1e-12:
+        ax[:3] = np.sqrt(0.5 * (np.diag(r) + 1.0))
+    else:
+        maginv = 0.5 * angle
+        maginv /= np.sin(angle)
+        ax[0] = r[2, 1] - r[1, 2]
+        ax[1] = r[0, 2] - r[2, 0]
+        ax[2] = r[1, 0] - r[0, 1]
+        ax *= maginv
+    return ax
+
+
+@numba.jit(nopython=True, nogil=True)
+def rot2aa(r):
+    return logmap(r)
 
 
 def parallel_convert_func(f):

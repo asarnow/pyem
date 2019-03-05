@@ -165,4 +165,3 @@ def expmap(e):
                   [w[1], -w[0], 0]], dtype=e.dtype)
     r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
     return r
-
