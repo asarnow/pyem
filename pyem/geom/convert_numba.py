@@ -217,9 +217,9 @@ def logmap(r):
     else:
         maginv = 0.5 * angle
         maginv /= np.sin(angle)
-        ax[0] = r[2, 1] - r[1, 2]
-        ax[1] = r[0, 2] - r[2, 0]
-        ax[2] = r[1, 0] - r[0, 1]
+        ax[0] = r[1, 2] - r[2, 1]
+        ax[1] = r[2, 0] - r[0, 2]
+        ax[2] = r[0, 1] - r[1, 0]
         ax *= maginv
     return ax
 
