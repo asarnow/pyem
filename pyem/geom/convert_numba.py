@@ -192,12 +192,12 @@ def expmap(e):
     """Convert axis-angle vector into 3D rotation matrix"""
     theta = np.linalg.norm(e)
     if theta < 1e-16:
-        return np.identity(3, dtype=e.dtype)
+        return np.identity(3, e.dtype)
     w = e / theta
     k = np.array([[0, w[2], -w[1]],
                   [-w[2], 0, w[0]],
                   [w[1], -w[0], 0]], dtype=e.dtype)
-    r = np.identity(3, dtype=e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
+    r = np.identity(3, e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
     return r
 
 
