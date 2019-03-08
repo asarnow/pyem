@@ -73,19 +73,26 @@ def vec2rot(v):
 @numba.jit(nopython=True, nogil=True)
 def quat2aa(q):
     n = np.sqrt(np.sum(q[1:] ** 2))
-    ax = q[1:] / n
-    theta = 2 * np.arctan2(n, q[0])  # Or 2 * np.arccos(q[0])
+    theta = 2 * np.arctan2(np.abs(n), q[0])  # Or 2 * np.arccos(q[0])
+    if np.abs(theta) > 1e-12:
+        ax = q[1:] / np.sin(0.5 * theta)
+    else:
+        ax = np.zeros(3, dtype=q.dtype)
     return theta * ax
 
 
 @numba.jit(nopython=True, nogil=True)
 def aa2quat(ax):
     theta = np.linalg.norm(ax)
-    if theta != 0:
-        ax = ax / theta
+    if theta == 0:
+        return np.array([1, 0, 0, 0], dtype=ax.dtype)
     q = np.zeros(4, dtype=ax.dtype)
-    q[0] = np.cos(theta / 2)
-    q[1:] = ax * np.sin(theta / 2)
+    q[0] = np.cos(0.5 * theta)
+    q[1:] = np.sin(0.5 * theta)
+    q[1:] *= ax
+    q[1:] /= theta
+    if q[0] < 0:
+        q[:] = -q[:]
     return q
 
 
@@ -149,6 +156,8 @@ def rot2quat(r):
             q[0] = sinv * (r[0, 1] - r[1, 0])
             q[1] = sinv * (r[0, 2] + r[2, 0])
             q[2] = sinv * (r[1, 2] + r[2, 1])
+    if q[0] < 0:
+        q[:] = -q[:]
     return q
 
 
@@ -215,12 +224,12 @@ def logmap(r):
     if np.abs(angle - np.pi) < 1e-12:
         ax[:3] = np.sqrt(0.5 * (np.diag(r) + 1.0))
     else:
-        maginv = 0.5 * angle
-        maginv /= np.sin(angle)
+        maginv = 0.5 / np.sin(angle)
         ax[0] = r[1, 2] - r[2, 1]
         ax[1] = r[2, 0] - r[0, 2]
         ax[2] = r[0, 1] - r[1, 0]
         ax *= maginv
+        ax *= angle
     return ax
 
 
