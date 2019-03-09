@@ -99,30 +99,34 @@ def aa2quat(ax):
 @numba.jit(nopython=True, nogil=True)
 def quat2rot(q):
     # aa = q[0] ** 2
-    bb = q[1] ** 2
-    cc = q[2] ** 2
-    dd = q[3] ** 2
+    bb = 2 * q[1] ** 2
+    cc = 2 * q[2] ** 2
+    dd = 2 * q[3] ** 2
     ab = 2 * q[0] * q[1]
     ac = 2 * q[0] * q[2]
     ad = 2 * q[0] * q[3]
     bc = 2 * q[1] * q[2]
     bd = 2 * q[1] * q[3]
     cd = 2 * q[2] * q[3]
-    # These formulas are equivalent forms taken from Wikipedia, but are incorrect.
+    # These formulas are equivalent forms taken from Wikipedia, but are transposed.
     # r = np.array([[aa + bb - cc - dd, 2*bc - 2*ad,       2*bd + 2*ac],
     #               [2*bc + 2*ad,       aa - bb + cc - dd, 2*cd - 2*ab],
     #               [2*bd - 2*ac,       2*cd + 2*ab,       aa - bb - cc + dd]], dtype=q.dtype)
     # r = np.array([[1 - 2 * (cc + dd), 2 * (bc - ad), 2 * (bd + ac)],
     #               [2 * (bc + ad), 1 - 2 * (bb + dd), 2 * (cd - ab)],
     #               [2 * (bd - ac), 2 * (cd + ab), 1 - 2 * (bb + cc)]], dtype=q.dtype)
-    # This formula is correct:
+    # Tentatively correct formula (assuming multiplication by 2):
+    r = np.array([[1 - cc - dd, bc + ad, bd - ac],
+                  [bc - ad, 1 - bb - dd, cd + ab],
+                  [bd + ac, cd - ab, 1 - bb - cc]], dtype=q.dtype)
+    # This formula is incorrect after fixing euler2quat for ZYZ.
     # r = np.array([[1 - 2 * (bb + dd), 2 * (ad - bc), -2 * (cd + ab)],
     #               [-2 * (bc + ad), 1 - 2 * (cc + dd), 2 * (bd - ac)],
     #               [2 * (ab - cd), 2 * (bd + ac), 1 - 2 * (bb + cc)]], dtype=q.dtype)
     # This assumes the multiplications by 2 are done first:
-    r = np.array([[1 - (bb + dd), (ad - bc), -(cd + ab)],
-                  [-(bc + ad), 1 - (cc + dd), (bd - ac)],
-                  [(ab - cd), (bd + ac), 1 - (bb + cc)]], dtype=q.dtype)
+    # r = np.array([[1 - (bb + dd), (ad - bc), -(cd + ab)],
+    #               [-(bc + ad), 1 - (cc + dd), (bd - ac)],
+    #               [(ab - cd), (bd + ac), 1 - (bb + cc)]], dtype=q.dtype)
     return r
 
 
@@ -164,8 +168,8 @@ def rot2quat(r):
 @numba.jit(nopython=True, nogil=True)
 def euler2quat(alpha, beta, gamma):
     q = np.array([np.cos((alpha + gamma) / 2) * np.cos(beta / 2),
+                  np.sin((gamma - alpha) / 2) * np.sin(beta / 2),
                   np.cos((alpha - gamma) / 2) * np.sin(beta / 2),
-                  np.sin((alpha - gamma) / 2) * np.sin(beta / 2),
                   np.sin((alpha + gamma) / 2) * np.cos(beta / 2)])
     return q
 
@@ -181,17 +185,19 @@ def quat2euler(q):
     bd = q[1] * q[3]
     cd = q[2] * q[3]
 
-    alpha = np.arctan2(bd + ac, ab - cd)
+    # alpha = np.arctan2(bd + ac, ab - cd)
+    alpha = np.arctan2(np.abs(ab - cd), bd + ac)
 
-    if alpha < 0:
-        alpha += 2 * np.pi
+    # if alpha < 0:
+    #     alpha += 2 * np.pi
 
     beta = np.arccos(aa - bb - cc + dd)
 
-    gamma = np.arctan2(bd - ac, ab + cd)
+    # gamma = np.arctan2(bd - ac, ab + cd)
+    gamma = 2 * np.arctan2(np.abs(bd - ac), ab + cd)
 
-    if gamma < 0:
-        gamma += 2 * np.pi
+    # if gamma < 0:
+    #     gamma += 2 * np.pi
 
     return alpha, beta, gamma
 
