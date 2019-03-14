@@ -84,3 +84,9 @@ def dualquat(q, t):
     dq.imag[:, 1:] = t
     dq.imag = qtimes(dq.imag, dq.real) * 0.5
     return dq
+
+
+def phi5(r, r2=None):
+    if r2 is not None:
+        r = r.dot(r2.T)
+    return np.linalg.norm(np.eye(3) - r)
