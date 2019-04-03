@@ -25,6 +25,7 @@ import os
 import os.path
 import sys
 import xml.etree.cElementTree as etree
+from pyem import geom
 from pyem import star
 from pyem import util
 
@@ -117,7 +118,8 @@ def subparticle_expansion(s, ops=None, dists=None, rots=None):
     if ops is None:
         ops = [np.eye(3)]
     if rots is None:
-        rots = [util.euler2rot(*np.deg2rad(r[1])) for r in s[star.Relion.ANGLES].iterrows()]
+        # rots = [util.euler2rot(*np.deg2rad(r[1])) for r in s[star.Relion.ANGLES].iterrows()]
+        rots = geom.e2r_vec(np.deg2rad(s[star.Relion.ANGLES].values))
     if dists is not None:
         if np.isscalar(dists):
             dists = [dists] * len(ops)

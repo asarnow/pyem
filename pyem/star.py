@@ -27,6 +27,7 @@ import pandas as pd
 import json
 from glob import glob
 from math import modf
+from pyem.geom import e2r_vec
 from pyem.algo import query_connected
 from pyem.util import rot2euler
 from pyem.util import euler2rot
@@ -302,7 +303,8 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         newstar = df.copy()
 
     if rots is None:
-        rots = [euler2rot(*np.deg2rad(row[1])) for row in df[Relion.ANGLES].iterrows()]
+        # rots = [euler2rot(*np.deg2rad(row[1])) for row in df[Relion.ANGLES].iterrows()]
+        rots = e2r_vec(np.deg2rad(df[Relion.ANGLES].values))
 
     if invert:
         r = r.T
