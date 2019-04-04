@@ -74,7 +74,7 @@ def main(args):
             log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
             args.apix = 1.0
             df[star.Relion.MAGNIFICATION] = 10000
-            df[star.DETECTORPIXELSIZE] = 1.0
+            df[star.Relion.DETECTORPIXELSIZE] = 1.0
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
