@@ -387,7 +387,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swap
         log.debug("Converting Rodrigues coordinates to Euler angles")
         df[star.Relion.ANGLES] = np.rad2deg(
                 df[star.Relion.ANGLES].apply(
-                    lambda x: geom.rot2euler(geom.expmap(x)),
+                    lambda x: geom.rot2euler(geom.expmap(x.values)),
                     axis=1, raw=True, result_type='broadcast'))
         log.info("Converted Rodrigues coordinates to Euler angles")
     elif star.Relion.ANGLEPSI in df:
