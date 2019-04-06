@@ -23,6 +23,7 @@ import pandas as pd
 import sys
 from math import modf
 from . import star
+from . import geom
 from . import util
 
 
@@ -225,7 +226,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
         df["rlnClassNumber"] = 1
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
         df[star.Relion.ANGLES] = np.rad2deg(
-            df[star.Relion.ANGLES].apply(lambda x: util.rot2euler(util.expmap(x)),
+            df[star.Relion.ANGLES].apply(lambda x: geom.rot2euler(geom.expmap(x)),
                                          axis=1, raw=True, broadcast=True))
     if phic is not None and minphic > 0:
         mask = np.all(phic < minphic, axis=1)
@@ -233,7 +234,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None):
+def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swapxy=False):
     micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                   u'mscope_params/accel_kv': None,
@@ -326,8 +327,11 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None):
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
-        df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
-                                          cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
+        if swapxy:
+            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
+                                              cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
+        else:
+            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] * cs['location/micrograph_shape']).astype(np.int)
         log.info("Converted particle coordinates from normalized to absolute")
 
     if star.Relion.DEFOCUSANGLE in df:
@@ -383,7 +387,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None):
         log.debug("Converting Rodrigues coordinates to Euler angles")
         df[star.Relion.ANGLES] = np.rad2deg(
                 df[star.Relion.ANGLES].apply(
-                    lambda x: util.rot2euler(util.expmap(x)),
+                    lambda x: geom.rot2euler(geom.expmap(x)),
                     axis=1, raw=True, result_type='broadcast'))
         log.info("Converted Rodrigues coordinates to Euler angles")
     elif star.Relion.ANGLEPSI in df:
