@@ -39,7 +39,7 @@ def main(args):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input)
         try:
-            df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic)
+            df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic, boxsize=args.boxsize)
         except (KeyError, ValueError) as e:
             log.error(e.message)
             log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Cryosparc metadata .csv (v0.6.5) or .cs (v2+) file")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--boxsize", help="Cryosparc refinement box size (if different from particles)", type=float)
     parser.add_argument("--passthrough", "-p", help="Passthrough file required for some Cryosparc 2+ job types")
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")

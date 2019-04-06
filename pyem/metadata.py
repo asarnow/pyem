@@ -233,7 +233,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
+def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None):
     micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                   u'mscope_params/accel_kv': None,
@@ -367,6 +367,9 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0):
                 df[model[k]] = pd.DataFrame(cs[name])
     else:
         log.info("Classification parameters not found")
+
+    if star.Relion.ORIGINX in df.columns and boxsize is not None:
+        df[star.Relion.ORIGINS] *= cs["blob/shape"][0] / boxsize
 
     if star.Relion.RANDOMSUBSET in df.columns:
         log.debug("Changing RANDOMSUBSET to 1-based index")
