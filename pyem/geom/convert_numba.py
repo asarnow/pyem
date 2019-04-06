@@ -212,7 +212,7 @@ def expmap(e):
     k = np.array([[0, w[2], -w[1]],
                   [-w[2], 0, w[0]],
                   [w[1], -w[0], 0]], dtype=e.dtype)
-    r = np.identity(3, e.dtype) + np.sin(theta) * k + (1 - np.cos(theta)) * np.dot(k, k)
+    r = np.identity(3, e.dtype) + np.sin(theta) * k + (np.ones(1, dtype=e.dtype) - np.cos(theta)) * np.dot(k, k)
     return r
 
 
