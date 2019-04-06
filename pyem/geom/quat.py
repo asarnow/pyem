@@ -14,51 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from .geom_numba import cross3
 
 
-def _qconj(q, p):
-    p[0] = q[0]
-    p[1] = -q[1]
-    p[2] = -q[2]
-    p[3] = -q[3]
-    return p
+def qrotate(q, v):
+    return v + cross3(2 * q[:, 1:], cross3(q[:, 1:], v) + q[:, 0].reshape(-1, 1) * v)
 
 
-qconj = np.vectorize(_qconj, signature="(m),(m)->(m)")
-
-
-def _qtimes(q1, q2, q3):
-    q3[0] = q1[0] * q2[0] - (q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3])
-    q3[1] = q1[2] * q2[3] - q1[3] * q2[2] + q1[0] * q2[1] + q2[0] * q1[1]
-    q3[2] = q1[3] * q2[1] - q1[1] * q2[3] + q1[0] * q2[2] + q2[0] * q1[2]
-    q3[3] = q1[1] * q2[2] - q1[2] * q2[1] + q1[0] * q2[3] + q2[0] * q1[3]
-    return q3
-
-
-qtimes = np.vectorize(_qtimes, signature="(m),(m)->(m)")
-
-
-def _qsqrt(q, p):
-    p[0] = q[0] + 1
-    p[1:] = q[1:]
-    p[:] = p[:] / np.sqrt(2 * (1 + q[0]))
-    return p
-
-
-qsqrt = np.vectorize(_qsqrt, signature="(m),(m)->(m)")
-
-
-def qslerp(q1, q2, t):
-    cos_half_theta = np.dot(q1, q2)
-    if cos_half_theta >= 1.0:
-        return q1.copy()
-    half_theta = np.arccos(cos_half_theta)
-    sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
-    if np.abs(sin_half_theta) < 1E-12:
-        return (q1 + q2) / 2
-    a = np.sin((1 - t) * half_theta) / sin_half_theta
-    b = np.sin(t * half_theta) / sin_half_theta
-    return q1 * a + q2 * b
+# def qslerp(q1, q2, t):
+#     cos_half_theta = np.dot(q1, q2)
+#     if cos_half_theta >= 1.0:
+#         return q1.copy()
+#     half_theta = np.arccos(cos_half_theta)
+#     sin_half_theta = np.sqrt(1 - cos_half_theta * cos_half_theta)
+#     if np.abs(sin_half_theta) < 1E-12:
+#         return (q1 + q2) / 2
+#     a = np.sin((1 - t) * half_theta) / sin_half_theta
+#     b = np.sin(t * half_theta) / sin_half_theta
+#     return q1 * a + q2 * b
 
 
 def normq(q, mu=None):

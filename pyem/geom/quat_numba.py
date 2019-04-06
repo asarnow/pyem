@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numba
 import numpy as np
+from .geom_numba import cross3_sca
 
 
 @numba.jit(nopython=True, cache=False, nogil=True)
@@ -102,7 +103,7 @@ def cdistq(q1, q2, d):
             v *= 2
             if v > pi_half:
                 v = np.pi - v
-#             v += 1e-6
+            # v += 1e-6
             v **= 2
             v *= -0.5
             d[i, j] = v
@@ -122,7 +123,7 @@ def pdistq(q1, d):
             v *= 2
             if v > pi_half:
                 v = np.pi - v
-#             v += 1e-6
+            # v += 1e-6
             v **= 2
             v *= -0.5
             d[i, j] = d[j, i] = v
@@ -148,3 +149,98 @@ def dqconj(q, p):
     _qconj(q.real, p.real)
     _qconj(q.imag, p.imag)
 
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def dqtimes_sca(q1, q2):
+    q3 = np.zeros((4,), dtype=q1.dtype)
+    # Dual part = dual1 * real2 + real1 * dual2
+    _qtimes(q1.imag, q2.real, q3.real)  # Store 1st dual term in real.
+    _qtimes(q1.real, q2.imag, q3.imag)  # Store 2nd dual term in imag.
+    tmp = q3.imag  # Workaround Numba typing error.
+    tmp += q3.real  # Sum terms into imag.
+    # Real part = real1 * real2
+    _qtimes(q1.real, q2.real, q3.real)  # Overwrite real with real part.
+    return q3
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def dqconj_sca(q):
+    p = np.zeros((4,), dtype=q.dtype)
+    _qconj(q.real, p.real)
+    _qconj(q.imag, p.imag)
+    return p
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def dq2sc(q):
+    theta = 2 * np.arccos(q[0].real)
+    # nr = 1 / np.linalg.norm(q[1:].real)
+    nr = np.sin(theta / 2)
+    if nr < 1E-6:
+        # nr = 0
+        nr = 1e6
+    else:
+        nr = 1 / nr
+    d = -2 * q[0].imag * nr
+    l = q[1:].real * nr
+    m = (q[1:].imag - l * d * q[0].real * 0.5) * nr
+    return theta, d, l, m
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def sc2dq(theta, d, l, m):
+    q = np.zeros((4,), dtype=np.complex128)
+    theta_half = 0.5 * theta
+    sin_theta_half = np.sin(theta_half)
+    cos_theta_half = np.cos(theta_half)
+    d_half = 0.5 * d
+    q.real[0] = cos_theta_half
+    q.real[:1] = sin_theta_half * l
+    q.imag[0] = - d_half * sin_theta_half
+    q.imag[1:] = sin_theta_half * m + d_half * cos_theta_half * l
+    return q
+
+
+# @numba.jit(nopython=True, cache=False, nogil=True)
+# def dqpower(q, t):
+#     theta, d, l, m = dq2sc(q)
+#     theta_half = 0.5 * theta
+#     d_half = 0.5 * d
+#     da_real = t * np.cos(theta_half)
+#     da_dual = t * -d_half * np.sin(theta_half)
+
+
+@numba.jit(nopython=True, cache=False, parallel=True)
+def pdistdq(q, d):
+    relq = np.zeros((4,), dtype=np.complex128)
+    for i in numba.prange(d.shape[0]):
+        # relq = geom.dqtimes(geom.dqconj(q[i, None]), q)
+        for j in range(i + 1, d.shape[1]):
+            relq[:] = dqtimes_sca(dqconj_sca(q[i]), q[j])
+            theta, dax, l, m = dq2sc(relq)
+            p0 = cross3_sca(l, m)
+            r2 = np.sum(p0 ** 2)
+            v = np.sqrt(dax ** 2 + theta ** 2 * r2)
+            d[i, j] = d[j, i] = v
+    return d
+
+
+@numba.jit(nopython=True, cache=False, parallel=True)
+def cdistdq(q1, q2, d):
+    relq = np.zeros((4,), dtype=np.complex128)
+    for i in numba.prange(d.shape[0]):
+        for j in range(d.shape[1]):
+            relq = dqtimes_sca(dqconj_sca(q1[i]), q2[j])
+            theta, dax, l, m = dq2sc(relq)
+            p0 = cross3_sca(l, m)
+            r2 = np.sum(p0 ** 2)
+            v = np.sqrt(dax ** 2 + theta ** 2 * r2)
+            d[i, j] = v
+    return d
+
+
+@numba.jit(nopython=True, cache=False, nogil=True)
+def dqblend(q1, q2, t):
+    q3 = (1 - t) * q1 + t * q2
+    q3 /= np.linalg.norm(q3)
+    return q3

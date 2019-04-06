@@ -39,7 +39,7 @@ def main(args):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input)
         try:
-            df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic, boxsize=args.boxsize)
+            df = metadata.parse_cryosparc_2_cs(cs, passthrough=args.passthrough, minphic=args.minphic, boxsize=args.boxsize, swapxy=args.swapxy)
         except (KeyError, ValueError) as e:
             log.error(e.message)
             log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
@@ -95,6 +95,7 @@ if __name__ == "__main__":
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
+    parser.add_argument("--swapxy", help="Swap X and Y axes when converting particle coordinates", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
