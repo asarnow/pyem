@@ -385,10 +385,11 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swap
 
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
         log.debug("Converting Rodrigues coordinates to Euler angles")
-        df[star.Relion.ANGLES] = np.rad2deg(
-                df[star.Relion.ANGLES].apply(
-                    lambda x: geom.rot2euler(geom.expmap(x.values)),
-                    axis=1, raw=True, result_type='broadcast'))
+        # df[star.Relion.ANGLES] = np.rad2deg(
+        #         df[star.Relion.ANGLES].apply(
+        #             lambda x: geom.rot2euler(geom.expmap(x.values)),
+        #             axis=1, raw=True, result_type='broadcast'))
+        df[star.Relion.ANGLES]  = np.rad2deg([geom.rot2euler(r) for r in geom.expmap(df[star.Relion.ANGLES].values)])
         log.info("Converted Rodrigues coordinates to Euler angles")
     elif star.Relion.ANGLEPSI in df:
         log.debug("Converting ANGLEPSI from degrees to radians")
@@ -396,3 +397,4 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swap
     else:
         log.info("Angular alignment parameters not found")
     return df
+
