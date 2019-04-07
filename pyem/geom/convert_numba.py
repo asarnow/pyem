@@ -203,17 +203,45 @@ def quat2euler(q):
 
 
 @numba.jit(nopython=True, nogil=True)
-def expmap(e):
+def expmap(e, out=None):
     """Convert axis-angle vector into 3D rotation matrix"""
-    theta = np.linalg.norm(e)
-    if theta < 1e-16:
-        return np.identity(3, e.dtype)
-    w = e / theta
-    k = np.array([[0, w[2], -w[1]],
-                  [-w[2], 0, w[0]],
-                  [w[1], -w[0], 0]], dtype=e.dtype)
-    r = np.identity(3, e.dtype) + np.sin(theta) * k + (np.ones(1, dtype=e.dtype) - np.cos(theta)) * np.dot(k, k)
-    return r
+    # theta = np.linalg.norm(e)
+    # if theta < 1e-16:
+    #     return np.identity(3, e.dtype)
+    # w = e / theta
+    # k = np.array([[0, w[2], -w[1]],
+    #               [-w[2], 0, w[0]],
+    #               [w[1], -w[0], 0]], dtype=e.dtype)
+    # r = np.identity(3, e.dtype) + np.sin(theta) * k + (np.ones(1, dtype=e.dtype) - np.cos(theta)) * np.dot(k, k)
+    e = np.atleast_2d(e)
+    if out is None:
+        out = np.zeros((len(e), 3, 3))
+    for i in range(len(e)):
+        theta = np.linalg.norm(e[i, ...])
+        if theta < 1e-16:
+            out[i, 0, 0] = out[i, 1, 1] = out[i, 2, 2] = 1
+        w = e[i, ...] / theta
+        s = np.sin(theta)
+        c = 1 - np.cos(theta)
+        w0 = s * w[0]
+        w1 = s * w[1]
+        w2 = s * w[2]
+        w00 = -w[0] ** 2
+        w11 = -w[1] ** 2
+        w22 = -w[2] ** 2
+        w01 = c * w[0] * w[1]
+        w02 = c * w[0] * w[2]
+        w12 = c * w[1] * w[2]
+        out[i, 0, 0] = 1 + c * (w22 + w11)
+        out[i, 0, 1] = w2 + w01
+        out[i, 0, 2] = -w1 + w02
+        out[i, 1, 0] = -w2 + w01
+        out[i, 1, 1] = 1 + c * (w22 + w00)
+        out[i, 1, 2] = w0 + w12
+        out[i, 2, 0] = w1 + w02
+        out[i, 2, 1] = -w0 + w12
+        out[i, 2, 2] = 1 + c * (w11 + w00)
+    return out
 
 
 @numba.jit(nopython=True, nogil=True)
