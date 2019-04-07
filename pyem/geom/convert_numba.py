@@ -20,30 +20,36 @@ import numpy as np
 
 
 @numba.jit(nopython=True, nogil=True)
-def rot2euler(r):
+def rot2euler(r, out=None):
     """Decompose rotation matrix into Euler angles"""
     # assert(isrotation(r))
     # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
-    epsilon = np.finfo(np.double).eps
-    abs_sb = np.sqrt(r[0, 2] ** 2 + r[1, 2] ** 2)
-    if abs_sb > 16 * epsilon:
-        gamma = np.arctan2(r[1, 2], -r[0, 2])
-        alpha = np.arctan2(r[2, 1], r[2, 0])
-        if np.abs(np.sin(gamma)) < epsilon:
-            sign_sb = np.sign(-r[0, 2]) / np.cos(gamma)
+    # epsilon = np.finfo(np.double).eps
+    epsilon = 1e-16
+    r = np.atleast_2d(r)
+    if out is None:
+        out = np.zeros((len(r), 3), dtype=r.dtype)
+    for i in range(len(r)):
+        abs_sb = np.sqrt(r[i, 0, 2] ** 2 + r[i, 1, 2] ** 2)
+        if abs_sb > 16 * epsilon:
+            gamma = np.arctan2(r[i, 1, 2], -r[i, 0, 2])
+            alpha = np.arctan2(r[i, 2, 1], r[i, 2, 0])
+            if np.abs(np.sin(gamma)) < epsilon:
+                sign_sb = np.sign(-r[i, 0, 2]) / np.cos(gamma)
+            else:
+                sign_sb = np.sign(r[i, 1, 2]) if np.sin(gamma) > 0 else -np.sign(r[i, 1, 2])
+            beta = np.arctan2(sign_sb * abs_sb, r[i, 2, 2])
         else:
-            sign_sb = np.sign(r[1, 2]) if np.sin(gamma) > 0 else -np.sign(r[1, 2])
-        beta = np.arctan2(sign_sb * abs_sb, r[2, 2])
-    else:
-        if np.sign(r[2, 2]) > 0:
-            alpha = 0
-            beta = 0
-            gamma = np.arctan2(-r[1, 0], r[0, 0])
-        else:
-            alpha = 0
-            beta = np.pi
-            gamma = np.arctan2(r[1, 0], -r[0, 0])
-    return alpha, beta, gamma
+            if np.sign(r[i, 2, 2]) > 0:
+                alpha = 0
+                beta = 0
+                gamma = np.arctan2(-r[i, 1, 0], r[i, 0, 0])
+            else:
+                alpha = 0
+                beta = np.pi
+                gamma = np.arctan2(r[i, 1, 0], -r[i, 0, 0])
+        out[i, :] = alpha, beta, gamma
+    return out
 
 
 @numba.jit(nopython=True, nogil=True)
