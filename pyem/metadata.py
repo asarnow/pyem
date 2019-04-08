@@ -225,9 +225,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
                 df[model[p]] = meta[p]
         df["rlnClassNumber"] = 1
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
-        df[star.Relion.ANGLES] = np.rad2deg(
-            df[star.Relion.ANGLES].apply(lambda x: geom.rot2euler(geom.expmap(x)),
-                                         axis=1, raw=True, broadcast=True))
+        df[star.Relion.ANGLES]  = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
     if phic is not None and minphic > 0:
         mask = np.all(phic < minphic, axis=1)
         df.drop(df[mask].index, inplace=True)
@@ -338,8 +336,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swap
         log.debug("Converting DEFOCUSANGLE from degrees to radians")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
-        df[star.Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(df[star.Relion.DEFOCUSV], df[star.Relion.DEFOCUSU]))
-        log.info("Calculated missing defocus angle")
+        log.warn("Defocus angles not found")
     else:
         log.info("Defocus values not found")
 
@@ -385,11 +382,7 @@ def parse_cryosparc_2_cs(csfile, passthrough=None, minphic=0, boxsize=None, swap
 
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
         log.debug("Converting Rodrigues coordinates to Euler angles")
-        # df[star.Relion.ANGLES] = np.rad2deg(
-        #         df[star.Relion.ANGLES].apply(
-        #             lambda x: geom.rot2euler(geom.expmap(x.values)),
-        #             axis=1, raw=True, result_type='broadcast'))
-        df[star.Relion.ANGLES]  = np.rad2deg([geom.rot2euler(r) for r in geom.expmap(df[star.Relion.ANGLES].values)])
+        df[star.Relion.ANGLES]  = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
         log.info("Converted Rodrigues coordinates to Euler angles")
     elif star.Relion.ANGLEPSI in df:
         log.debug("Converting ANGLEPSI from degrees to radians")
