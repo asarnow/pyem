@@ -48,7 +48,9 @@ def rot2euler(r, out=None):
                 alpha = 0
                 beta = np.pi
                 gamma = np.arctan2(r[i, 1, 0], -r[i, 0, 0])
-        out[i, :] = alpha, beta, gamma
+        out[i, 0] = alpha
+        out[i, 1] = beta
+        out[i, 2] = gamma
     return out
 
 
@@ -221,7 +223,7 @@ def expmap(e, out=None):
     # r = np.identity(3, e.dtype) + np.sin(theta) * k + (np.ones(1, dtype=e.dtype) - np.cos(theta)) * np.dot(k, k)
     e = np.atleast_2d(e)
     if out is None:
-        out = np.zeros((len(e), 3, 3))
+        out = np.zeros((len(e), 3, 3), dtype=e.dtype)
     for i in range(len(e)):
         theta = np.linalg.norm(e[i, ...])
         if theta < 1e-16:
