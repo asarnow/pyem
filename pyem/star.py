@@ -41,6 +41,7 @@ class Relion:
     COORDY = "rlnCoordinateY"
     ORIGINX = "rlnOriginX"
     ORIGINY = "rlnOriginY"
+    ORIGINZ = "rlnOriginZ"
     ANGLEROT = "rlnAngleRot"
     ANGLETILT = "rlnAngleTilt"
     ANGLEPSI = "rlnAnglePsi"
@@ -66,6 +67,7 @@ class Relion:
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
+    ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
                   BEAMTILTX, BEAMTILTY, CTFSCALEFACTOR, CTFBFACTOR,
@@ -303,7 +305,6 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         newstar = df.copy()
 
     if rots is None:
-        # rots = [euler2rot(*np.deg2rad(row[1])) for row in df[Relion.ANGLES].iterrows()]
         rots = e2r_vec(np.deg2rad(df[Relion.ANGLES].values))
 
     if invert:
@@ -325,8 +326,12 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
                 tt = -np.vstack([q.dot(t) for q in rots])
             else:
                 tt = np.vstack([q.dot(t) for q in newrots])
-        newshifts = df[Relion.ORIGINS] + tt[:, :-1]
-        newstar[Relion.ORIGINS] = newshifts
+        if Relion.ORIGINX in newstar:
+            newstar[Relion.ORIGINX] += tt[:, 0]
+        if Relion.ORIGINY in newstar:
+            newstar[Relion.ORIGINY] += tt[:, 1]
+        if Relion.ORIGINZ in newstar:
+            newstar[Relion.ORIGINZ] += tt[:, 2]
         if adjust_defocus:
             newstar[Relion.DEFOCUSU] += tt[:, -1] * calculate_apix(df)
             newstar[Relion.DEFOCUSV] += tt[:, -1] * calculate_apix(df)
