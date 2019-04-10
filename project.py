@@ -47,6 +47,9 @@ def main(args):
         print("Please supply a map")
         return 1
 
+    if args.size is None:
+        args.size = vol.shape[0]
+
     f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
@@ -71,10 +74,16 @@ def main(args):
                     img = zsr.read(p["ucsfImageIndex"])
                 log.debug("%f +/- %f" % (np.mean(img), np.std(img)))
                 proj = img - proj
+            if args.crop is not None:
+                intoff = np.round(p[star.Relion.ORIGINS].values)
+                intoff += args.size/2
+                proj = proj[intoff - args.crop/2:intoff + args.crop/2, intoff - args.crop/2:intoff + args.crop/2]
             zsw.write(proj)
             log.info("%d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i + 1, df.shape[0]))
 
     if args.star is not None:
+        if args.crop is not None:
+            df = star.recenter(df, inplace=True)
         if args.subtract:
             df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
             df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
@@ -118,7 +127,8 @@ if __name__ == "__main__":
     parser.add_argument("--ctf", help="Apply CTF to projections", action="store_true")
     parser.add_argument("--flip", help="Only flip phases when applying CTF to projections", action="store_true")
     parser.add_argument("--pfac", help="Zero padding factor for 3D FFT (default: %(default)d)", type=int, default=2)
-    parser.add_argument("--size", help="Size of output projections", type=int)
+    parser.add_argument("--size", help="Size of projections (before subtraction)", type=int)
+    parser.add_argument("--crop", help="Size to crop recentered output images (after subtraction)", type=int)
     parser.add_argument("--star", help="Output STAR file with projection metadata")
     parser.add_argument("--subtract", help="Subtract projection from experimental images", action="store_true")
     parser.add_argument("--threads", "-j", help="Number of threads for FFTs (default: CPU count = %(default)d)",
