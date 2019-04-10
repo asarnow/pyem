@@ -50,7 +50,7 @@ def main(args):
     if args.size is None:
         args.size = vol.shape[0]
 
-    if args.crop // 2 < np.max(np.abs(df[star.Relion.ORIGINS].values)):
+    if args.size < (np.round(np.max(np.abs(df[star.Relion.ORIGINS].values))) + args.crop // 2):
         log.error("Some shifts are too large to crop")
         return 1
 
