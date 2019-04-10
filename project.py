@@ -50,6 +50,10 @@ def main(args):
     if args.size is None:
         args.size = vol.shape[0]
 
+    if args.crop // 2 < np.max(np.abs(df[star.Relion.ORIGINS].values)):
+        log.error("Some shifts are too large to crop")
+        return 1
+
     if args.subtract and args.size != vol.shape[0]:
         log.error("Volume and projections must be same size when subtracting")
         return 1
