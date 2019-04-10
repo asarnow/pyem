@@ -63,7 +63,7 @@ def main(args):
             f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf, size=args.size, flip_phase=args.flip)
             if ift is None:
                 ift = irfft2(f2d.copy(),
-                             threads=cpu_count(),
+                             threads=args.threads,
                              planner_effort="FFTW_ESTIMATE",
                              auto_align_input=True,
                              auto_contiguous=True)
