@@ -44,11 +44,15 @@ def main(args):
             mask = mrc.read(args.mask, inc_header=False, compat="relion")
             vol *= mask
     else:
-        print("Please supply a map")
+        log.error("Please supply a map")
         return 1
 
     if args.size is None:
         args.size = vol.shape[0]
+
+    if args.subtract and args.size != vol.shape[0]:
+        log.error("Volume and projections must be same size when subtracting")
+        return 1
 
     log.info("Preparing 3D FFT of volume")
     f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
@@ -62,7 +66,7 @@ def main(args):
 
     with mrc.ZSliceWriter(args.output) as zsw:
         for i, p in df.iterrows():
-            f2d = project(f3d, p, s, sx, sy, a, apply_ctf=args.ctf, size=args.size, flip_phase=args.flip)
+            f2d = project(f3d, p, s, sx, sy, a, pfac=args.pfac, apply_ctf=args.ctf, size=args.size, flip_phase=args.flip)
             if ift is None:
                 ift = irfft2(f2d.copy(),
                              threads=args.threads,
@@ -77,13 +81,16 @@ def main(args):
                 log.debug("%f +/- %f" % (np.mean(img), np.std(img)))
                 proj = img - proj
             if args.crop is not None:
-                intoff = np.round(p[star.Relion.ORIGINS].values)
-                intoff += args.size/2
-                proj = proj[intoff - args.crop/2:intoff + args.crop/2, intoff - args.crop/2:intoff + args.crop/2]
+                orihalf = args.size // 2
+                newhalf = args.crop // 2
+                x = np.int(np.round(p[star.Relion.ORIGINX])) + orihalf
+                y = np.int(np.round(p[star.Relion.ORIGINY])) + orihalf
+                proj = proj[y-newhalf:y+newhalf, x-newhalf:x+newhalf]
             zsw.write(proj)
-            log.info("%d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i + 1, df.shape[0]))
+            log.debug("%d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i + 1, df.shape[0]))
 
     if args.star is not None:
+        log.info("Writing output .star file")
         if args.crop is not None:
             df = star.recenter(df, inplace=True)
         if args.subtract:
@@ -96,13 +103,13 @@ def main(args):
     return 0
 
 
-def project(f3d, p, s, sx, sy, a, apply_ctf=False, size=None, flip_phase=False):
+def project(f3d, p, s, sx, sy, a, pfac=2, apply_ctf=False, size=None, flip_phase=False):
     orient = util.euler2rot(np.deg2rad(p[star.Relion.ANGLEROT]),
                             np.deg2rad(p[star.Relion.ANGLETILT]),
                             np.deg2rad(p[star.Relion.ANGLEPSI]))
     pshift = np.exp(-2 * np.pi * 1j * (-p[star.Relion.ORIGINX] * sx +
                                        -p[star.Relion.ORIGINY] * sy))
-    f2d = vop.interpolate_slice_numba(f3d, orient, size=size)
+    f2d = vop.interpolate_slice_numba(f3d, orient, pfac=pfac, size=size)
     f2d *= pshift
     if apply_ctf or flip_phase:
         apix = star.calculate_apix(p)
