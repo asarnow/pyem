@@ -50,7 +50,9 @@ def main(args):
     if args.size is None:
         args.size = vol.shape[0]
 
+    log.info("Preparing 3D FFT of volume")
     f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
+    log.info("Finished 3D FFT of volume")
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
