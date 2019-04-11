@@ -38,30 +38,37 @@ def main(args):
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
-    if args.map is not None:
-        vol = mrc.read(args.map, inc_header=False, compat="relion")
-        if args.mask is not None:
-            mask = mrc.read(args.mask, inc_header=False, compat="relion")
-            vol *= mask
-    else:
-        log.error("Please supply a map")
-        return 1
-
-    if args.size is None:
-        args.size = vol.shape[0]
 
     maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
     if args.size // 2 < maxshift + args.crop // 2:
         log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
         return 1
 
-    if args.subtract and args.size != vol.shape[0]:
+    if args.map is not None:
+        if args.map.endswith(".npy"):
+            log.info("Reading precomputed 3D FFT of volume")
+            f3d = np.load(args.map)
+            log.info("Finished reading 3D FFT of volume")
+            if args.size is None:
+                args.size = f3d.shape[0] // args.pfac - 1
+        else:
+            vol = mrc.read(args.map, inc_header=False, compat="relion")
+            if args.mask is not None:
+                mask = mrc.read(args.mask, inc_header=False, compat="relion")
+                vol *= mask
+            if args.size is None:
+                args.size = vol.shape[0]
+            log.info("Preparing 3D FFT of volume")
+            f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
+            log.info("Finished 3D FFT of volume")
+    else:
+        log.error("Please supply a map")
+        return 1
+
+    if args.subtract and args.size != f3d.shape[0] // args.pfac - 1:
         log.error("Volume and projections must be same size when subtracting")
         return 1
 
-    log.info("Preparing 3D FFT of volume")
-    f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
-    log.info("Finished 3D FFT of volume")
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
