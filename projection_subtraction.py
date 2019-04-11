@@ -257,10 +257,8 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
         queue.put((ptcl[star.UCSF.IMAGE_INDEX], ri), block=True)
         log.debug("Queue for %s is size %d" % (ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], queue.qsize()))
     zreader.close()
-    # Either the poison-pill-put blocks, we have multiple queues and
-    # consumers, or the consumer knows maps results to multiple files.
     log.debug("Put poison pill")
-    queue.put((-1, None), block=False)
+    queue.put((-1, None), block=True)
 
 
 def consumer(queue, stack, apix=1.0, iothreads=None):
