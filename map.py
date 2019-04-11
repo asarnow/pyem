@@ -51,6 +51,9 @@ def main(args):
     center = box // 2
 
     if args.fft:
+        if args.final_mask is not None:
+            final_mask = read(args.final_mask)
+            data *= final_mask
         data_ft = vop.vol_ft(data.T, pfac=args.pfac, threads=args.threads)
         np.save(args.output, data_ft)
         return 0
