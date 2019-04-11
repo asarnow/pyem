@@ -39,11 +39,6 @@ def main(args):
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
 
-    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
-    if args.size // 2 < maxshift + args.crop // 2:
-        log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
-        return 1
-
     if args.map is not None:
         if args.map.endswith(".npy"):
             log.info("Reading precomputed 3D FFT of volume")
@@ -69,9 +64,14 @@ def main(args):
         log.error("Volume and projections must be same size when subtracting")
         return 1
 
-    apix = star.calculate_apix(df) * args.size / (f3d.shape[0] // 2 - 1)
+    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
+    if args.crop is not None and args.size // 2 < maxshift + args.crop // 2:
+        log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
+        return 1
 
-    sz = f3d.shape[0] // 2 - 1
+    apix = star.calculate_apix(df) * args.size / (f3d.shape[0] // args.pfac - 1)
+
+    sz = f3d.shape[0] // args.pfac - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
     a = np.arctan2(sy, sx)
@@ -126,7 +126,7 @@ def project(f3d, p, s, sx, sy, a, pfac=2, apply_ctf=False, size=None, flip_phase
     f2d = vop.interpolate_slice_numba(f3d, orient, pfac=pfac, size=size)
     f2d *= pshift
     if apply_ctf or flip_phase:
-        apix = star.calculate_apix(p) * size / (f3d.shape[0] // 2 - 1)
+        apix = star.calculate_apix(p) * size / (f3d.shape[0] // pfac - 1)
         c = ctf.eval_ctf(s / apix, a,
                          p[star.Relion.DEFOCUSU], p[star.Relion.DEFOCUSV],
                          p[star.Relion.DEFOCUSANGLE],
