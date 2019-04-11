@@ -128,7 +128,7 @@ def main(args):
             log.debug("Create consumer for %s" % fname)
             cons = threading.Thread(
                 target=consumer,
-                args=(queue, fname, apix, fftthreads, iothreads))
+                args=(queue, fname, apix, iothreads))
             threads.append((prod, cons))
             iothreads.acquire()
             log.debug("iotheads at %d" % iothreads._Semaphore__value)
@@ -246,7 +246,7 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
     queue.put((-1, None), block=False)
 
 
-def consumer(queue, stack, apix=1.0, fftthreads=1, iothreads=None):
+def consumer(queue, stack, apix=1.0, iothreads=None):
     log = logging.getLogger('root')
     with mrc.ZSliceWriter(stack, psz=apix) as zwriter:
         while True:
