@@ -50,7 +50,7 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    log.debug("Reading particle .star file")
+    log.info("Reading particle .star file")
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
     df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
@@ -63,18 +63,22 @@ def main(args):
             args.dest,
             args.prefix +
             os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
-    log.debug("Read particle .star file")
+    log.info("Read particle .star file")
 
     if args.submap_ft is None:
+        log.info("Reading volume")
         submap = mrc.read(args.submap, inc_header=False, compat="relion")
         if args.submask is not None:
+            log.info("Masking volume")
             submask = mrc.read(args.submask, inc_header=False, compat="relion")
             submap *= submask
+        log.info("Preparing 3D FFT of volume")
         submap_ft = vop.vol_ft(submap, threads=min(args.threads, cpu_count()))
+        log.info("Finished 3D FFT of volume")
     else:
-        log.debug("Loading %s" % args.submap_ft)
+        log.info("Loading 3D FFT from %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
-        log.debug("Loaded %s" % args.submap_ft)
+        log.info("Loaded 3D FFT from %s" % args.submap_ft)
 
     sz = submap_ft.shape[0] // 2 - 1
 
@@ -97,9 +101,9 @@ def main(args):
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
             refmap_ft = vop.vol_ft(refmap, threads=min(args.threads, cpu_count()))
         else:
-            log.debug("Loading %s" % args.refmap_ft)
+            log.info("Loading 3D FFT from %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
-            log.debug("Loaded %s" % args.refmap_ft)
+            log.info("Loaded 3D FFT from %s" % args.refmap_ft)
     else:
         coefs_method = 0
         refmap_ft = np.empty(submap_ft.shape, dtype=submap_ft.dtype)
@@ -118,9 +122,11 @@ def main(args):
         global tls
         tls = threading.local()
 
-    log.debug("Instantiating worker pool")
+    log.info("Instantiating thread pool with %d workers" % args.threads)
     pool = Pool(processes=args.threads, initializer=init)
     threads = []
+    
+    log.info("Performing projection subtraction")
 
     try:
         for fname, particles in gb:
@@ -156,9 +162,11 @@ def main(args):
     pool.join()
     pool.terminate()
 
+    log.info("Finished projection subtraction")
+
+    log.info("Writing output .star file")
     if args.crop is not None:
         df = star.recenter(df, inplace=True)
-
     star.simplify_star_ucsf(df)
     star.write_star(args.output, df, reindex=True)
 
@@ -167,7 +175,7 @@ def main(args):
 
 def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr, **kwargs):
     log = logging.getLogger('root')
-    log.info("%d@%s Exp %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r)))
+    log.debug("%d@%s Exp %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r)))
     ft = getattr(tls, 'ft', None)
     if ft is None:
         ft = rfft2(fftshift(p1r.copy()), threads=kwargs["fftthreads"],
@@ -195,7 +203,7 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
                      auto_contiguous=True)
         tls.ift = ift
     p1sr = fftshift(ift(p1s.copy(), np.zeros(ift.output_shape, dtype=ift.output_dtype)).copy())
-    log.info("%d@%s Exp %f +/- %f, Sub %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r), np.mean(p1sr), np.std(p1sr)))
+    log.debug("%d@%s Exp %f +/- %f, Sub %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r), np.mean(p1sr), np.std(p1sr)))
     new_image = p1r - p1sr
     if kwargs["crop"] is not None:
         orihalf = new_image.shape[0] // 2
