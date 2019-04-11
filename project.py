@@ -46,7 +46,7 @@ def main(args):
             f3d = np.load(args.map)
             log.info("Finished reading 3D FFT of volume")
             if args.size is None:
-                args.size = f3d.shape[0] // args.pfac - 1
+                args.size = (f3d.shape[0] - 3) // args.pfac
         else:
             vol = mrc.read(args.map, inc_header=False, compat="relion")
             if args.mask is not None:
@@ -64,7 +64,7 @@ def main(args):
         log.error("Please supply a map")
         return 1
 
-    sz = f3d.shape[0] // args.pfac - 1
+    sz = (f3d.shape[0] - 3) // args.pfac
     apix = star.calculate_apix(df) * np.double(args.size) / sz
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
