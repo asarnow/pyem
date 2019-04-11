@@ -38,11 +38,12 @@ def fill_ft(ft, ftc, rmax, normfft=1):
 @numba.jit(cache=False, nopython=True, nogil=True)
 def interpolate_slice_numba(f3d, rot, pfac=2, size=None):
     linterp = lambda a, l, h: l + (h - l) * a
-    n = f3d.shape[0] // pfac - 1
-    nhalf = n / 2
+    ori = f3d.shape[0] // 2 - 1
+    n = (f3d.shape[0] - 3) // pfac
+    nhalf = n // 2
     if size is None:
         size = n
-    phalf = size / 2
+    phalf = size // 2
     rmax = min(nhalf, (phalf+1) - 1)
     rmax2 = rmax**2
     qot = rot.T * pfac  # Scaling!
@@ -85,8 +86,8 @@ def interpolate_slice_numba(f3d, rot, pfac=2, size=None):
             ay = y - y0
             az = z - z0
 
-            y0 += n + 1
-            z0 += n + 1
+            y0 += ori + 1
+            z0 += ori + 1
 
             x1 = x0 + 1
             y1 = y0 + 1
