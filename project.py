@@ -38,6 +38,7 @@ def main(args):
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
+    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
 
     if args.map is not None:
         if args.map.endswith(".npy"):
@@ -53,6 +54,9 @@ def main(args):
                 vol *= mask
             if args.size is None:
                 args.size = vol.shape[0]
+            if args.crop is not None and args.size // 2 < maxshift + args.crop // 2:
+                log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
+                return 1
             log.info("Preparing 3D FFT of volume")
             f3d = vop.vol_ft(vol, pfac=args.pfac, threads=args.threads)
             log.info("Finished 3D FFT of volume")
@@ -60,22 +64,21 @@ def main(args):
         log.error("Please supply a map")
         return 1
 
-    if args.subtract and args.size != f3d.shape[0] // args.pfac - 1:
-        log.error("Volume and projections must be same size when subtracting")
-        return 1
-
-    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
-    if args.crop is not None and args.size // 2 < maxshift + args.crop // 2:
-        log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
-        return 1
-
-    apix = star.calculate_apix(df) * np.double(args.size) / (f3d.shape[0] // args.pfac - 1)
-    log.info("Effective pixel size is %f A/px" % apix)
     sz = f3d.shape[0] // args.pfac - 1
-    log.info("Projection size is %d, volume size is %d" % (args.size, sz))
+    apix = star.calculate_apix(df) * np.double(args.size) / sz
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
     a = np.arctan2(sy, sx)
+    log.info("Projection size is %d, volume size is %d" % (args.size, sz))
+    log.info("Effective pixel size is %f A/px" % apix)
+
+    if args.subtract and args.size != sz:
+        log.error("Volume and projections must be same size when subtracting")
+        return 1
+
+    if args.crop is not None and args.size // 2 < maxshift + args.crop // 2:
+        log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
+        return 1
 
     ift = None
 
@@ -88,7 +91,7 @@ def main(args):
                              planner_effort="FFTW_ESTIMATE",
                              auto_align_input=True,
                              auto_contiguous=True)
-            proj = fftshift(ift(f2d.copy(), np.zeros(vol.shape[:-1], dtype=vol.dtype)))
+            proj = fftshift(ift(f2d.copy(), np.zeros(ift.output_shape, dtype=ift.output_dtype)))
             log.debug("%f +/- %f" % (np.mean(proj), np.std(proj)))
             if args.subtract:
                 with mrc.ZSliceReader(p["ucsfImagePath"]) as zsr:
