@@ -124,7 +124,7 @@ def main(args):
             prod = threading.Thread(
                 target=producer,
                 args=(pool, queue, submap_ft, refmap_ft, fname, particles,
-                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads))
+                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads, args.crop))
             log.debug("Create consumer for %s" % fname)
             cons = threading.Thread(
                 target=consumer,
@@ -149,6 +149,9 @@ def main(args):
     pool.close()
     pool.join()
     pool.terminate()
+
+    if args.crop is not None:
+        df = star.recenter(df, inplace=True)
 
     star.simplify_star_ucsf(df)
     star.write_star(args.output, df, reindex=True)
@@ -188,6 +191,12 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
     p1sr = fftshift(ift(p1s.copy(), np.zeros(ift.output_shape, dtype=ift.output_dtype)).copy())
     log.info("%d@%s Exp %f +/- %f, Sub %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r), np.mean(p1sr), np.std(p1sr)))
     new_image = p1r - p1sr
+    if kwargs["crop"] is not None:
+        orihalf = new_image.shape[0] // 2
+        newhalf = kwargs["crop"] // 2
+        x = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINX]))
+        y = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINY]))
+        new_image = new_image[y - newhalf:y + newhalf, x - newhalf:x + newhalf]
     return new_image
 
 
@@ -214,7 +223,7 @@ def subtract(p1, submap_ft, refmap_ft,
 
 
 def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
-             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1):
+             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1, crop=None):
     log = logging.getLogger('root')
     log.debug("Producing %s" % fname)
     zreader = mrc.ZSliceReader(particles[star.UCSF.IMAGE_ORIGINAL_PATH].iloc[0])
@@ -226,7 +235,7 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
         ri = pool.apply_async(
             subtract_outer,
             (p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr),
-            {"fftthreads": fftthreads})
+            {"fftthreads": fftthreads, "crop": crop})
         log.debug("Put")
         queue.put((ptcl[star.UCSF.IMAGE_INDEX], ri), block=True)
         log.debug("Queue for %s is size %d" % (ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], queue.qsize()))
@@ -278,6 +287,7 @@ if __name__ == "__main__":
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help="Low cutoff frequency (Å)")
     parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help="High cutoff frequency (Å)")
+    parser.add_argument("--crop", help="Size to crop recentered output images", type=int)
     parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
     parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks", default="")
 
