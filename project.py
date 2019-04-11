@@ -69,7 +69,7 @@ def main(args):
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
     a = np.arctan2(sy, sx)
-    log.info("Projection size is %d, volume size is %d" % (args.size, sz))
+    log.info("Projection size is %d, unpadded volume size is %d" % (args.size, sz))
     log.info("Effective pixel size is %f A/px" % apix)
 
     if args.subtract and args.size != sz:
