@@ -51,7 +51,7 @@ def main(args):
     center = box // 2
 
     if args.fft:
-        data_ft = vop.vol_ft(data.T, threads=args.threads)
+        data_ft = vop.vol_ft(data.T, pfac=args.pfac, threads=args.threads)
         np.save(args.output, data_ft)
         return 0
 
@@ -168,8 +168,9 @@ if __name__ == "__main__":
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
-    parser.add_argument("--fft", help="Cache padded FFT for projections.", action="store_true")
+    parser.add_argument("--fft", help="Cache padded 3D FFT for projections.", action="store_true")
     parser.add_argument("--threads", help="Thread count for FFTW", type=int, default=1)
+    parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms (volume center by default)", metavar="x,y,z")
     parser.add_argument("--target", help="Target pose (view axis and origin) coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
