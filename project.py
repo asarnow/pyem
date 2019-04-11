@@ -70,8 +70,9 @@ def main(args):
         return 1
 
     apix = star.calculate_apix(df) * np.double(args.size) / (f3d.shape[0] // args.pfac - 1)
-
+    log.info("Effective pixel size is %f A/px" % apix)
     sz = f3d.shape[0] // args.pfac - 1
+    log.info("Projection size is %d, volume size is %d" % (args.size, sz))
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
     a = np.arctan2(sy, sx)
