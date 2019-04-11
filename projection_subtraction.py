@@ -50,6 +50,10 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
+    if args.dest is None and args.suffix == "":
+        args.dest = ""
+        args.suffix = "_subtracted"
+
     log.info("Reading particle .star file")
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
@@ -63,7 +67,6 @@ def main(args):
             args.dest,
             args.prefix +
             os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
-    log.info("Read particle .star file")
 
     if args.submap_ft is None:
         log.info("Reading volume")
