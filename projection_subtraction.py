@@ -77,6 +77,12 @@ def main(args):
         log.debug("Loaded %s" % args.submap_ft)
 
     sz = submap_ft.shape[0] // 2 - 1
+
+    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
+    if args.crop is not None and sz < maxshift + args.crop // 2:
+        log.error("Some shifts are too large to crop (maximum crop is %d)" % (sz - 2 * maxshift))
+        return 1
+
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
     r = s * sz
