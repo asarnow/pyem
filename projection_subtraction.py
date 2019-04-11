@@ -76,14 +76,14 @@ def main(args):
             submask = mrc.read(args.submask, inc_header=False, compat="relion")
             submap *= submask
         log.info("Preparing 3D FFT of volume")
-        submap_ft = vop.vol_ft(submap, threads=min(args.threads, cpu_count()))
+        submap_ft = vop.vol_ft(submap, pfac=args.pfac, threads=min(args.threads, cpu_count()))
         log.info("Finished 3D FFT of volume")
     else:
         log.info("Loading 3D FFT from %s" % args.submap_ft)
         submap_ft = np.load(args.submap_ft)
         log.info("Loaded 3D FFT from %s" % args.submap_ft)
 
-    sz = submap_ft.shape[0] // 2 - 1
+    sz = (submap_ft.shape[0] - 3) // args.pfac
 
     maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
     if args.crop is not None and sz < maxshift + args.crop // 2:
@@ -102,7 +102,7 @@ def main(args):
         coefs_method = 1
         if args.refmap_ft is None:
             refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
-            refmap_ft = vop.vol_ft(refmap, threads=min(args.threads, cpu_count()))
+            refmap_ft = vop.vol_ft(refmap, pfac=args.pfac, threads=min(args.threads, cpu_count()))
         else:
             log.info("Loading 3D FFT from %s" % args.refmap_ft)
             refmap_ft = np.load(args.refmap_ft)
@@ -139,7 +139,7 @@ def main(args):
             prod = threading.Thread(
                 target=producer,
                 args=(pool, queue, submap_ft, refmap_ft, fname, particles,
-                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads, args.crop))
+                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads, args.crop, args.pfac))
             log.debug("Create consumer for %s" % fname)
             cons = threading.Thread(
                 target=consumer,
@@ -196,7 +196,7 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
                    ptcl[star.Relion.DEFOCUSU], ptcl[star.Relion.DEFOCUSV], ptcl[star.Relion.DEFOCUSANGLE],
                    ptcl[star.Relion.PHASESHIFT], ptcl[star.Relion.VOLTAGE], ptcl[star.Relion.AC], ptcl[star.Relion.CS],
                    ptcl[star.Relion.ANGLEROT], ptcl[star.Relion.ANGLETILT], ptcl[star.Relion.ANGLEPSI],
-                   ptcl[star.Relion.ORIGINX], ptcl[star.Relion.ORIGINY], coefs_method, r, nr)
+                   ptcl[star.Relion.ORIGINX], ptcl[star.Relion.ORIGINY], coefs_method, r, nr, kwargs["pfac"])
 
     ift = getattr(tls, 'ift', None)
     if ift is None:
@@ -220,17 +220,17 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
 @numba.jit(cache=False, nopython=True, nogil=True)
 def subtract(p1, submap_ft, refmap_ft,
              sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
-             az, el, sk, xshift, yshift, coefs_method, r, nr):
+             az, el, sk, xshift, yshift, coefs_method, r, nr, pfac):
     c = ctf.eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0, lp=2 * apix)
     orient = euler2rot(np.deg2rad(az), np.deg2rad(el), np.deg2rad(sk))
     pshift = np.exp(-2 * np.pi * 1j * (-xshift * sx + -yshift * sy))
-    p2 = vop.interpolate_slice_numba(submap_ft, orient)
+    p2 = vop.interpolate_slice_numba(submap_ft, orient, pfac=pfac)
     p2 *= pshift
     if coefs_method < 1:
         # p1s = p1 - p2 * c
         p1s = p2 * c
     elif coefs_method == 1:
-        p3 = vop.interpolate_slice_numba(refmap_ft, orient)
+        p3 = vop.interpolate_slice_numba(refmap_ft, orient, pfac=pfac)
         p3 *= pshift
         frc = np.abs(algo.bincorr_nb(p1, p3 * c, r, nr))
         coefs = np.take(frc, r)
@@ -240,7 +240,7 @@ def subtract(p1, submap_ft, refmap_ft,
 
 
 def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
-             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1, crop=None):
+             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1, crop=None, pfac=2):
     log = logging.getLogger('root')
     log.debug("Producing %s" % fname)
     zreader = mrc.ZSliceReader(particles[star.UCSF.IMAGE_ORIGINAL_PATH].iloc[0])
@@ -252,7 +252,7 @@ def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
         ri = pool.apply_async(
             subtract_outer,
             (p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr),
-            {"fftthreads": fftthreads, "crop": crop})
+            {"fftthreads": fftthreads, "crop": crop, "pfac": pfac})
         log.debug("Put")
         queue.put((ptcl[star.UCSF.IMAGE_INDEX], ri), block=True)
         log.debug("Queue for %s is size %d" % (ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], queue.qsize()))
@@ -299,6 +299,7 @@ if __name__ == "__main__":
     parser.add_argument("--io-thread-pairs", type=int, default=1)
     parser.add_argument("--io-queue-length", type=int, default=1000)
     parser.add_argument("--fft-threads", type=int, default=1)
+    parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help=argparse.SUPPRESS)
     parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help=argparse.SUPPRESS)
