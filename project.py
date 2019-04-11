@@ -69,6 +69,8 @@ def main(args):
         log.error("Volume and projections must be same size when subtracting")
         return 1
 
+    apix = star.calculate_apix(df) * args.size / (f3d.shape[0] // 2 - 1)
+
     sz = f3d.shape[0] // 2 - 1
     sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
     s = np.sqrt(sx ** 2 + sy ** 2)
@@ -76,7 +78,7 @@ def main(args):
 
     ift = None
 
-    with mrc.ZSliceWriter(args.output) as zsw:
+    with mrc.ZSliceWriter(args.output, psz=apix) as zsw:
         for i, p in df.iterrows():
             f2d = project(f3d, p, s, sx, sy, a, pfac=args.pfac, apply_ctf=args.ctf, size=args.size, flip_phase=args.flip)
             if ift is None:
@@ -124,7 +126,7 @@ def project(f3d, p, s, sx, sy, a, pfac=2, apply_ctf=False, size=None, flip_phase
     f2d = vop.interpolate_slice_numba(f3d, orient, pfac=pfac, size=size)
     f2d *= pshift
     if apply_ctf or flip_phase:
-        apix = star.calculate_apix(p)
+        apix = star.calculate_apix(p) * size / (f3d.shape[0] // 2 - 1)
         c = ctf.eval_ctf(s / apix, a,
                          p[star.Relion.DEFOCUSU], p[star.Relion.DEFOCUSV],
                          p[star.Relion.DEFOCUSANGLE],
