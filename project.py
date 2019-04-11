@@ -52,7 +52,7 @@ def main(args):
 
     maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
     if args.size // 2 < maxshift + args.crop // 2:
-        log.error("Some shifts are too large to crop (maximum crop is %d" % args.size - 2 * maxshift)
+        log.error("Some shifts are too large to crop (maximum crop is %d)" % (args.size - 2 * maxshift))
         return 1
 
     if args.subtract and args.size != vol.shape[0]:
