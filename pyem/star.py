@@ -18,19 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
-import sys
 import re
 import os.path
 from collections import Counter
 import numpy as np
 import pandas as pd
-import json
-from glob import glob
 from math import modf
 from pyem.geom import e2r_vec
-from pyem.algo import query_connected
 from pyem.util import rot2euler
-from pyem.util import euler2rot
 
 
 class Relion:
