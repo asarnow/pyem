@@ -84,6 +84,7 @@ class UCSF:
     IMAGE_ORIGINAL_PATH = "ucsfImageOriginalPath"
     IMAGE_ORIGINAL_BASENAME = "ucsfImageOriginalBasename"
     IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
+    MICROGRAPH_BASENAME = "ucsfMicrographBasename"
 
 
 def smart_merge(s1, s2, fields, key=None):
@@ -122,6 +123,11 @@ def merge_key(s1, s2):
             return Relion.MICROGRAPH_COORDS
         elif can_merge_mgraph_name:
             return Relion.MICROGRAPH_NAME
+    if UCSF.MICROGRAPH_BASENAME in inter:
+        c = Counter(s1[UCSF.MICROGRAPH_BASENAME])
+        shared = sum(c[i] for i in set(s2[UCSF.MICROGRAPH_BASENAME]))
+        if shared > s1.shape[0] * 0.5:
+            return UCSF.MICROGRAPH_BASENAME
     return None
 
 
@@ -357,6 +363,9 @@ def augment_star_ucsf(df, inplace=True):
             df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
         df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
         df[UCSF.IMAGE_ORIGINAL_BASENAME] = df[UCSF.IMAGE_ORIGINAL_PATH].apply(os.path.basename)
+
+    if Relion.MICROGRAPH_NAME in df:
+        df[UCSF.MICROGRAPH_BASENAME] = df[Relion.MICROGRAPH_NAME].apply(os.path.basename)
     return df
 
 
