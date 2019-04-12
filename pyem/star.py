@@ -100,25 +100,25 @@ def smart_merge(s1, s2, fields, key=None):
     return s1.reset_index(drop=True)
 
 
-def merge_key(s1, s2):
+def merge_key(s1, s2, threshold=0.5):
     inter = s1.columns.intersection(s2.columns)
     if not inter.size:
         return None
     if Relion.IMAGE_NAME in inter:
         c = Counter(s1[Relion.IMAGE_NAME])
         shared = sum(c[i] for i in set(s2[Relion.IMAGE_NAME]))
-        if shared > s1.shape[0] * 0.5:
+        if shared > s1.shape[0] * threshold:
             return Relion.IMAGE_NAME
         if UCSF.IMAGE_BASENAME in inter:
             c = Counter(s1[UCSF.IMAGE_BASENAME])
             shared = sum(c[i] for i in set(s2[UCSF.IMAGE_BASENAME]))
-            if shared > s1.shape[0] * 0.5:
+            if shared > s1.shape[0] * threshold:
                 return [UCSF.IMAGE_BASENAME, UCSF.IMAGE_INDEX]
     mgraph_coords = inter.intersection(Relion.MICROGRAPH_COORDS)
     if Relion.MICROGRAPH_NAME in mgraph_coords:
         c = Counter(s1[Relion.MICROGRAPH_NAME])
         shared = sum(c[i] for i in set(s2[Relion.MICROGRAPH_NAME]))
-        can_merge_mgraph_name = Relion.MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
+        can_merge_mgraph_name = Relion.MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * threshold
         if can_merge_mgraph_name and mgraph_coords.intersection(Relion.COORDS).size:
             return Relion.MICROGRAPH_COORDS
         elif can_merge_mgraph_name:
@@ -126,7 +126,7 @@ def merge_key(s1, s2):
     if UCSF.MICROGRAPH_BASENAME in inter:
         c = Counter(s1[UCSF.MICROGRAPH_BASENAME])
         shared = sum(c[i] for i in set(s2[UCSF.MICROGRAPH_BASENAME]))
-        if shared > s1.shape[0] * 0.5:
+        if shared > s1.shape[0] * threshold:
             return UCSF.MICROGRAPH_BASENAME
     return None
 
