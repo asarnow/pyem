@@ -17,7 +17,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from __future__ import print_function
 import logging
 import json
 import numpy as np
@@ -31,13 +30,9 @@ from pyem import util
 
 def main(args):
     log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
     hdlr = logging.StreamHandler(sys.stdout)
-    if args.quiet:
-        hdlr.setLevel(logging.WARNING)
-    else:
-        hdlr.setLevel(logging.INFO)
     log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
     if args.target is None and args.sym is None and args.transform is None:
         log.error("At least a target, transformation matrix, or symmetry group must be provided")
@@ -111,7 +106,9 @@ def main(args):
         log.error("At least a target or symmetry group must be provided via --target or --sym")
         return 1
 
+    log.info("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
     ops = [op.dot(r).T for op in args.sym] if args.sym is not None else [r.T]
+    log.info("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
     d = -d
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus))
  
@@ -136,8 +133,9 @@ def subparticle_expansion(s, ops=None, dists=0, rots=None, rotate=True, invert=F
         ops = [np.eye(3)]
     if rots is None:
         rots = geom.e2r_vec(np.deg2rad(s[star.Relion.ANGLES].values))
-    if dists is not None and np.isscalar(dists):
-        dists = [dists] * len(ops)
+    dists = np.atleast_2d(dists)
+    if len(dists) == 1:
+        dists = np.repeat(dists, len(ops), axis=0)
     for i in range(len(ops)):
         yield star.transform_star(s, ops[i], dists[i], rots=rots, rotate=rotate, invert=invert, adjust_defocus=adjust_defocus)
 
@@ -162,7 +160,7 @@ if __name__ == "__main__":
                                            "extracting outside Relion)", action="store_true")
     parser.add_argument("--adjust-defocus", help="Add Z component of shifts to defocus", action="store_true")
     parser.add_argument("--shift-only", help="Keep original view axis after target transformation", action="store_false")
-    parser.add_argument("--quiet", help="Don't print info messages", action="store_true")
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
     parser.add_argument("--suffix", help="Suffix for multiple output files")
