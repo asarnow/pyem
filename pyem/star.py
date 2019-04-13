@@ -298,7 +298,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         t = r[:, -1]
         r = r[:, :3]
     assert (r.shape == (3, 3))
-    assert t is None or np.isscalar(t) or len(t) == 3
+    assert t is None or np.array(t).size == 1 or len(t) == 3
 
     if inplace:
         newstar = df
