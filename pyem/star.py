@@ -317,7 +317,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         newstar[Relion.ANGLES] = angles
 
     if t is not None and np.linalg.norm(t) > 0:
-        if np.isscalar(t):
+        if np.array(t).size == 1:
             if invert:
                 tt = -np.vstack([np.squeeze(q[:, 2]) * t for q in rots])
             else:
