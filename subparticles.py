@@ -92,6 +92,7 @@ def main(args):
         d = np.linalg.norm(c)
         ax = c / d
         r = geom.euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), np.deg2rad(args.psi)]))
+        d = -d
     elif args.transform is not None:
         r = args.transform[:, :3]
         if args.transform.shape[1] == 4:
@@ -101,7 +102,7 @@ def main(args):
             d = 0
     elif args.sym is not None:
         r = np.identity(3)
-        d = args.displacement / args.apix
+        d = -args.displacement / args.apix
     else:
         log.error("At least a target or symmetry group must be provided via --target or --sym")
         return 1
@@ -109,7 +110,6 @@ def main(args):
     log.info("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
     ops = [op.dot(r).T for op in args.sym] if args.sym is not None else [r.T]
     log.info("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
-    d = -d
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus))
  
     if args.recenter:
