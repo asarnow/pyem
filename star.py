@@ -56,6 +56,9 @@ def main(args):
             print("%f A/px (%sX magnification)" % (star.calculate_apix(df), "{:,.0f}".format(df[star.Relion.MAGNIFICATION][0])))
         except KeyError:
             pass
+        if len(df.columns.intersection(star.Relion.ORIGINS3D)) > 0:
+            print("Largest shift is %f pixels" %
+                  np.max(np.abs(df[df.columns.intersection(star.Relion.ORIGINS3D)].values)))
         return 0
 
     if args.drop_angles:
