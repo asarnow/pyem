@@ -133,8 +133,8 @@ def main(args):
         star.scale_magnification(df, args.scale, inplace=True)
 
     if args.scale_particles is not None:
-        star.scale_origins(df, args.scale, inplace=True)
-        star.scale_magnification(df, args.scale, inplace=True)
+        star.scale_origins(df, args.scale_particles, inplace=True)
+        star.scale_magnification(df, args.scale_particles, inplace=True)
 
     if args.scale_coordinates is not None:
         star.scale_coordinates(df, args.scale_coordinates, inplace=True)
