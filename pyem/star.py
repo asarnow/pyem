@@ -18,19 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
-import sys
 import re
 import os.path
 from collections import Counter
 import numpy as np
 import pandas as pd
-import json
-from glob import glob
 from math import modf
 from pyem.geom import e2r_vec
-from pyem.algo import query_connected
 from pyem.util import rot2euler
-from pyem.util import euler2rot
 
 
 class Relion:
@@ -100,25 +95,25 @@ def smart_merge(s1, s2, fields, key=None):
     return s1.reset_index(drop=True)
 
 
-def merge_key(s1, s2):
+def merge_key(s1, s2, threshold=0.5):
     inter = s1.columns.intersection(s2.columns)
     if not inter.size:
         return None
     if Relion.IMAGE_NAME in inter:
         c = Counter(s1[Relion.IMAGE_NAME])
         shared = sum(c[i] for i in set(s2[Relion.IMAGE_NAME]))
-        if shared > s1.shape[0] * 0.5:
+        if shared > s1.shape[0] * threshold:
             return Relion.IMAGE_NAME
         if UCSF.IMAGE_BASENAME in inter:
             c = Counter(s1[UCSF.IMAGE_BASENAME])
             shared = sum(c[i] for i in set(s2[UCSF.IMAGE_BASENAME]))
-            if shared > s1.shape[0] * 0.5:
+            if shared > s1.shape[0] * threshold:
                 return [UCSF.IMAGE_BASENAME, UCSF.IMAGE_INDEX]
     mgraph_coords = inter.intersection(Relion.MICROGRAPH_COORDS)
     if Relion.MICROGRAPH_NAME in mgraph_coords:
         c = Counter(s1[Relion.MICROGRAPH_NAME])
         shared = sum(c[i] for i in set(s2[Relion.MICROGRAPH_NAME]))
-        can_merge_mgraph_name = Relion.MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * 0.5
+        can_merge_mgraph_name = Relion.MICROGRAPH_NAME in mgraph_coords and shared > s1.shape[0] * threshold
         if can_merge_mgraph_name and mgraph_coords.intersection(Relion.COORDS).size:
             return Relion.MICROGRAPH_COORDS
         elif can_merge_mgraph_name:
@@ -126,7 +121,7 @@ def merge_key(s1, s2):
     if UCSF.MICROGRAPH_BASENAME in inter:
         c = Counter(s1[UCSF.MICROGRAPH_BASENAME])
         shared = sum(c[i] for i in set(s2[UCSF.MICROGRAPH_BASENAME]))
-        if shared > s1.shape[0] * 0.5:
+        if shared > s1.shape[0] * threshold:
             return UCSF.MICROGRAPH_BASENAME
     return None
 
@@ -303,7 +298,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         t = r[:, -1]
         r = r[:, :3]
     assert (r.shape == (3, 3))
-    assert t is None or np.isscalar(t) or len(t) == 3
+    assert t is None or np.array(t).size == 1 or len(t) == 3
 
     if inplace:
         newstar = df
@@ -322,7 +317,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
         newstar[Relion.ANGLES] = angles
 
     if t is not None and np.linalg.norm(t) > 0:
-        if np.isscalar(t):
+        if np.array(t).size == 1:
             if invert:
                 tt = -np.vstack([np.squeeze(q[:, 2]) * t for q in rots])
             else:
