@@ -26,7 +26,7 @@ def rot2euler(r, out=None):
     # Shoemake rotation matrix decomposition algorithm with same conventions as Relion.
     # epsilon = np.finfo(np.double).eps
     epsilon = 1e-16
-    r = np.atleast_2d(r)
+    r = r.reshape(-1, 9).reshape(-1, 3, 3)
     if out is None:
         out = np.zeros((len(r), 3), dtype=r.dtype)
     for i in range(len(r)):
