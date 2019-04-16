@@ -107,9 +107,9 @@ def main(args):
         log.error("At least a target or symmetry group must be provided via --target or --sym")
         return 1
 
-    log.info("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
-    ops = [op.dot(r).T for op in args.sym] if args.sym is not None else [r.T]
-    log.info("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
+    log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
+    ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
+    log.debug("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus))
  
     if args.recenter:
@@ -129,6 +129,7 @@ def main(args):
 
 
 def subparticle_expansion(s, ops=None, dists=0, rots=None, rotate=True, invert=False, adjust_defocus=False):
+    log = logging.getLogger(__name__)
     if ops is None:
         ops = [np.eye(3)]
     if rots is None:
@@ -137,6 +138,9 @@ def subparticle_expansion(s, ops=None, dists=0, rots=None, rotate=True, invert=F
     if len(dists) == 1:
         dists = np.repeat(dists, len(ops), axis=0)
     for i in range(len(ops)):
+        log.debug("Yielding expansion %d" % i)
+        log.debug("Rotation: %s" % str(ops[i]).replace("\n", "\n" + " " * 10))
+        log.debug("Translation: %s (%f px)" % (str(dists[i]), np.linalg.norm(dists[i])))
         yield star.transform_star(s, ops[i], dists[i], rots=rots, rotate=rotate, invert=invert, adjust_defocus=adjust_defocus)
 
 
