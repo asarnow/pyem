@@ -108,7 +108,7 @@ def main(args):
         return 1
 
     log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
-    ops = [op.dot(r).T for op in args.sym] if args.sym is not None else [r.T]
+    ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
     log.debug("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus))
  
