@@ -213,10 +213,10 @@ def main(args):
         return 0
 
     if args.auxout is not None and dfaux is not None:
-        star.write_star(args.auxout, dfaux, simplify=args.augment)
+        star.write_star(args.auxout, dfaux, simplify=args.augment_output)
 
     if args.output is not None:
-        star.write_star(args.output, df, simplify=args.augment)
+        star.write_star(args.output, df, simplify=args.augment_output)
     return 0
 
 
@@ -226,8 +226,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
                         type=str)
-    parser.add_argument("--augment", help="Always augment inputs and simplify outputs",
+    parser.add_argument("--augment", help="Always augment inputs",
                         action="store_true")
+    parser.add_argument("--augment-output", help="Write augmented .star files with non-standard fields", action="store_false")
     parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
                         type=int, default=None)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
