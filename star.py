@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
+from six import iteritems
 import glob
 import json
 import numpy as np
@@ -44,7 +45,7 @@ def main(args):
             c = df[star.Relion.CLASS].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(df.shape[0]), len(c)))
             print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100. * s / c.sum())
-                               for i, s in c.sort_index().iteritems()]))
+                               for i, s in iteritems(c.sort_index())]))
         elif star.is_particle_star(df):
             print("%s particles" % "{:,}".format(df.shape[0]))
         if star.Relion.MICROGRAPH_NAME in df.columns:

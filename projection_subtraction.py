@@ -23,7 +23,10 @@ import logging
 import numba
 import numpy as np
 import os.path
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue
 import sys
 import threading
 from multiprocessing import cpu_count
