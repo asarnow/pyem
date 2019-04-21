@@ -24,9 +24,9 @@ import numba
 import numpy as np
 import os.path
 try:
-    import queue
-except ImportError:
     import Queue
+except ImportError:
+    import queue
 import sys
 import threading
 from multiprocessing import cpu_count
