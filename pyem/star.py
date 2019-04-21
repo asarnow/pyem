@@ -25,7 +25,7 @@ import numpy as np
 import pandas as pd
 from math import modf
 from pyem.geom import e2r_vec
-from pyem.util import rot2euler
+from pyem.geom import rot2euler
 
 
 class Relion:
@@ -311,22 +311,22 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
     if invert:
         r = r.T
 
-    newrots = [ptcl.dot(r) for ptcl in rots]
+    newrots = np.dot(rots, r)  # Works with 3D array and list of 2D arrays.
     if rotate:
-        angles = [np.rad2deg(rot2euler(q)) for q in newrots]
+        angles = np.rad2deg(rot2euler(newrots))
         newstar[Relion.ANGLES] = angles
 
     if t is not None and np.linalg.norm(t) > 0:
         if np.array(t).size == 1:
             if invert:
-                tt = -np.vstack([np.squeeze(q[:, 2]) * t for q in rots])
+                tt = -(t * rots)[:, :, 2]  # Works with 3D array and list of 2D arrays.
             else:
-                tt = np.vstack([np.squeeze(q[:, 2]) * t for q in newrots])
+                tt = newrots[:, :, 2] * t
         else:
             if invert:
-                tt = -np.vstack([q.dot(t) for q in rots])
+                tt = -np.dot(rots, t)
             else:
-                tt = np.vstack([q.dot(t) for q in newrots])
+                tt = np.dot(newrots, t)
         if Relion.ORIGINX in newstar:
             newstar[Relion.ORIGINX] += tt[:, 0]
         if Relion.ORIGINY in newstar:

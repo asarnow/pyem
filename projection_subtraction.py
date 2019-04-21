@@ -23,7 +23,10 @@ import logging
 import numba
 import numpy as np
 import os.path
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue
 import sys
 import threading
 from multiprocessing import cpu_count
@@ -57,8 +60,9 @@ def main(args):
     log.info("Reading particle .star file")
     df = star.parse_star(args.input, keep_index=False)
     star.augment_star_ucsf(df)
-    df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
-    df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
+    if not args.original:
+        df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
+        df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
     df.sort_values(star.UCSF.IMAGE_ORIGINAL_PATH, inplace=True, kind="mergesort")
     gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
     df[star.UCSF.IMAGE_INDEX] = gb.cumcount()
@@ -295,6 +299,7 @@ if __name__ == "__main__":
     parser.add_argument("--refmap_ft", type=str, help=argparse.SUPPRESS)
     parser.add_argument("--submap_ft", type=str, help=argparse.SUPPRESS)
     parser.add_argument("--submask", type=str, help="Mask to apply to submap before subtracting")
+    parser.add_argument("--original", help="Read original particle images instead of current", action="store_true")
     parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
     parser.add_argument("--io-thread-pairs", type=int, default=1)
     parser.add_argument("--io-queue-length", type=int, default=1000)

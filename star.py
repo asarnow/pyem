@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
+from six import iteritems
 import glob
 import json
 import numpy as np
@@ -44,7 +45,7 @@ def main(args):
             c = df[star.Relion.CLASS].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(df.shape[0]), len(c)))
             print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100. * s / c.sum())
-                               for i, s in c.sort_index().iteritems()]))
+                               for i, s in iteritems(c.sort_index())]))
         elif star.is_particle_star(df):
             print("%s particles" % "{:,}".format(df.shape[0]))
         if star.Relion.MICROGRAPH_NAME in df.columns:
@@ -213,10 +214,10 @@ def main(args):
         return 0
 
     if args.auxout is not None and dfaux is not None:
-        star.write_star(args.auxout, dfaux, simplify=args.augment)
+        star.write_star(args.auxout, dfaux, simplify=args.augment_output)
 
     if args.output is not None:
-        star.write_star(args.output, df, simplify=args.augment)
+        star.write_star(args.output, df, simplify=args.augment_output)
     return 0
 
 
@@ -226,8 +227,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles",
                         type=str)
-    parser.add_argument("--augment", help="Always augment inputs and simplify outputs",
+    parser.add_argument("--augment", help="Always augment inputs",
                         action="store_true")
+    parser.add_argument("--augment-output", help="Write augmented .star files with non-standard fields", action="store_false")
     parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
                         type=int, default=None)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
