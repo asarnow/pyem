@@ -104,6 +104,14 @@ def main(args):
         angle_star = star.parse_star(args.copy_angles, augment=args.augment)
         df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES)
 
+    if args.copy_alignments is not None:
+        align_star = star.parse_star(args.copy_alignments, augment=args.augment)
+        df = star.smart_merge(df, align_star, fields=star.Relion.ALIGNMENTS)
+
+    if args.copy_reconstruct_images is not None:
+        recon_star = star.parse_star(args.copy_reconstruct_images, augment=args.augment)
+        df[star.Relion.RECONSTRUCT_IMAGE_NAME] = recon_star[star.Relion.IMAGE_NAME]
+
     if args.transform is not None:
         if args.transform.count(",") == 2:
             r = star.euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
@@ -237,11 +245,13 @@ if __name__ == "__main__":
     parser.add_argument("--copy-angles",
                         help="Source for particle Euler angles (must align exactly with input .star file)",
                         type=str)
+    parser.add_argument("--copy-alignments", help="Source for alignment parameters (angles and shifts)")
     parser.add_argument("--copy-ctf", help="Source for CTF parameters (file or quoted glob)")
     parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
                         type=str)
+    parser.add_argument("--copy-reconstruct-images", help="Source for rlnReconstructImage (must align exactly with input .star file)")
     parser.add_argument("--merge-source", help="Source .star for merge")
     parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
     parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",

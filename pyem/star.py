@@ -32,6 +32,7 @@ class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
+    RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
     COORDX = "rlnCoordinateX"
     COORDY = "rlnCoordinateY"
     ORIGINX = "rlnOriginX"
@@ -64,6 +65,7 @@ class Relion:
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
+    ALIGNMENTS = ANGLES + ORIGINS
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
                   BEAMTILTX, BEAMTILTY, CTFSCALEFACTOR, CTFBFACTOR,
                   CTFMAXRESOLUTION, CTFFIGUREOFMERIT]
