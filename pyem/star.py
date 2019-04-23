@@ -32,6 +32,7 @@ class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
+    RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
     COORDX = "rlnCoordinateX"
     COORDY = "rlnCoordinateY"
     ORIGINX = "rlnOriginX"
