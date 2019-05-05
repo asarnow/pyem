@@ -34,8 +34,8 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    if args.target is None and args.sym is None and args.transform is None:
-        log.error("At least a target, transformation matrix, or symmetry group must be provided")
+    if args.target is None and args.sym is None and args.transform is None and args.euler is None:
+        log.error("At least a target, transformation matrix, Euler angles, or a symmetry group must be provided")
         return 1
     elif args.target is not None and args.boxsize is None and args.origin is None:
         log.error("An origin must be provided via --boxsize or --origin")
@@ -48,7 +48,18 @@ def main(args):
             log.error("Target must be comma-separated list of x,y,z coordinates")
             return 1
 
-    if args.transform is not None:
+    if args.euler is not None:
+        try:
+            args.euler = np.deg2rad(np.array([np.double(tok) for tok in args.euler.split(",")]))
+            args.transform = np.zeros((3,4))
+            args.transform[:,:3] = geom.euler2rot(*args.euler)
+            if args.target is not None:
+                args.transform[:, -1] = args.target
+        except:
+            log.error("Euler angles must be comma-separated list of rotation, tilt, skew in degrees")
+            return 1
+
+    if args.transform is not None and not hasattr(args.transform, "dtype"):
         if args.target is not None:
             log.warn("--target supersedes --transform")
         try:
@@ -159,6 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
     parser.add_argument("--psi", help="Additional in-plane rotation of target in degrees", type=float, default=0)
+    parser.add_argument("--euler", help="Euler angles (ZYZ intrinsic) to rotate particles", metavar="rot,tilt,psi")
     parser.add_argument("--transform", help="Transformation matrix (3x3 or 3x4) in Numpy format")
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
                                            "extracting outside Relion)", action="store_true")
