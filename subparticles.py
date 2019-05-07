@@ -41,6 +41,15 @@ def main(args):
         log.error("An origin must be provided via --boxsize or --origin")
         return 1
 
+    if args.apix is None:
+        df = star.parse_star(args.input, nrows=1)
+        args.apix = star.calculate_apix(df)
+        if args.apix is None:
+            log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
+            args.apix = 1.0
+            df[star.Relion.MAGNIFICATION] = 10000
+            df[star.Relion.DETECTORPIXELSIZE] = 1.0
+
     if args.target is not None:
         try:
             args.target = np.array([np.double(tok) for tok in args.target.split(",")])
@@ -52,7 +61,7 @@ def main(args):
         try:
             args.euler = np.deg2rad(np.array([np.double(tok) for tok in args.euler.split(",")]))
             args.transform = np.zeros((3,4))
-            args.transform[:,:3] = geom.euler2rot(*args.euler)
+            args.transform[:, :3] = geom.euler2rot(*args.euler)
             if args.target is not None:
                 args.transform[:, -1] = args.target
         except:
@@ -85,13 +94,9 @@ def main(args):
 
     df = star.parse_star(args.input)
 
-    if args.apix is None:
-        args.apix = star.calculate_apix(df)
-        if args.apix is None:
-            log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
-            args.apix = 1.0
-            df[star.Relion.MAGNIFICATION] = 10000
-            df[star.Relion.DETECTORPIXELSIZE] = 1.0
+    if star.calculate_apix(df) != args.apix:
+        log.warn("Using specified pixel size of %f instead of calculated size %f" %
+                 (args.apix, star.calculate_apix(df)))
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
