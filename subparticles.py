@@ -60,7 +60,7 @@ def main(args):
     if args.euler is not None:
         try:
             args.euler = np.deg2rad(np.array([np.double(tok) for tok in args.euler.split(",")]))
-            args.transform = np.zeros((3,4))
+            args.transform = np.zeros((3, 4))
             args.transform[:, :3] = geom.euler2rot(*args.euler)
             if args.target is not None:
                 args.transform[:, -1] = args.target
@@ -126,7 +126,7 @@ def main(args):
     log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
     ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
     log.debug("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
-    dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.target_invert, adjust_defocus=args.adjust_defocus))
+    dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.invert, adjust_defocus=args.adjust_defocus))
  
     if args.recenter:
         for s in dfs:
@@ -173,7 +173,8 @@ if __name__ == "__main__":
                         type=float, default=0)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
-    parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
+    parser.add_argument("--invert", help="Invert the transformation", action="store_true")
+    parser.add_argument("--target-invert", action="store_true", dest="invert", help=argparse.SUPPRESS)
     parser.add_argument("--psi", help="Additional in-plane rotation of target in degrees", type=float, default=0)
     parser.add_argument("--euler", help="Euler angles (ZYZ intrinsic) to rotate particles", metavar="rot,tilt,psi")
     parser.add_argument("--transform", help="Transformation matrix (3x3 or 3x4) in Numpy format")
