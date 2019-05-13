@@ -102,11 +102,11 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = star.parse_star(args.copy_angles, augment=args.augment)
-        df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES)
+        df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES, key=args.merge_key)
 
     if args.copy_alignments is not None:
         align_star = star.parse_star(args.copy_alignments, augment=args.augment)
-        df = star.smart_merge(df, align_star, fields=star.Relion.ALIGNMENTS)
+        df = star.smart_merge(df, align_star, fields=star.Relion.ALIGNMENTS, key=args.merge_key)
 
     if args.copy_reconstruct_images is not None:
         recon_star = star.parse_star(args.copy_reconstruct_images, augment=args.augment)
@@ -129,12 +129,12 @@ def main(args):
 
     if args.copy_ctf is not None:
         ctf_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_ctf)), join="inner")
-        df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS)
+        df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS, key=args.merge_key)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_micrograph_coordinates)), join="inner")
-        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS)
+        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS, key=args.merge_key)
 
     if args.scale is not None:
         star.scale_coordinates(df, args.scale, inplace=True)
