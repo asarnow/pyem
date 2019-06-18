@@ -82,6 +82,7 @@ class UCSF:
     IMAGE_ORIGINAL_BASENAME = "ucsfImageOriginalBasename"
     IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
     MICROGRAPH_BASENAME = "ucsfMicrographBasename"
+    PARTICLE_UID = "ucsfParticleUid"
 
 
 def smart_merge(s1, s2, fields, key=None):
