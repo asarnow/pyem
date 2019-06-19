@@ -108,7 +108,7 @@ def main(args):
         except:
             log.error("Matrix format is incorrect")
             return 1
-        data = vop.resample_volume(data, r=r, t=None, ori=None, order=args.spline_order)
+        data = vop.resample_volume(data, r=r, t=None, ori=None, order=args.spline_order, invert=args.invert)
 
     if args.target is not None:
         try:
@@ -122,7 +122,7 @@ def main(args):
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
-        data = vop.resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.target_invert)
+        data = vop.resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.invert)
 
     if args.euler is not None:
         try:
@@ -176,12 +176,15 @@ if __name__ == "__main__":
     parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms (volume center by default)", metavar="x,y,z")
     parser.add_argument("--target", help="Target pose (view axis and origin) coordinates in Angstroms", metavar="x,y,z")
-    parser.add_argument("--target-invert", help="Undo target pose transformation", action="store_true")
+    parser.add_argument("--invert", help="Invert the transformation", action="store_true")
+    parser.add_argument("--target-invert", action="store_true", dest="invert", help=argparse.SUPPRESS)
     parser.add_argument("--euler", help="Euler angles in degrees (Relion conventions)", metavar="phi,theta,psi")
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--matrix",
                         help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
-    parser.add_argument("--boxsize", help="Set the output box dimensions, accounting for pixel size", type=int)
+    parser.add_argument("--boxsize", help="Set the output box dimensions", type=int)
+    parser.add_argument("--scale", help="Scale factor for output pixel size", type=float)
+    parser.add_argument("--apix-out", help="Pixel size in output (similar to --scale)", type=float)
     parser.add_argument("--spline-order",
                         help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
                         type=int, default=3, choices=np.arange(6))
