@@ -35,7 +35,7 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    if args.input.endswith(".cs"):
+    if args.input[0].endswith(".cs"):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
         try:
@@ -47,7 +47,10 @@ def main(args):
             return 1
     else:
         log.debug("Detected CryoSPARC 0.6.5 .csv file")
-        meta = metadata.parse_cryosparc_065_csv(args.input)  # Read cryosparc metadata file.
+        if len(args.input) > 1:
+            log.error("Only one file at a time supported for CryoSPARC 0.6.5 .csv format")
+            return 1
+        meta = metadata.parse_cryosparc_065_csv(args.input[0])  # Read cryosparc metadata file.
         df = metadata.cryosparc_065_csv2star(meta, args.minphic)
 
     if args.cls is not None:
