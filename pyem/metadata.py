@@ -21,7 +21,6 @@ import logging
 import numpy as np
 import pandas as pd
 import sys
-from math import modf
 from . import star
 from . import geom
 from . import util
@@ -29,10 +28,10 @@ from . import util
 
 def parse_f9_par(fn):
     head_data = {"Input particle images": None,
-           "Beam energy (keV)": None,
-           "Spherical aberration (mm)": None,
-           "Amplitude contrast": None,
-           "Pixel size of images (A)": None}
+                 "Beam energy (keV)": None,
+                 "Spherical aberration (mm)": None,
+                 "Amplitude contrast": None,
+                 "Pixel size of images (A)": None}
     ln = 1
     skip = 0
     with open(fn, 'rU') as f:
@@ -59,8 +58,8 @@ def parse_f9_par(fn):
                 break
             else:
                 headers = ["C", "PHI", "THETA", "PSI", "SHX", "SHY",
-                        "MAG", "FILM", "DF1", "DF2", "ANGAST",
-                        "OCC", "LogP", "SIGMA", "SCORE", "CHANGE"]
+                           "MAG", "FILM", "DF1", "DF2", "ANGAST",
+                           "OCC", "LogP", "SIGMA", "SCORE", "CHANGE"]
                 break
                 
             ln += 1
@@ -106,17 +105,17 @@ def write_fx_par(fn, df):
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
     general = {"PHI": None,
-            "THETA": None,
-            "PSI": None,
-            "SHX": None,
-            "SHY": None,
-            "MAG": None,
-            "FILM": star.Relion.GROUPNUMBER,
-            "DF1": star.Relion.DEFOCUSU,
-            "DF2": star.Relion.DEFOCUSV,
-            "ANGAST": star.Relion.DEFOCUSANGLE,
-            "C": None,
-            }
+               "THETA": None,
+               "PSI": None,
+               "SHX": None,
+               "SHY": None,
+               "MAG": None,
+               "FILM": star.Relion.GROUPNUMBER,
+               "DF1": star.Relion.DEFOCUSU,
+               "DF2": star.Relion.DEFOCUSV,
+               "ANGAST": star.Relion.DEFOCUSANGLE,
+               "C": None,
+               }
     rlnheaders = [general[h] for h in par.columns if h in general and general[h] is not None]
     df = par[[h for h in par.columns if h in general and general[h] is not None]].copy()
     df.columns = rlnheaders
@@ -225,7 +224,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
                 df[model[p]] = meta[p]
         df["rlnClassNumber"] = 1
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
-        df[star.Relion.ANGLES]  = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
+        df[star.Relion.ANGLES] = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
     if phic is not None and minphic > 0:
         mask = np.all(phic < minphic, axis=1)
         df.drop(df[mask].index, inplace=True)
@@ -405,4 +404,3 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     else:
         log.warn("Angular alignment parameters not found")
     return df
-
