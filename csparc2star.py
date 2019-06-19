@@ -83,7 +83,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Cryosparc metadata .csv (v0.6.5) or .cs (v2+) files", args="*")
+    parser.add_argument("input", help="Cryosparc metadata .csv (v0.6.5) or .cs (v2+) files", nargs="*")
     parser.add_argument("output", help="Output .star file")
     parser.add_argument("--boxsize", help="Cryosparc refinement box size (if different from particles)", type=float)
     # parser.add_argument("--passthrough", "-p", help="List file required for some Cryosparc 2+ job types")
