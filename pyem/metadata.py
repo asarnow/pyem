@@ -290,7 +290,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                 log.info("Passing np.ndarray at %s" % str(id(pt)))
                 pt = passthrough
             else:
-                log.info("Reading auxiliary file %f" % passthrough)
+                log.info("Reading auxiliary file %s" % passthrough)
                 pt = np.load(passthrough)
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
