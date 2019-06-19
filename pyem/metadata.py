@@ -295,13 +295,13 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
                 if 'micrograph_blob/idx' in pt.dtype.names:
-                    log.info("Particle file detected")
-                    pt = util.dataframe_from_records_mapped(pt, general)
-                    key = star.UCSF.PARTICLE_UID
-                else:
                     log.info("Micrograph file detected")
                     pt = util.dataframe_from_records_mapped(pt, micrograph)
                     key = star.Relion.MICROGRAPH_NAME
+                else:
+                    log.info("Particle file detected")
+                    pt = util.dataframe_from_records_mapped(pt, general)
+                    key = star.UCSF.PARTICLE_UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in pt.columns if c not in df.columns]
                 log.info("Merging micrograph fields: %s" % ", ".join(fields))
