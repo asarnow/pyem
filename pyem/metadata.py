@@ -232,6 +232,71 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
+def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False):
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    if u'location/center_x_frac' in cs.dtype.names:
+        log.debug("Converting normalized particle coordinates to absolute")
+        df[star.Relion.COORDX] = cs[u'location/center_x_frac']
+        df[star.Relion.COORDY] = cs[u'location/center_y_frac']
+        # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
+        if swapxy:
+            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
+                                              cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
+        else:
+            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] * cs['location/micrograph_shape']).astype(np.int)
+        log.info("Converted particle coordinates from normalized to absolute")
+    return df
+
+
+def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
+    model = {u'split': "rlnRandomSubset",
+             u'shift': star.Relion.ORIGINS,
+             u'pose': star.Relion.ANGLES,
+             u'error': None,
+             u'error_min': None,
+             u'resid_pow': None,
+             u'slice_pow': None,
+             u'image_pow': None,
+             u'cross_cor': None,
+             u'alpha': None,
+             u'weight': None,
+             u'pose_ess': None,
+             u'shift_ess': None,
+             u'class_posterior': None,
+             u'class': star.Relion.CLASS,
+             u'class_ess': None}
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
+    if len(phic_names) > 1:
+        log.info("Collecting particle parameters from most likely classes")
+        phic = np.array([cs[p] for p in phic_names])
+        cls = np.argmax(phic, axis=0)
+        cls_prob = np.choose(cls, phic)
+        for k in model:
+            if model[k] is not None:
+                names = [n for n in cs.dtype.names if n.endswith(k)]
+                df[model[k]] = pd.DataFrame(np.array(
+                    [cs[names[c]][i] for i, c in enumerate(cls)]))
+        if minphic > 0:
+            df.drop(df.loc[cls_prob < minphic].index, inplace=True)
+    elif len(phic_names) == 1:
+        log.info("Assigning parameters 2D classes or single 3D class")
+        if "alignments2D" in phic_names[0]:
+            log.info("Assigning skew angle from 2D classification")
+            model["pose"] = star.Relion.ANGLEPSI
+        for k in model:
+            if model[k] is not None:
+                name = phic_names[0].replace("class_posterior", k)
+                df[model[k]] = pd.DataFrame(cs[name])
+    else:
+        log.info("Classification parameters not found")
+    return df
+
+
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swapxy=False):
     micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
@@ -264,26 +329,12 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                u'location/center_y_frac': None,
                u'location/micrograph_path': star.Relion.MICROGRAPH_NAME,
                u'location/micrograph_shape': None}
-    model = {u'split': "rlnRandomSubset",
-             u'shift': star.Relion.ORIGINS,
-             u'pose': star.Relion.ANGLES,
-             u'error': None,
-             u'error_min': None,
-             u'resid_pow': None,
-             u'slice_pow': None,
-             u'image_pow': None,
-             u'cross_cor': None,
-             u'alpha': None,
-             u'weight': None,
-             u'pose_ess': None,
-             u'shift_ess': None,
-             u'class_posterior': None,
-             u'class': star.Relion.CLASS,
-             u'class_ess': None}
     log = logging.getLogger('root')
     log.debug("Reading primary file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
     df = util.dataframe_from_records_mapped(cs, general)
+    df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy)
+    df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
     if passthroughs is not None:
         for passthrough in passthroughs:
             if type(passthrough) is np.ndarray:
@@ -296,16 +347,18 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             if len(names) > 0:
                 if 'micrograph_blob/idx' in pt.dtype.names:
                     log.info("Micrograph file detected")
-                    pt = util.dataframe_from_records_mapped(pt, micrograph)
+                    ptdf = util.dataframe_from_records_mapped(pt, micrograph)
                     key = star.Relion.MICROGRAPH_NAME
                 else:
                     log.info("Particle file detected")
-                    pt = util.dataframe_from_records_mapped(pt, general)
+                    ptdf = util.dataframe_from_records_mapped(pt, general)
+                    ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
+                    ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
                     key = star.UCSF.PARTICLE_UID
                 log.info("Trying to merge: %s" % ", ".join(names))
-                fields = [c for c in pt.columns if c not in df.columns]
-                log.info("Merging micrograph fields: %s" % ", ".join(fields))
-                df = star.smart_merge(df, pt, fields=fields, key=key)
+                fields = [c for c in ptdf.columns if c not in df.columns]
+                log.info("Merging: %s" % ", ".join(fields))
+                df = star.smart_merge(df, ptdf, fields=fields, key=key)
             else:
                 log.info("This file contains no new information and will be ignored")
 
@@ -319,18 +372,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     df[star.Relion.MAGNIFICATION] = 10000.0
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
-    if u'location/center_x_frac' in cs.dtype.names:
-        log.debug("Converting normalized particle coordinates to absolute")
-        df[star.Relion.COORDX] = cs[u'location/center_x_frac']
-        df[star.Relion.COORDY] = cs[u'location/center_y_frac']
-        # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
-        if swapxy:
-            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
-                                              cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
-        else:
-            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] * cs['location/micrograph_shape']).astype(np.int)
-        log.info("Converted particle coordinates from normalized to absolute")
-
     if star.Relion.DEFOCUSANGLE in df:
         log.debug("Converting DEFOCUSANGLE from degrees to radians")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
@@ -342,31 +383,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     if star.Relion.PHASESHIFT in df:
         log.debug("Converting PHASESHIFT from degrees to radians")
         df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
-
-    phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
-    if len(phic_names) > 1:
-        log.info("Collecting particle parameters from most likely classes")
-        phic = np.array([cs[p] for p in phic_names])
-        cls = np.argmax(phic, axis=0)
-        cls_prob = np.choose(cls, phic)
-        for k in model:
-            if model[k] is not None:
-                names = [n for n in cs.dtype.names if n.endswith(k)]
-                df[model[k]] = pd.DataFrame(np.array(
-                        [cs[names[c]][i] for i, c in enumerate(cls)]))
-        if minphic > 0:
-            df.drop(df.loc[cls_prob < minphic].index, inplace=True)
-    elif len(phic_names) == 1:
-        log.info("Assigning parameters 2D classes or single 3D class")
-        if "alignments2D" in phic_names[0]:
-            log.info("Assigning skew angle from 2D classification")
-            model["pose"] = star.Relion.ANGLEPSI
-        for k in model:
-            if model[k] is not None:
-                name = phic_names[0].replace("class_posterior", k)
-                df[model[k]] = pd.DataFrame(cs[name])
-    else:
-        log.info("Classification parameters not found")
 
     if star.Relion.ORIGINX in df.columns and boxsize is not None:
         df[star.Relion.ORIGINS] *= cs["blob/shape"][0] / boxsize
