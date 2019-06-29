@@ -35,15 +35,9 @@ from scipy.ndimage import zoom
 
 def main(args):
     log = logging.getLogger(__name__)
-    log.setLevel(logging.INFO)
     hdlr = logging.StreamHandler(sys.stdout)
-    if args.quiet:
-        hdlr.setLevel(logging.ERROR)
-    elif args.verbose:
-        hdlr.setLevel(logging.INFO)
-    else:
-        hdlr.setLevel(logging.WARN)
     log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
     data, hdr = read(args.input, inc_header=True)
     final = None
@@ -80,11 +74,11 @@ def main(args):
         args.apix = hdr["xlen"] / hdr["nx"]
         log.info("Using computed pixel size of %f Angstroms" % args.apix)
 
-    if args.target and args.matrix:
+    if args.target and args.transform:
         log.warn("Target pose transformation will be applied after explicit matrix")
-    if args.euler is not None and (args.target is not None or args.matrix is not None):
+    if args.euler is not None and (args.target is not None or args.transform is not None):
         log.warn("Euler transformation will be applied after target pose transformation")
-    if args.translate is not None and (args.euler is not None or args.target is not None or args.matrix is not None):
+    if args.translate is not None and (args.euler is not None or args.target is not None or args.transform is not None):
         log.warn("Translation will be applied after other transformations")
 
     if args.origin is not None:
@@ -98,17 +92,26 @@ def main(args):
         args.origin = center
         log.info("Origin set to box center, %s" % (args.origin * args.apix))
 
-    if not (args.target is None and args.euler is None and args.matrix is None and args.boxsize is None) \
+    if not (args.target is None and args.euler is None and args.transform is None and args.boxsize is None) \
             and vop.ismask(data) and args.spline_order != 0:
         log.warn("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
 
-    if args.matrix is not None:
+    if args.transform is not None:
         try:
-            r = np.array(json.loads(args.matrix))
+            args.transform = np.array(json.loads(args.transform))
         except:
-            log.error("Matrix format is incorrect")
+            log.error("Transformation matrix must be in JSON/Numpy format")
             return 1
-        data = vop.resample_volume(data, r=r, t=None, ori=None, order=args.spline_order, invert=args.invert)
+        r = args.transform[:, :3]
+        if args.transform.shape[1] == 4:
+            t = args.transform[:, -1] / args.apix
+            t = r.dot(args.origin) + t - args.origin
+            t = -r.T.dot(t)
+        else:
+            t = 0
+        log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
+        log.debug("Final translation: %s (%f px)" % (str(t), np.linalg.norm(t)))
+        data = vop.resample_volume(data, r=r, t=t, ori=None, order=args.spline_order, invert=args.invert)
 
     if args.target is not None:
         try:
@@ -122,6 +125,8 @@ def main(args):
         r = vec2rot(args.target)
         t = np.linalg.norm(args.target)
         log.info("Euler angles are %s deg and shift is %f px" % (np.rad2deg(rot2euler(r)), t))
+        log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
+        log.debug("Final translation: %s (%f px)" % (str(t), np.linalg.norm(t)))
         data = vop.resample_volume(data, r=r, t=args.target, ori=ori, order=args.spline_order, invert=args.invert)
 
     if args.euler is not None:
@@ -180,7 +185,7 @@ if __name__ == "__main__":
     parser.add_argument("--target-invert", action="store_true", dest="invert", help=argparse.SUPPRESS)
     parser.add_argument("--euler", help="Euler angles in degrees (Relion conventions)", metavar="phi,theta,psi")
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
-    parser.add_argument("--matrix",
+    parser.add_argument("--transform",
                         help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
     parser.add_argument("--boxsize", help="Set the output box dimensions", type=int)
     parser.add_argument("--scale", help="Scale factor for output pixel size", type=float)
@@ -188,6 +193,5 @@ if __name__ == "__main__":
     parser.add_argument("--spline-order",
                         help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
                         type=int, default=3, choices=np.arange(6))
-    parser.add_argument("--quiet", "-q", help="Print errors only", action="store_true")
-    parser.add_argument("--verbose", "-v", help="Print info messages", action="store_true")
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
