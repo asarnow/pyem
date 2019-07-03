@@ -77,7 +77,7 @@ def parse_f9_par(fn):
 
 
 def parse_fx_par(fn):
-    df = pd.read_table(fn, delimiter="\s+", skipfooter=2, engine="python")
+    df = pd.read_csv(fn, delimiter="\s+", skipfooter=2, engine="python")
     return df
 
 
@@ -105,17 +105,18 @@ def write_fx_par(fn, df):
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
     general = {"PHI": None,
-               "THETA": None,
-               "PSI": None,
-               "SHX": None,
-               "SHY": None,
-               "MAG": None,
-               "FILM": star.Relion.GROUPNUMBER,
-               "DF1": star.Relion.DEFOCUSU,
-               "DF2": star.Relion.DEFOCUSV,
-               "ANGAST": star.Relion.DEFOCUSANGLE,
-               "C": None,
-               }
+            "THETA": None,
+            "PSI": None,
+            "SHX": None,
+            "SHY": None,
+            "MAG": None,
+            "FILM": star.Relion.GROUPNUMBER,
+            "DF1": star.Relion.DEFOCUSU,
+            "DF2": star.Relion.DEFOCUSV,
+            "ANGAST": star.Relion.DEFOCUSANGLE,
+            "C": None,
+            "CLASS": star.Relion.CLASS
+            }
     rlnheaders = [general[h] for h in par.columns if h in general and general[h] is not None]
     df = par[[h for h in par.columns if h in general and general[h] is not None]].copy()
     df.columns = rlnheaders
@@ -404,3 +405,4 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     else:
         log.warn("Angular alignment parameters not found")
     return df
+
