@@ -37,7 +37,7 @@ def main(args):
         log.error("Input files are not aligned!")
         return 1
     df = pd.concat(dfs, axis=0, ignore_index=True)
-    df["CLASS"] = np.repeat(np.arange(len(dfs)), n)
+    df["CLASS"] = np.repeat(np.arange(1, len(dfs) + 1), n)
 
     if args.min_occ:
         df = df[df["OCC"] >= args.min_occ]
