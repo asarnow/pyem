@@ -26,6 +26,7 @@ import os.path
 import pandas as pd
 import sys
 from pyem import algo
+from pyem import geom
 from pyem import star
 
 
@@ -114,7 +115,7 @@ def main(args):
 
     if args.transform is not None:
         if args.transform.count(",") == 2:
-            r = star.euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
+            r = geom.euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
         else:
             r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
@@ -125,6 +126,7 @@ def main(args):
 
     if args.copy_paths is not None:
         path_star = star.parse_star(args.copy_paths)
+        star.set_original_fields(df, inplace=True)
         df[star.Relion.IMAGE_NAME] = path_star[star.Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
