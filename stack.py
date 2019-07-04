@@ -85,11 +85,11 @@ def main(args):
                 dfs.append(df)
             first_ptcl += df.shape[0]
 
-            if args.star is not None:
-                df = pd.concat(dfs, join="inner")
-                # df = pd.concat(dfs)
-                # df = df.dropna(df, axis=1, how="any")
-                star.write_star(args.star, df, reindex=True)
+    if args.star is not None:
+        df = pd.concat(dfs, join="inner")
+        # df = pd.concat(dfs)
+        # df = df.dropna(df, axis=1, how="any")
+        star.write_star(args.star, df, reindex=True)
 
     return 0
 
