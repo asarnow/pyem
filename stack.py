@@ -44,8 +44,9 @@ def main(args):
     with mrc.ZSliceWriter(args.output) as writer:
         for fn in args.input:
             if fn.endswith(".star"):
-                df = star.parse_star(fn, keep_index=False)
-                star.augment_star_ucsf(df)
+                df = star.parse_star(fn, augment=True)
+                if args.cls is not None:
+                    df = star.select_classes(df, args.cls)
                 star.set_original_fields(df, inplace=True)
                 df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
                                      star.UCSF.IMAGE_ORIGINAL_INDEX])
@@ -103,6 +104,8 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output stack")
     parser.add_argument("--star", help="Optional composite .star output file")
     parser.add_argument("--stack-path", help="(PAR file only) Particle stack for input file")
+    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
