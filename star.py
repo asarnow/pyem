@@ -75,6 +75,13 @@ def main(args):
     if args.offset_group is not None:
         df[star.Relion.GROUPNUMBER] += args.offset_group
 
+    if args.restack is not None:
+        if not args.augment:
+            star.augment_star_ucsf(df, inplace=True)
+        star.set_original_fields(df, inplace=True)
+        df[star.UCSF.IMAGE_PATH] = args.restack
+        df[star.UCSF.IMAGE_INDEX] = np.arange(df.shape[0])
+
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
             print("Only particle sampling allows bootstrapping")
@@ -269,6 +276,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--offset-group", help="Add fixed offset to group number",
                         type=int)
+    parser.add_argument("--restack", help="Stack path for new contiguous particle")
     parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
                         action="store_true")
     parser.add_argument("--recenter", help="Subtract origin from coordinates, leaving subpixel information in origin",
