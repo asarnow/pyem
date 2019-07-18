@@ -90,7 +90,7 @@ def main(args):
     sz = (submap_ft.shape[0] - 3) // args.pfac
 
     maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
-    if args.crop is not None and sz < maxshift + args.crop // 2:
+    if args.crop is not None and sz < 2 * maxshift + args.crop:
         log.error("Some shifts are too large to crop (maximum crop is %d)" % (sz - 2 * maxshift))
         return 1
 

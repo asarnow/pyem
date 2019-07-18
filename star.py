@@ -26,6 +26,7 @@ import os.path
 import pandas as pd
 import sys
 from pyem import algo
+from pyem import geom
 from pyem import star
 
 
@@ -74,6 +75,13 @@ def main(args):
     if args.offset_group is not None:
         df[star.Relion.GROUPNUMBER] += args.offset_group
 
+    if args.restack is not None:
+        if not args.augment:
+            star.augment_star_ucsf(df, inplace=True)
+        star.set_original_fields(df, inplace=True)
+        df[star.UCSF.IMAGE_PATH] = args.restack
+        df[star.UCSF.IMAGE_INDEX] = np.arange(df.shape[0])
+
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
             print("Only particle sampling allows bootstrapping")
@@ -102,11 +110,11 @@ def main(args):
 
     if args.copy_angles is not None:
         angle_star = star.parse_star(args.copy_angles, augment=args.augment)
-        df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES)
+        df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES, key=args.merge_key)
 
     if args.copy_alignments is not None:
         align_star = star.parse_star(args.copy_alignments, augment=args.augment)
-        df = star.smart_merge(df, align_star, fields=star.Relion.ALIGNMENTS)
+        df = star.smart_merge(df, align_star, fields=star.Relion.ALIGNMENTS, key=args.merge_key)
 
     if args.copy_reconstruct_images is not None:
         recon_star = star.parse_star(args.copy_reconstruct_images, augment=args.augment)
@@ -114,7 +122,7 @@ def main(args):
 
     if args.transform is not None:
         if args.transform.count(",") == 2:
-            r = star.euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
+            r = geom.euler2rot(*np.deg2rad([np.double(s) for s in args.transform.split(",")]))
         else:
             r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
@@ -125,16 +133,17 @@ def main(args):
 
     if args.copy_paths is not None:
         path_star = star.parse_star(args.copy_paths)
+        star.set_original_fields(df, inplace=True)
         df[star.Relion.IMAGE_NAME] = path_star[star.Relion.IMAGE_NAME]
 
     if args.copy_ctf is not None:
         ctf_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_ctf)), join="inner")
-        df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS)
+        df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS, key=args.merge_key)
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_micrograph_coordinates)), join="inner")
-        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS)
+        df = star.smart_merge(df, coord_star, fields=star.Relion.MICROGRAPH_COORDS, key=args.merge_key)
 
     if args.scale is not None:
         star.scale_coordinates(df, args.scale, inplace=True)
@@ -267,6 +276,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--offset-group", help="Add fixed offset to group number",
                         type=int)
+    parser.add_argument("--restack", help="Stack path for new contiguous particle")
     parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
                         action="store_true")
     parser.add_argument("--recenter", help="Subtract origin from coordinates, leaving subpixel information in origin",

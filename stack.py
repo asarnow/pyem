@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import numpy as np
+import os.path
 import pandas as pd
 import sys
 from pyem import metadata
@@ -44,8 +45,9 @@ def main(args):
     with mrc.ZSliceWriter(args.output) as writer:
         for fn in args.input:
             if fn.endswith(".star"):
-                df = star.parse_star(fn, keep_index=False)
-                star.augment_star_ucsf(df)
+                df = star.parse_star(fn, augment=True)
+                if args.cls is not None:
+                    df = star.select_classes(df, args.cls)
                 star.set_original_fields(df, inplace=True)
                 df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
                                      star.UCSF.IMAGE_ORIGINAL_INDEX])
@@ -79,17 +81,20 @@ def main(args):
             if args.star is not None:
                 df[star.UCSF.IMAGE_INDEX] = np.arange(first_ptcl,
                                                       first_ptcl + df.shape[0])
-                df[star.UCSF.IMAGE_PATH] = writer.path
+                if args.abs_path:
+                    df[star.UCSF.IMAGE_PATH] = writer.path
+                else:
+                    df[star.UCSF.IMAGE_PATH] = os.path.relpath(writer.path, os.path.dirname(args.star))
                 df["index"] = df[star.UCSF.IMAGE_INDEX]
                 star.simplify_star_ucsf(df)
                 dfs.append(df)
             first_ptcl += df.shape[0]
 
-            if args.star is not None:
-                df = pd.concat(dfs, join="inner")
-                # df = pd.concat(dfs)
-                # df = df.dropna(df, axis=1, how="any")
-                star.write_star(args.star, df, reindex=True)
+    if args.star is not None:
+        df = pd.concat(dfs, join="inner")
+        # df = pd.concat(dfs)
+        # df = df.dropna(df, axis=1, how="any")
+        star.write_star(args.star, df, reindex=True)
 
     return 0
 
@@ -101,8 +106,11 @@ if __name__ == "__main__":
                         help="Input image(s), stack(s) and/or .star file(s)",
                         nargs="*")
     parser.add_argument("output", help="Output stack")
-    parser.add_argument("--star", help="Optional composite .star output file")
+    parser.add_argument("--abs-path", "-a", help="Don't solve relative path between star and stack", action="store_true")
+    parser.add_argument("--star", "-s", help="Optional composite .star output file")
     parser.add_argument("--stack-path", help="(PAR file only) Particle stack for input file")
+    parser.add_argument("--class", "-c", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
