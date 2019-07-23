@@ -390,9 +390,22 @@ def simplify_star_ucsf(df, inplace=True):
     return df
 
 
-def reorder_columns(df, inplace=True):
+def sort_fields(df, inplace=True):
     df = df if inplace else df.copy()
     columns = [c for c in Relion.FIELD_ORDER if c in df] + \
               [c for c in df.columns if c not in Relion.FIELD_ORDER]
     df.reindex(columns=columns)
+    return df
+
+
+def sort_records(df, inplace=True):
+    df = df if inplace else df.copy()
+    # TODO Change to natural sort.
+    if is_particle_star(df):
+        if UCSF.IMAGE_INDEX in df:
+            df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
+        else:
+            df.sort_values(Relion.MICROGRAPH_COORDS, inplace=True)
+    else:
+        df.sort_values(Relion.MICROGRAPH_NAME, inplace=True)
     return df
