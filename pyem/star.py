@@ -30,6 +30,7 @@ from pyem.geom import rot2euler
 
 class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
+    MICROGRAPH_NAME_NODW = "rlnMicrographNameNoDW"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
     RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
@@ -66,13 +67,17 @@ class Relion:
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
-    ALIGNMENTS = ANGLES + ORIGINS
+    ALIGNMENTS = ANGLES + ORIGINS3D
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
                   BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, CTFSCALEFACTOR, CTFBFACTOR,
                   CTFMAXRESOLUTION, CTFFIGUREOFMERIT]
     MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE]
     MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
     PICK_PARAMS = MICROGRAPH_COORDS + [ANGLEPSI, CLASS, AUTOPICKFIGUREOFMERIT]
+
+    FIELD_ORDER = [IMAGE_NAME, IMAGE_ORIGINAL_NAME, MICROGRAPH_NAME, MICROGRAPH_NAME_NODW] + \
+                   COORDS + ALIGNMENTS + MICROSCOPE_PARAMS + CTF_PARAMS + \
+                  [CLASS + GROUPNUMBER + RANDOMSUBSET]
 
 
 class UCSF:
@@ -382,4 +387,12 @@ def simplify_star_ucsf(df, inplace=True):
     if "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
+    return df
+
+
+def reorder_columns(df, inplace=True):
+    df = df if inplace else df.copy()
+    columns = [c for c in Relion.FIELD_ORDER if c in df] + \
+              [c for c in df.columns if c not in Relion.FIELD_ORDER]
+    df.reindex(columns=columns)
     return df
