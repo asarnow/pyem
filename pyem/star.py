@@ -26,6 +26,7 @@ import pandas as pd
 from math import modf
 from pyem.geom import e2r_vec
 from pyem.geom import rot2euler
+from pyem.util import natsort_values
 
 
 class Relion:
@@ -394,7 +395,7 @@ def sort_fields(df, inplace=True):
     df = df if inplace else df.copy()
     columns = [c for c in Relion.FIELD_ORDER if c in df] + \
               [c for c in df.columns if c not in Relion.FIELD_ORDER]
-    df.reindex(columns=columns)
+    df = df.reindex(columns=columns, copy=False)
     return df
 
 
@@ -405,7 +406,7 @@ def sort_records(df, inplace=True):
         if UCSF.IMAGE_INDEX in df:
             df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
         else:
-            df.sort_values(Relion.MICROGRAPH_COORDS, inplace=True)
+            df = natsort_values(df, inplace=True)
     else:
-        df.sort_values(Relion.MICROGRAPH_NAME, inplace=True)
+        df = natsort_values(df, Relion.MICROGRAPH_NAME, inplace=True)
     return df
