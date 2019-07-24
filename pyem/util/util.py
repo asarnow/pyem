@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import absolute_import
 import bisect
+import natsort
 import numpy as np
 import pandas as pd
 import subprocess
@@ -123,3 +124,12 @@ def write_q_series(vol, qarr, basename, psz=1., order=1):
         r = geom.quat2rot(q / np.linalg.norm(q))
         decoy = vop.resample_volume(vol, r=r, order=order)
         mrc.write(basename % i, decoy, psz=psz)
+
+
+def natsort_values(df, col, inplace=False):
+    df = df if inplace else df.copy()
+    # df = df.reindex(index=natsort.order_by_index(df.index, natsort.index_natsorted(df[col])), copy=not inplace)
+    df["__natsort_key__"] = natsort.index_natsorted(df[col])
+    df.sort_values("__natsort_key__", inplace=True)
+    df.drop("__natsort_key__", inplace=True)
+    return df
