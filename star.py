@@ -184,10 +184,7 @@ def main(args):
                        df.iloc[ind])
 
     if args.to_micrographs:
-        gb = df.groupby(star.Relion.MICROGRAPH_NAME)
-        mu = gb.mean()
-        df = mu[[c for c in star.Relion.CTF_PARAMS + star.Relion.MICROSCOPE_PARAMS + [star.Relion.MICROGRAPH_NAME] if
-                 c in mu]].reset_index()
+        df = star.to_micrographs(df)
 
     if args.micrograph_range:
         df.set_index(star.Relion.MICROGRAPH_NAME, inplace=True)

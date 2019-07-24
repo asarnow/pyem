@@ -162,6 +162,14 @@ def select_classes(df, classes):
     return df.loc[ind]
 
 
+def to_micrographs(df):
+    gb = df.groupby(Relion.MICROGRAPH_NAME)
+    mu = gb.mean()
+    df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
+             [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
+    return df
+
+
 def split_micrographs(df):
     gb = df.groupby(Relion.MICROGRAPH_NAME)
     dfs = {}
