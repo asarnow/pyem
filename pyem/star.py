@@ -275,21 +275,17 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
     return df
 
 
-def write_star(starfile, df, reindex=True, simplify=True):
+def write_star(starfile, df, resort_fields=True, simplify=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
     if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
         df = simplify_star_ucsf(df)
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
-    if reindex and not indexed:  # No index present, append consecutive indices to sorted headers.
-        order = np.argsort(df.columns)
-        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
-    elif reindex and indexed:  # Replace existing indices with consecutive indices after sorting headers.
-        names = [c.split("#")[0].rstrip()for c in df.columns]
-        order = np.argsort(names)
-        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
+    if not indexed:
+        if resort_fields:
+            df = sort_fields(df, inplace=True)
+        names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
-        order = np.arange(df.shape[1])
         names = df.columns
     with open(starfile, 'w') as f:
         f.write('\n')
@@ -300,7 +296,7 @@ def write_star(starfile, df, reindex=True, simplify=True):
             line = name + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    df[df.columns[order]].to_csv(starfile, mode='a', sep=' ', header=False, index=False)
+    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):

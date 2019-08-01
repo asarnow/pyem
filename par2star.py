@@ -52,7 +52,7 @@ def main(args):
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
-    star.write_star(args.output, df, reindex=True)
+    star.write_star(args.output, df)
     return 0
 
 
