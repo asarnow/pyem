@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -399,7 +398,7 @@ def simplify_star_ucsf(df, inplace=True):
     return df
 
 
-def sort_fields(df, inplace=True):
+def sort_fields(df, inplace=False):
     df = df if inplace else df.copy()
     columns = [c for c in Relion.FIELD_ORDER if c in df] + \
               [c for c in df.columns if c not in Relion.FIELD_ORDER]
@@ -407,14 +406,12 @@ def sort_fields(df, inplace=True):
     return df
 
 
-def sort_records(df, inplace=True):
+def sort_records(df, inplace=False):
     df = df if inplace else df.copy()
-    # TODO Change to natural sort.
     if is_particle_star(df):
         if UCSF.IMAGE_INDEX in df:
-            df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
-        else:
-            df = natsort_values(df, inplace=True)
+            # df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
+            df = natsort_values(df, df[UCSF.IMAGE_PATH] + "_" + df[UCSF.IMAGE_INDEX].astype(str), inplace=True)
     else:
         df = natsort_values(df, Relion.MICROGRAPH_NAME, inplace=True)
     return df
