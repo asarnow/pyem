@@ -128,7 +128,10 @@ def write_q_series(vol, qarr, basename, psz=1., order=1):
 
 def natsort_values(df, col, inplace=False):
     df = df if inplace else df.copy()
-    idx = np.array(natsort.index_natsorted(df[col]))
+    if type(col) is str:
+        idx = np.array(natsort.index_natsorted(df[col]))
+    else:
+        idx = np.array(natsort.index_natsorted(col))
     df["__natsort_key__"] = np.argsort(idx)
     df.sort_values("__natsort_key__", inplace=True)
     df.drop("__natsort_key__", axis=1, inplace=True)
