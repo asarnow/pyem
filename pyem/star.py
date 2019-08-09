@@ -296,7 +296,7 @@ def write_star(starfile, df, resort_fields=True, simplify=True):
             line = name + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False)
+    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
