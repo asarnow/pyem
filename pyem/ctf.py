@@ -125,3 +125,11 @@ def eval_ctf_between(n, apix, def1, def2, lores=0, hires=0, angast=0, phase=0, k
                 ctf[cnt] *= np.exp(-k4 * s2)
             cnt += 1
     return out
+
+
+@numba.jit(cache=True, nopython=True, nogil=True)
+def eval_ctfs(s, a, def1, def2, angast=0, phase=0, kv=300, ac=0.1, cs=2.0, bf=0, lp=0):
+    ctfs = np.zeros((len(def1), s.shape[0], s.shape[1]), dtype=def1.dtype)
+    for i in numba.prange(len(def1)):
+        ctfs[i] = eval_ctf(s, a, def1, def2, angast=angast, phase=phase, kv=kv, ac=ac, cs=cs, bf=bf, lp=lp)
+    return ctfs
