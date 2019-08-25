@@ -24,7 +24,6 @@ import json
 import numpy as np
 import os.path
 import pandas as pd
-import re
 import sys
 from pyem import algo
 from pyem import geom
@@ -220,10 +219,7 @@ def main(args):
             if "," in args.merge_key:
                 args.merge_key = args.merge_key.split(",")
         if args.by_original:
-            idx = re.findall("[A-Z]", args.merge_key)
-            tok = [args.merge_key[idx[0]:idx[1]], "Original"] + \
-                  [args.merge_key[idx[i]:idx[i+1]] for i in range(1, len(idx))]
-            args.by_original = "".join(tok)
+            args.by_original = star.original_field(args.merge_key)
         else:
             args.by_original = args.merge_key
         merge_star = star.parse_star(args.merge_source, augment=args.augment)

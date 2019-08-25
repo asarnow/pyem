@@ -413,3 +413,11 @@ def sort_records(df, inplace=False):
     else:
         df = natsort_values(df, Relion.MICROGRAPH_NAME, inplace=True)
     return df
+
+
+def original_field(field):
+    tok = re.findall("[A-Z][a-z]+", field)
+    tok = tok[0] + "Original" + sum(tok[1:])
+    lead = re.match(r".*?[a-z].*?(?=[A-Z])", field).group()
+    field = lead + tok
+    return field
