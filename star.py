@@ -24,6 +24,7 @@ import json
 import numpy as np
 import os.path
 import pandas as pd
+import re
 import sys
 from pyem import algo
 from pyem import geom
@@ -218,8 +219,15 @@ def main(args):
         if args.merge_key is not None:
             if "," in args.merge_key:
                 args.merge_key = args.merge_key.split(",")
+        if args.by_original:
+            idx = re.findall("[A-Z]", args.merge_key)
+            tok = [args.merge_key[idx[0]:idx[1]], "Original"] + \
+                  [args.merge_key[idx[i]:idx[i+1]] for i in range(1, len(idx))]
+            args.by_original = "".join(tok)
+        else:
+            args.by_original = args.merge_key
         merge_star = star.parse_star(args.merge_source, augment=args.augment)
-        df = star.smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key)
+        df = star.smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key, left_key=args.by_original)
 
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
@@ -262,6 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
     parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
                         metavar="f1,f2...fN", type=str)
+    parser.add_argument("--by-original", help="Merge using \"original\" field name in input .star", action="store_true")
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
