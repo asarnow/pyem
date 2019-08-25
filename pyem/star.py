@@ -417,7 +417,7 @@ def sort_records(df, inplace=False):
 
 def original_field(field):
     tok = re.findall("[A-Z][a-z]+", field)
-    tok = tok[0] + "Original" + sum(tok[1:])
+    tok = tok[0] + "Original" + "".join(tok[1:])
     lead = re.match(r".*?[a-z].*?(?=[A-Z])", field).group()
     field = lead + tok
     return field
