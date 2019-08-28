@@ -257,13 +257,13 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
     ln = 0
     with open(starfile, 'rU') as f:
         for l in f:
-            if l.startswith("_"):
+            if l.strip().startswith("_"):
                 foundheader = True
                 lastheader = True
                 if keep_index:
-                    head = l.rstrip()
+                    head = l.strip()
                 else:
-                    head = l.split('#')[0].rstrip().lstrip('_')
+                    head = l.split('#')[0].strip().lstrip('_')
                 headers.append(head)
             else:
                 lastheader = False
