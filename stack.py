@@ -94,7 +94,7 @@ def main(args):
         df = pd.concat(dfs, join="inner")
         # df = pd.concat(dfs)
         # df = df.dropna(df, axis=1, how="any")
-        star.write_star(args.star, df, reindex=True)
+        star.write_star(args.star, df)
 
     return 0
 

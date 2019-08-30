@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -26,10 +25,12 @@ import pandas as pd
 from math import modf
 from pyem.geom import e2r_vec
 from pyem.geom import rot2euler
+from pyem.util import natsort_values
 
 
 class Relion:
     MICROGRAPH_NAME = "rlnMicrographName"
+    MICROGRAPH_NAME_NODW = "rlnMicrographNameNoDW"
     IMAGE_NAME = "rlnImageName"
     IMAGE_ORIGINAL_NAME = "rlnImageOriginalName"
     RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
@@ -66,13 +67,17 @@ class Relion:
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
-    ALIGNMENTS = ANGLES + ORIGINS
+    ALIGNMENTS = ANGLES + ORIGINS3D
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
                   BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, CTFSCALEFACTOR, CTFBFACTOR,
                   CTFMAXRESOLUTION, CTFFIGUREOFMERIT]
     MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE]
     MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
     PICK_PARAMS = MICROGRAPH_COORDS + [ANGLEPSI, CLASS, AUTOPICKFIGUREOFMERIT]
+
+    FIELD_ORDER = [IMAGE_NAME, IMAGE_ORIGINAL_NAME, MICROGRAPH_NAME, MICROGRAPH_NAME_NODW] + \
+                   COORDS + ALIGNMENTS + MICROSCOPE_PARAMS + CTF_PARAMS + \
+                  [CLASS + GROUPNUMBER + RANDOMSUBSET]
 
 
 class UCSF:
@@ -86,11 +91,13 @@ class UCSF:
     PARTICLE_UID = "ucsfParticleUid"
 
 
-def smart_merge(s1, s2, fields, key=None):
+def smart_merge(s1, s2, fields, key=None, left_key=None):
     if key is None:
         key = merge_key(s1, s2)
+    if left_key is None:
+        left_key = key
     s2 = s2.set_index(key, drop=False)
-    s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=key, right_index=True, suffixes=["_x", ""])
+    s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=left_key, right_index=True, suffixes=["_x", ""])
     x = [c for c in s1.columns if "_x" in c]
     if len(x) > 0:
         y = [c.split("_")[0] for c in s1.columns if c in x]
@@ -154,6 +161,14 @@ def select_classes(df, classes):
     if not np.any(ind):
         raise RuntimeError("Specified classes have no members")
     return df.loc[ind]
+
+
+def to_micrographs(df):
+    gb = df.groupby(Relion.MICROGRAPH_NAME)
+    mu = gb.mean()
+    df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
+             [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
+    return df
 
 
 def split_micrographs(df):
@@ -262,21 +277,17 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
     return df
 
 
-def write_star(starfile, df, reindex=True, simplify=True):
+def write_star(starfile, df, resort_fields=True, simplify=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
     if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
         df = simplify_star_ucsf(df)
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
-    if reindex and not indexed:  # No index present, append consecutive indices to sorted headers.
-        order = np.argsort(df.columns)
-        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
-    elif reindex and indexed:  # Replace existing indices with consecutive indices after sorting headers.
-        names = [c.split("#")[0].rstrip()for c in df.columns]
-        order = np.argsort(names)
-        names = [df.columns[idx] + " #%d" % (i + 1) for i, idx in enumerate(order)]
+    if not indexed:
+        if resort_fields:
+            df = sort_fields(df, inplace=True)
+        names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
-        order = np.arange(df.shape[1])
         names = df.columns
     with open(starfile, 'w') as f:
         f.write('\n')
@@ -287,7 +298,7 @@ def write_star(starfile, df, reindex=True, simplify=True):
             line = name + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    df[df.columns[order]].to_csv(starfile, mode='a', sep=' ', header=False, index=False)
+    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
@@ -383,3 +394,30 @@ def simplify_star_ucsf(df, inplace=True):
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
     return df
+
+
+def sort_fields(df, inplace=False):
+    df = df if inplace else df.copy()
+    columns = [c for c in Relion.FIELD_ORDER if c in df] + \
+              [c for c in df.columns if c not in Relion.FIELD_ORDER]
+    df = df.reindex(columns=columns, copy=False)
+    return df
+
+
+def sort_records(df, inplace=False):
+    df = df if inplace else df.copy()
+    if is_particle_star(df):
+        if UCSF.IMAGE_INDEX in df:
+            # df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
+            df = natsort_values(df, df[UCSF.IMAGE_PATH] + "_" + df[UCSF.IMAGE_INDEX].astype(str), inplace=True)
+    else:
+        df = natsort_values(df, Relion.MICROGRAPH_NAME, inplace=True)
+    return df
+
+
+def original_field(field):
+    tok = re.findall("[A-Z][a-z]+", field)
+    tok = tok[0] + "Original" + "".join(tok[1:])
+    lead = re.match(r".*?[a-z].*?(?=[A-Z])", field).group()
+    field = lead + tok
+    return field

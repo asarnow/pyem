@@ -81,6 +81,28 @@ def parse_fx_par(fn):
     return df
 
 
+def write_f9_par(fn, df):
+    formatters = {"C": lambda x: "%d" % x,
+                  "PSI": lambda x: "%0.2f" % x,
+                  "THETA": lambda x: "%0.2f" % x,
+                  "PHI": lambda x: "%0.2f" % x,
+                  "SHX": lambda x: "%0.2f" % x,
+                  "SHY": lambda x: "%0.2f" % x,
+                  "MAG": lambda x: "%d" % x,
+                  "INCLUDE": lambda x: "%d" % x,
+                  "DF1": lambda x: "%0.1f" % x,
+                  "DF2": lambda x: "0.1f" % x,
+                  "ANGAST": lambda x: "%0.2f" % x,
+                  "PSHIFT": lambda x: "%0.2f" % x,
+                  "OCC": lambda x: "%0.2f" % x,
+                  "LOGP": lambda x: "%d" % x,
+                  "SIGMA": lambda x: "%0.4f" % x,
+                  "SCORE": lambda x: "%0.2f" % x,
+                  "CHANGE": lambda x: "%0.2f" % x}
+    with open(fn, 'w') as f:
+        f.write(df.to_string(formatters=formatters, index=False))
+
+
 def write_fx_par(fn, df):
     formatters = {"C": lambda x: "%d" % x,
                   "PSI": lambda x: "%0.2f" % x,

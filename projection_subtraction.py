@@ -175,7 +175,7 @@ def main(args):
     if args.crop is not None:
         df = star.recenter(df, inplace=True)
     star.simplify_star_ucsf(df)
-    star.write_star(args.output, df, reindex=True)
+    star.write_star(args.output, df)
 
     return 0
 

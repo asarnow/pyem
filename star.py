@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # Copyright (C) 2018 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -184,10 +184,7 @@ def main(args):
                        df.iloc[ind])
 
     if args.to_micrographs:
-        gb = df.groupby(star.Relion.MICROGRAPH_NAME)
-        mu = gb.mean()
-        df = mu[[c for c in star.Relion.CTF_PARAMS + star.Relion.MICROSCOPE_PARAMS + [star.Relion.MICROGRAPH_NAME] if
-                 c in mu]].reset_index()
+        df = star.to_micrographs(df)
 
     if args.micrograph_range:
         df.set_index(star.Relion.MICROGRAPH_NAME, inplace=True)
@@ -221,8 +218,12 @@ def main(args):
         if args.merge_key is not None:
             if "," in args.merge_key:
                 args.merge_key = args.merge_key.split(",")
+        if args.by_original:
+            args.by_original = star.original_field(args.merge_key)
+        else:
+            args.by_original = args.merge_key
         merge_star = star.parse_star(args.merge_source, augment=args.augment)
-        df = star.smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key)
+        df = star.smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key, left_key=args.by_original)
 
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
@@ -265,6 +266,7 @@ if __name__ == "__main__":
     parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
     parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
                         metavar="f1,f2...fN", type=str)
+    parser.add_argument("--by-original", help="Merge using \"original\" field name in input .star", action="store_true")
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",
