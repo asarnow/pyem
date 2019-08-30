@@ -30,9 +30,6 @@ from pyem.util import vec2rot
 from pyem import vop
 from scipy.ndimage import affine_transform
 from scipy.ndimage import shift
-from scipy.ndimage import zoom
-from scipy.ndimage import geometric_transform
-from scipy.ndimage import map_coordinates
 import warnings
 warnings.filterwarnings('ignore', '.*output shape of zoom.*')
 
@@ -181,13 +178,6 @@ def main(args):
         final *= final_mask
 
     if args.scale is not None:
-        # newhalf = args.boxsize // 2
-        # xyz = np.array(np.meshgrid(np.arange(-newhalf, newhalf),
-        #                            np.arange(-newhalf, newhalf),
-        #                            np.arange(-newhalf, newhalf), indexing='ij'), dtype=np.single)
-        # xyz /= args.scale
-        # xyz += final.shape[0] // 2
-        # final = map_coordinates(final, xyz, order=args.spline_order)
         final = vop.resample_volume(final, scale=args.scale, output_shape=args.boxsize, order=args.spline_order)
 
     write(args.output, final, psz=args.apix_out)
