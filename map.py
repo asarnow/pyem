@@ -31,6 +31,10 @@ from pyem import vop
 from scipy.ndimage import affine_transform
 from scipy.ndimage import shift
 from scipy.ndimage import zoom
+from scipy.ndimage import geometric_transform
+from scipy.ndimage import map_coordinates
+import warnings
+warnings.filterwarnings('ignore', '.*output shape of zoom.*')
 
 
 def main(args):
@@ -73,6 +77,26 @@ def main(args):
     if args.apix is None:
         args.apix = hdr["xlen"] / hdr["nx"]
         log.info("Using computed pixel size of %f Angstroms" % args.apix)
+
+    if args.apix_out is not None:
+        if args.scale is not None:
+            log.warn("--apix-out supersedes --scale")
+        args.scale = args.apix / args.apix_out
+    elif args.scale is not None:
+            args.apix_out = args.apix / args.scale
+    elif args.boxsize is not None:
+        args.scale = box[0] / np.double(args.boxsize)
+
+    if args.apix_out is None:
+        args.apix_out = args.apix
+
+    if args.boxsize is None:
+        if args.scale is None:
+            args.boxsize = box[0]
+        else:
+            args.boxsize = np.int(box[0] * args.scale)
+
+    log.info("Volume will be scaled by %f to size %d @ %f A/px" % (args.scale, args.boxsize, args.apix_out))
 
     if args.target and args.transform:
         log.warn("Target pose transformation will be applied after explicit matrix")
@@ -149,11 +173,6 @@ def main(args):
         args.translate -= args.origin
         data = shift(data, -args.translate, order=args.spline_order)
 
-    if args.boxsize is not None:
-        args.boxsize = np.double(args.boxsize)
-        data = zoom(data, args.boxsize / box, order=args.spline_order)
-        args.apix = args.apix * box[0] / args.boxsize
-
     if final is None:
         final = data
 
@@ -161,7 +180,17 @@ def main(args):
         final_mask = read(args.final_mask)
         final *= final_mask
 
-    write(args.output, final, psz=args.apix)
+    if args.scale is not None:
+        # newhalf = args.boxsize // 2
+        # xyz = np.array(np.meshgrid(np.arange(-newhalf, newhalf),
+        #                            np.arange(-newhalf, newhalf),
+        #                            np.arange(-newhalf, newhalf), indexing='ij'), dtype=np.single)
+        # xyz /= args.scale
+        # xyz += final.shape[0] // 2
+        # final = map_coordinates(final, xyz, order=args.spline_order)
+        final = vop.resample_volume(final, scale=args.scale, output_shape=args.boxsize, order=args.spline_order)
+
+    write(args.output, final, psz=args.apix_out)
     return 0
 
 
@@ -172,7 +201,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
-    parser.add_argument("--mask", help="Final mask to apply after any operations", dest="final_mask")
+    parser.add_argument("--mask", help="Final mask (applied before scaling)", dest="final_mask")
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
@@ -187,7 +216,7 @@ if __name__ == "__main__":
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--transform",
                         help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
-    parser.add_argument("--boxsize", help="Set the output box dimensions", type=int)
+    parser.add_argument("--boxsize", help="Output box size (pads/crops with --scale or --apix-out, otherwise scales)", type=int)
     parser.add_argument("--scale", help="Scale factor for output pixel size", type=float)
     parser.add_argument("--apix-out", help="Pixel size in output (similar to --scale)", type=float)
     parser.add_argument("--spline-order",
