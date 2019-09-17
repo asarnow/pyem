@@ -82,47 +82,51 @@ def parse_fx_par(fn):
 
 
 def write_f9_par(fn, df):
-    formatters = {"C": lambda x: "%d" % x,
-                  "PSI": lambda x: "%0.2f" % x,
-                  "THETA": lambda x: "%0.2f" % x,
-                  "PHI": lambda x: "%0.2f" % x,
-                  "SHX": lambda x: "%0.2f" % x,
-                  "SHY": lambda x: "%0.2f" % x,
-                  "MAG": lambda x: "%d" % x,
-                  "INCLUDE": lambda x: "%d" % x,
-                  "DF1": lambda x: "%0.1f" % x,
-                  "DF2": lambda x: "0.1f" % x,
-                  "ANGAST": lambda x: "%0.2f" % x,
-                  "PSHIFT": lambda x: "%0.2f" % x,
-                  "OCC": lambda x: "%0.2f" % x,
-                  "LOGP": lambda x: "%d" % x,
-                  "SIGMA": lambda x: "%0.4f" % x,
-                  "SCORE": lambda x: "%0.2f" % x,
-                  "CHANGE": lambda x: "%0.2f" % x}
+    formatters = {"C": lambda x: "%7d" % x,
+                  "PSI": lambda x: "%7.2f" % x,
+                  "THETA": lambda x: "%7.2f" % x,
+                  "PHI": lambda x: "%7.2f" % x,
+                  "SHX": lambda x: "%9.2f" % x,
+                  "SHY": lambda x: "%9.2f" % x,
+                  "MAG": lambda x: "%7.0f" % x,
+                  "INCLUDE": lambda x: "%5d" % x,
+                  "DF1": lambda x: "%8.1f" % x,
+                  "DF2": lambda x: "%8.1f" % x,
+                  "ANGAST": lambda x: "%7.2f" % x,
+                  "PSHIFT": lambda x: "%7.2f" % x,
+                  "OCC": lambda x: "%7.2f" % x,
+                  "LogP": lambda x: "%9d" % x,
+                  "SIGMA": lambda x: "%10.4f" % x,
+                  "SCORE": lambda x: "%7.2f" % x,
+                  "CHANGE": lambda x: "%7.2f" % x}
     with open(fn, 'w') as f:
         f.write(df.to_string(formatters=formatters, index=False))
 
 
 def write_fx_par(fn, df):
-    formatters = {"C": lambda x: "%d" % x,
-                  "PSI": lambda x: "%0.2f" % x,
-                  "THETA": lambda x: "%0.2f" % x,
-                  "PHI": lambda x: "%0.2f" % x,
-                  "SHX": lambda x: "%0.2f" % x,
-                  "SHY": lambda x: "%0.2f" % x,
-                  "MAG": lambda x: "%d" % x,
-                  "INCLUDE": lambda x: "%d" % x,
-                  "DF1": lambda x: "%0.1f" % x,
-                  "DF2": lambda x: "0.1f" % x,
-                  "ANGAST": lambda x: "%0.2f" % x,
-                  "PSHIFT": lambda x: "%0.2f" % x,
-                  "OCC": lambda x: "%0.2f" % x,
-                  "LOGP": lambda x: "%d" % x,
-                  "SIGMA": lambda x: "%0.4f" % x,
-                  "SCORE": lambda x: "%0.2f" % x,
-                  "CHANGE": lambda x: "%0.2f" % x}
+    formatters = {"C": lambda x: "%7d" % x,
+                  "PSI": lambda x: "%7.2f" % x,
+                  "THETA": lambda x: "%7.2f" % x,
+                  "PHI": lambda x: "%7.2f" % x,
+                  "SHX": lambda x: "%9.2f" % x,
+                  "SHY": lambda x: "%9.2f" % x,
+                  "MAG": lambda x: "%7.0f" % x,
+                  "INCLUDE": lambda x: "%5d" % x,
+                  "DF1": lambda x: "%8.1f" % x,
+                  "DF2": lambda x: "%8.1f" % x,
+                  "ANGAST": lambda x: "%7.2f" % x,
+                  "PSHIFT": lambda x: "%7.2f" % x,
+                  "OCC": lambda x: "%7.2f" % x,
+                  "LogP": lambda x: "%9d" % x,
+                  "SIGMA": lambda x: "%10.4f" % x,
+                  "SCORE": lambda x: "%7.2f" % x,
+                  "CHANGE": lambda x: "%7.2f" % x}
     with open(fn, 'w') as f:
-        f.write(df.to_string(formatters=formatters, index=False))
+        f.write("C           PSI   THETA     PHI       SHX       SHY     "
+                "MAG  INCLUDE   DF1      DF2  ANGAST  PSHIFT     "
+                "OCC      LogP      SIGMA   SCORE  CHANGE\n")
+        df.to_string(buf=f, formatters=formatters, index=False, header=None)
+        f.write("\nC Blank line\n")
 
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
