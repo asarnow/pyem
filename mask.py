@@ -40,7 +40,7 @@ def main(args):
         base_map = read(args.base_map, inc_header=False)
         base_mask = binarize_volume(base_map, args.threshold, minvol=args.minvol, fill=args.fill)
         total_width = args.extend + args.edge_width
-        excl_mask = binary_dilate(mask, args.extend+args.edge_width, strel=args.relion)
+        excl_mask = binary_dilate(mask, total_width, strel=args.relion)
         base_mask = binary_dilate(base_mask, args.extend, strel=args.relion)
         base_mask = base_mask &~ excl_mask
         if args.overlap > 0:
@@ -53,7 +53,7 @@ def main(args):
         se = binary_sphere(args.extend, False)
         mask = binary_closing(mask, structure=se, iterations=1)
     final = mask.astype(np.single)
-    if args.edge_width is not None:
+    if args.edge_width != 0:
         dt = distance_transform_edt(~mask)  # Compute *outward* distance transform of mask.
         idx = (dt <= args.edge_width) & (dt > 0)  # Identify edge points by distance from mask.
         x = np.arange(1, args.edge_width + 1)  # Domain of the edge profile.
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--extend", "-e", help="Structuring element size for dilating initial mask",
                         type=int, default=0)
     parser.add_argument("--edge-width", "-w", help="Width for soft edge",
-                        type=int)
+                        type=int, default=0)
     parser.add_argument("--edge-profile", "-p", help="Soft edge profile type",
                         choices=["sinusoid"],
                         default="sinusoid")
