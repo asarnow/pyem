@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright (C) 2017-2018 Daniel Asarnow
 # University of California, San Francisco
 #
