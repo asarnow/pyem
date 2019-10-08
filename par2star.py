@@ -47,7 +47,7 @@ def main(args):
     df = df.sort_values(by="C")
 
     df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
-                           ac=args.ac, kv=args.voltage, invert_eulers=args.relion)
+                           ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
     
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
@@ -68,7 +68,8 @@ if __name__ == "__main__":
     parser.add_argument("--voltage", "--kv", "-v", help="Acceleration voltage (kV)", type=float)
     parser.add_argument("--min-occ", help="Minimum occupancy for inclusion in output", type=float)
     parser.add_argument("--class", "-c", help="Classes to preserve in output", action="append", dest="cls")
-    parser.add_argument("--relion", help="Use if .par file came from importing .star in cisTEM", action="store_false")
+    parser.add_argument("--relion", help=argparse.SUPPRESS, action="store_true")
+    parser.add_argument("--invert-eulers", help="Invert Euler angles (generally unnecessary)", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
 
