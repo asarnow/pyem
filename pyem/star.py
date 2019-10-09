@@ -272,6 +272,8 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
             ln += 1
     df = pd.read_csv(starfile, skiprows=ln, delimiter='\s+', header=None, nrows=nrows)
     df.columns = headers
+    if Relion.PHASESHIFT not in df:
+        df[Relion.PHASESHIFT] = 0.0
     if augment:
         augment_star_ucsf(df, inplace=True)
     return df
