@@ -323,7 +323,8 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
 
 
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swapxy=False):
-    micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
+    micrograph = {u'uid': star.UCSF.MICROGRAPH_UID,
+                  u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                   u'mscope_params/accel_kv': None,
                   u'mscope_params/cs_mm': None,
@@ -370,16 +371,18 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                 pt = np.load(passthrough)
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
-                if 'micrograph_blob/idx' in pt.dtype.names:
-                    log.info("Micrograph file detected")
-                    ptdf = util.dataframe_from_records_mapped(pt, micrograph)
-                    key = star.Relion.MICROGRAPH_NAME
-                else:
-                    log.info("Particle file detected")
-                    ptdf = util.dataframe_from_records_mapped(pt, general)
-                    ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
-                    ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
-                    key = star.UCSF.PARTICLE_UID
+                #if 'micrograph_blob/idx' in pt.dtype.names:
+                #    log.info("Micrograph file detected")
+                #    ptdf = util.dataframe_from_records_mapped(pt, micrograph)
+                #    key = star.UCSF.MICROGRAPH_UID
+                #else:
+                #    log.info("Particle file detected")
+                #    ptdf = util.dataframe_from_records_mapped(pt, general)
+                #    ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
+                #    ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
+                #    key = star.UCSF.PARTICLE_UID
+                ptdf = util.dataframe_from_records_mapped(pt, {**general, **micrograph})
+                key = star.UCSF.MICROGRAPH_UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
                 log.info("Merging: %s" % ", ".join(fields))
