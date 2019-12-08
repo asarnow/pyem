@@ -90,6 +90,7 @@ def main(args):
     if args.boxsize is None:
         if args.scale is None:
             args.boxsize = box[0]
+            args.scale = 1
         else:
             args.boxsize = np.int(box[0] * args.scale)
 
@@ -177,7 +178,7 @@ def main(args):
         final_mask = read(args.final_mask)
         final *= final_mask
 
-    if args.scale is not None:
+    if args.scale != 1 or args.boxsize != box[0]:
         final = vop.resample_volume(final, scale=args.scale, output_shape=args.boxsize, order=args.spline_order)
 
     write(args.output, final, psz=args.apix_out)
