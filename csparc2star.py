@@ -41,9 +41,8 @@ def main(args):
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic, boxsize=args.boxsize, swapxy=args.swapxy)
         except (KeyError, ValueError) as e:
-            log.error(e.message)
-            log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
-            log.debug(e, exc_info=True)
+            log.error(e, exc_info=True)
+            log.error("Required fields could not be mapped. Are you using the right input file(s)?")
             return 1
     else:
         log.debug("Detected CryoSPARC 0.6.5 .csv file")
