@@ -74,7 +74,7 @@ def join_struct_arrays(arrays):
 
 
 def dataframe_from_records_mapped(rec, field_dict):
-    names = [str(k) for k in field_dict if field_dict[k] is not None and k in rec.dtype.names]
+    names = list(set([str(k) for k in field_dict if field_dict[k] is not None and k in rec.dtype.names]))
     df = pd.DataFrame.from_records(rec[names])
     df.columns = [field_dict[k] for k in names]
     return df

@@ -88,6 +88,7 @@ class UCSF:
     IMAGE_ORIGINAL_BASENAME = "ucsfImageOriginalBasename"
     IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
     MICROGRAPH_BASENAME = "ucsfMicrographBasename"
+    UID = "ucsfUid"
     PARTICLE_UID = "ucsfParticleUid"
     MICROGRAPH_UID = "ucsfMicrographUid"
 
