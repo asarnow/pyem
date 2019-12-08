@@ -420,7 +420,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     elif star.Relion.ANGLEPSI in df:
         log.debug("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
-    else:
+    elif star.is_particle_star(df):
         log.warn("Angular alignment parameters not found")
     return df
 
