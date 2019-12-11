@@ -57,10 +57,8 @@ def main(args):
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
-            (star.parse_star(inp, keep_index=False) for inp in
+            (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
-        star.augment_star_ucsf(coord_star)
-        star.augment_star_ucsf(df)
         key = star.merge_key(df, coord_star)
         log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:

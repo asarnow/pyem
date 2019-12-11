@@ -224,6 +224,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     df = meta[[h for h in meta.columns if
                h in general and general[h] is not None]].copy()
     df.columns = rlnheaders
+    df = star.augment_star_ucsf(df, inplace=True)
     if "rlnRandomSubset" in df.columns:
         df["rlnRandomSubset"] = df["rlnRandomSubset"].apply(
             lambda x: ord(x) - 64)
@@ -388,7 +389,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
         if star.UCSF.IMAGE_PATH in df:
             df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
-    star.simplify_star_ucsf(df)
     df[star.Relion.MAGNIFICATION] = 10000.0
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
