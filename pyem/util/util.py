@@ -38,10 +38,9 @@ def relion_symmetry_group(sym):
     if relion is None:
         raise RuntimeError(
             "Need relion_refine on PATH to obtain symmetry operators")
-    stdout = subprocess.check_output(
-        ("%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" %
-         (relion, sym)).split())
-    lines = stdout.split("\n")[2:-1]
+    stdout = subprocess.getoutput(
+        "%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" % (relion, sym))
+    lines = stdout.split("\n")[2:]
     return [np.array(
         [[np.double(val) for val in l.split()] for l in lines[i:i + 3]])
         for i in range(1, len(lines), 4)]
