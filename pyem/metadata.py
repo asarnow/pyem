@@ -276,6 +276,30 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False):
     return df
 
 
+def cryosparc_2_cs_ctf_parameters(cs, df=None):
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    if 'ctf/tilt_A' in cs.dtype.names:
+        log.debug("Recovering beam tilt")
+        df[star.Relion.BEAMTILTX] = cs['ctf/tilt_A'][:, 0]
+        df[star.Relion.BEAMTILTY] = cs['ctf/tilt_A'][:, 1]
+    if 'ctf/shift_A' in cs.dtype.names:
+        pass
+    if 'ctf/trefoil_A' in cs.dtype.names:
+        pass
+        # df[star.Relion.ODDZERNIKE] = cs['ctf/trefoil_A']
+    if 'ctf/tetrafoil_A' in cs.dtype.names:
+        pass
+        # df[star.Relion.EVENZERNIKE] = cs['ctf/tetra_A']
+    if 'ctf/anisomag' in cs.dtype.names:
+        df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
+        df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
+        df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
+        df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
+    return df
+
+
 def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
     model = {u'split': "rlnRandomSubset",
              u'shift': star.Relion.ORIGINS,
@@ -336,8 +360,8 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                   u'ctf/df2_A': star.Relion.DEFOCUSV,
                   u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
                   u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
-                  u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
-                  u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution"}
+                  u'ctf/cross_corr_ctffind4': star.Relion.CTFFIGUREOFMERIT,
+                  u'ctf/ctf_fit_to_A': star.Relion.CTFMAXRESOLUTION}
     general = {u'uid': star.UCSF.UID,
                u'ctf/accel_kv': star.Relion.VOLTAGE,
                u'blob/psize_A': star.Relion.DETECTORPIXELSIZE,
@@ -348,8 +372,10 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                u'ctf/df2_A': star.Relion.DEFOCUSV,
                u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
                u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
-               u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
-               u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution",
+               u'ctf/cross_corr_ctffind4': star.Relion.CTFFIGUREOFMERIT,
+               u'ctf/ctf_fit_to_A': star.Relion.CTFMAXRESOLUTION,
+               u'ctf/bfactor': star.Relion.CTFBFACTOR,
+               u'ctf/exp_group_id': star.Relion.OPTICSGROUP,
                u'blob/path': star.UCSF.IMAGE_PATH,
                u'blob/idx': star.UCSF.IMAGE_INDEX,
                u'location/center_x_frac': None,
