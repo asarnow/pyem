@@ -82,7 +82,7 @@ def calc_dfsc(f3d1, f3d2, vecs, arc):
         idx = np.asarray(idx) + 1
         fcor[i] = np.abs(bincorr(
             f3d1.flat[idx], f3d2.flat[idx], r.flat[idx], minlength=nr)[:-1])
-    log.info("Evaluated cones in %0.2f s" % (time.time() - t0))
+    log.info("Evaluated %d cones in %0.2f s" % (len(vecs), time.time() - t0))
     return np.row_stack(fcor)
 
 
