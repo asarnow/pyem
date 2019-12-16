@@ -72,7 +72,7 @@ def calc_dfsc(f3d1, f3d2, vecs, arc):
     grid = np.column_stack([sx.reshape(-1), sy.reshape(-1), sz.reshape(-1)])
     grid = grid / np.linalg.norm(grid, axis=1).reshape(-1, 1)
     t0 = time.time()
-    kdtree = cKDTree(grid[1:])
+    kdtree = cKDTree(grid[1:], balanced_tree=False)
     log.info("Constructed kD-tree in %0.2f s" % (time.time() - t0))
     maxdist = 2 * np.sin(arc / 2)
     fcor = np.zeros((len(vecs), nr - 1))
