@@ -22,6 +22,7 @@ import numpy as np
 import pyfftw
 import pyfftw.interfaces.numpy_fft as fft
 import sys
+import time
 from healpy import pix2vec
 from pyem import mrc
 from pyem.algo import bincorr
@@ -46,14 +47,19 @@ def main(args):
     x, y, z = pix2vec(nside, np.arange(12 * nside ** 2))
     xhalf = x >= 0
     hp = np.column_stack([x[xhalf], y[xhalf], z[xhalf]])
+    t0 = time.time()
     fcor = calc_dfsc(f3d1, f3d2, hp, np.deg2rad(args.arc))
+    log.info("Computed CFSC in %0.2f s") % (time.time() - t0)
     fsc = calc_fsc(f3d1, f3d2)
+    t0 = time.time()
+    log.info("Computed GFSC in %0.2f s") % (time.time() - t0)
     freqs = np.fft.rfftfreq(f3d1.shape[0])
-    np.save(args.output, np.row_stack(freqs, fsc, fcor))
+    np.save(args.output, np.row_stack([freqs, fsc, fcor]))
     return 0
 
 
 def calc_dfsc(f3d1, f3d2, vecs, arc):
+    log = logging.getLogger('root')
     n = f3d1.shape[0]
     sz, sy, sx = np.meshgrid(np.fft.fftfreq(n),
                              np.fft.fftfreq(n),
@@ -65,14 +71,18 @@ def calc_dfsc(f3d1, f3d2, vecs, arc):
     nr = np.max(r) + 1
     grid = np.column_stack([sx.reshape(-1), sy.reshape(-1), sz.reshape(-1)])
     grid = grid / np.linalg.norm(grid, axis=1).reshape(-1, 1)
+    t0 = time.time()
     kdtree = cKDTree(grid[1:])
+    log.info("Constructed kD-tree in %0.2f s") % (time.time() - t0)
     maxdist = 2 * np.sin(arc / 2)
     fcor = np.zeros((len(vecs), nr - 1))
+    t0 = time.time()
     for i, vec in enumerate(vecs):
         idx = kdtree.query_ball_point(vec, maxdist)
         idx = np.asarray(idx) + 1
         fcor[i] = np.abs(bincorr(
             f3d1.flat[idx], f3d2.flat[idx], r.flat[idx], minlength=nr)[:-1])
+    log.info("Evaluated cones in %0.2f s") % (time.time() - t0)
     return np.row_stack(fcor)
 
 
@@ -99,4 +109,5 @@ if __name__ == "__main__":
     parser.add_argument("--healpix-order", help="Healpix order", type=int, default=2)
     parser.add_argument("--mask", "-m", help="Mask for FSC calculation")
     parser.add_argument("--threads", "-j", help="Number of threads for FFTW", type=int, default=1)
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
