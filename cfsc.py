@@ -49,10 +49,10 @@ def main(args):
     hp = np.column_stack([x[xhalf], y[xhalf], z[xhalf]])
     t0 = time.time()
     fcor = calc_dfsc(f3d1, f3d2, hp, np.deg2rad(args.arc))
-    log.info("Computed CFSC in %0.2f s") % (time.time() - t0)
+    log.info("Computed CFSC in %0.2f s" % (time.time() - t0))
     fsc = calc_fsc(f3d1, f3d2)
     t0 = time.time()
-    log.info("Computed GFSC in %0.2f s") % (time.time() - t0)
+    log.info("Computed GFSC in %0.2f s" % (time.time() - t0))
     freqs = np.fft.rfftfreq(f3d1.shape[0])
     np.save(args.output, np.row_stack([freqs, fsc, fcor]))
     return 0
@@ -73,7 +73,7 @@ def calc_dfsc(f3d1, f3d2, vecs, arc):
     grid = grid / np.linalg.norm(grid, axis=1).reshape(-1, 1)
     t0 = time.time()
     kdtree = cKDTree(grid[1:])
-    log.info("Constructed kD-tree in %0.2f s") % (time.time() - t0)
+    log.info("Constructed kD-tree in %0.2f s" % (time.time() - t0))
     maxdist = 2 * np.sin(arc / 2)
     fcor = np.zeros((len(vecs), nr - 1))
     t0 = time.time()
@@ -82,7 +82,7 @@ def calc_dfsc(f3d1, f3d2, vecs, arc):
         idx = np.asarray(idx) + 1
         fcor[i] = np.abs(bincorr(
             f3d1.flat[idx], f3d2.flat[idx], r.flat[idx], minlength=nr)[:-1])
-    log.info("Evaluated cones in %0.2f s") % (time.time() - t0)
+    log.info("Evaluated cones in %0.2f s" % (time.time() - t0))
     return np.row_stack(fcor)
 
 
