@@ -7,7 +7,7 @@ The entire collection is licensed under the terms of the GNU Public License, ver
 
 # How to cite
 
-Please cite the DOI for the UCSF pyem code repository.
+Please cite the UCSF pyem code repository DOI: [10.5281/zenodo.3576630](https://doi.org/10.5281/zenodo.3576630).
 
 # Installation
 
