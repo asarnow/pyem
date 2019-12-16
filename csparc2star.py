@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -41,9 +41,8 @@ def main(args):
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic, boxsize=args.boxsize, swapxy=args.swapxy)
         except (KeyError, ValueError) as e:
-            log.error(e.message)
-            log.error("A passthrough file may be required (check inside the cryoSPARC 2+ job directory)")
-            log.debug(e, exc_info=True)
+            log.error(e, exc_info=True)
+            log.error("Required fields could not be mapped. Are you using the right input file(s)?")
             return 1
     else:
         log.debug("Detected CryoSPARC 0.6.5 .csv file")
@@ -58,10 +57,8 @@ def main(args):
 
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
-            (star.parse_star(inp, keep_index=False) for inp in
+            (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
-        star.augment_star_ucsf(coord_star)
-        star.augment_star_ucsf(df)
         key = star.merge_key(df, coord_star)
         log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
@@ -79,7 +76,7 @@ def main(args):
         df = star.transform_star(df, r, inplace=True)
 
     # Write Relion .star file with correct headers.
-    star.write_star(args.output, df)
+    star.write_star(args.output, df, resort_records=True)
     log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 

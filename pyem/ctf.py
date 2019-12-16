@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # -*- coding: utf-8 -*-
 # Copyright (C) 2018 Daniel Asarnow, Eugene Palovcak
 # University of California, San Francisco

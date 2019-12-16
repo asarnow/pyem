@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright (C) 2017 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -29,20 +28,27 @@ def ismask(vol):
     Even with a soft edge, a mask will have very few unique values (unless it's already been resampled).
     The 1D slice below treats just the central XY section for speed. Real maps have ~20,000 unique values here.
     """
-    return np.unique(vol[vol.shape[2] / 2::vol.shape[2]]).size < 100
+    return np.unique(vol[vol.shape[2] // 2::vol.shape[2]]).size < 100
 
 
-def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", indexing="ij", invert=False):
-    if r is None and t is None:
+def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014",
+                    indexing="ij", invert=False, scale=None, output_shape=None):
+    if r is None and t is None and scale is None and (output_shape is None or np.array_equal(output_shape, vol.shape)):
         return vol.copy()
 
-    center = np.array(vol.shape) // 2
+    if output_shape is None:
+        output_shape = np.array(vol.shape)
+    elif np.isscalar(output_shape):
+        output_shape = np.array((output_shape, output_shape, output_shape))
 
-    x, y, z = np.meshgrid(*[np.arange(-c, c) for c in center], indexing=indexing)
+    x, y, z = np.meshgrid(*[np.arange(-c, c) for c in output_shape // 2], indexing=indexing)
     xyz = np.vstack([x.reshape(-1), y.reshape(-1), z.reshape(-1), np.ones(x.size)])
 
     if ori is not None:
         xyz -= ori[:, None]
+
+    if r is None:
+        r = np.eye(3)
 
     th = np.eye(4)
     if t is None and r.shape[1] == 4:
@@ -51,8 +57,12 @@ def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", in
         th[:3, 3] = t
 
     rh = np.eye(4)
-    if r is not None:
-        rh[:3, :3] = r[:3, :3].T
+    rh[:3, :3] = r[:3, :3].T
+
+    if scale is not None:
+        rh[:3, :3] /= scale
+
+    center = np.array(vol.shape) // 2
 
     if invert:
         th[:3, 3] = -th[:3, 3]
@@ -61,7 +71,7 @@ def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", in
     else:
         xyz = th.dot(rh.dot(xyz))[:3, :] + center[:, None]
 
-    xyz = np.array([arr.reshape(vol.shape) for arr in xyz])
+    xyz = np.array([arr.reshape(output_shape) for arr in xyz])
 
     if "relion" in compat.lower() or "xmipp" in compat.lower():
         xyz = xyz[::-1]
@@ -72,7 +82,7 @@ def resample_volume(vol, r=None, t=None, ori=None, order=3, compat="mrc2014", in
 
 def grid_correct(vol, pfac=2, order=1):
     n = vol.shape[0]
-    nhalf = n / 2
+    nhalf = n // 2
     x, y, z = np.meshgrid(*[np.arange(-nhalf, nhalf)] * 3, indexing="xy")
     r = np.sqrt(x**2 + y**2 + z**2, dtype=vol.dtype) / (n * pfac)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -114,7 +124,7 @@ def vol_ft(vol, pfac=2, threads=1, normfft=1):
     :param normfft: Normalization constant for Fourier transform.
     """
     vol = grid_correct(vol, pfac=pfac, order=1)
-    padvol = np.pad(vol, (vol.shape[0] * pfac - vol.shape[0]) // 2, "constant")
+    padvol = np.pad(vol, int((vol.shape[0] * pfac - vol.shape[0]) // 2), "constant")
     ft = rfftn(np.fft.ifftshift(padvol), padvol.shape, threads=threads)
     ftc = np.zeros((ft.shape[0] + 3, ft.shape[1] + 3, ft.shape[2]), dtype=ft.dtype)
     fill_ft(ft, ftc, vol.shape[0], normfft=normfft)

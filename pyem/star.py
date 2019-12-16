@@ -56,13 +56,20 @@ class Relion:
     BEAMTILTX = "rlnBeamTiltX"
     BEAMTILTY = "rlnBeamTiltY"
     BEAMTILTCLASS = "rlnBeamTiltClass"
-    CTFSCALEFACTOR = "rlnCtfScaleFactor"
-    CTFBFACTOR = "rlnCtfBFactor"
+    CTFSCALEFACTOR = "rlnCtfScalefactor"
+    CTFBFACTOR = "rlnCtfBfactor"
     CTFMAXRESOLUTION = "rlnCtfMaxResolution"
     CTFFIGUREOFMERIT = "rlnCtfFigureOfMerit"
     GROUPNUMBER = "rlnGroupNumber"
+    OPTICSGROUP = "rlnOpticsGroup"
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
+    ODDZERNIKE = "rlnOddZernike"
+    EVENZERNIKE = "rlnEvenZernike"
+    MAGMAT00 = "rlnMagMat00"
+    MAGMAT01 = "rlnMagMat01"
+    MAGMAT10 = "rlnMagMat10"
+    MAGMAT11 = "rlnMagMat11"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
@@ -88,7 +95,9 @@ class UCSF:
     IMAGE_ORIGINAL_BASENAME = "ucsfImageOriginalBasename"
     IMAGE_ORIGINAL_INDEX = "ucsfImageOriginalIndex"
     MICROGRAPH_BASENAME = "ucsfMicrographBasename"
+    UID = "ucsfUid"
     PARTICLE_UID = "ucsfParticleUid"
+    MICROGRAPH_UID = "ucsfMicrographUid"
 
 
 def smart_merge(s1, s2, fields, key=None, left_key=None):
@@ -257,13 +266,13 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
     ln = 0
     with open(starfile, 'rU') as f:
         for l in f:
-            if l.startswith("_"):
+            if l.strip().startswith("_"):
                 foundheader = True
                 lastheader = True
                 if keep_index:
-                    head = l.rstrip()
+                    head = l.strip()
                 else:
-                    head = l.split('#')[0].rstrip().lstrip('_')
+                    head = l.split('#')[0].strip().lstrip('_')
                 headers.append(head)
             else:
                 lastheader = False
@@ -272,14 +281,18 @@ def parse_star(starfile, keep_index=False, augment=False, nrows=None):
             ln += 1
     df = pd.read_csv(starfile, skiprows=ln, delimiter='\s+', header=None, nrows=nrows)
     df.columns = headers
+    if Relion.PHASESHIFT not in df:
+        df[Relion.PHASESHIFT] = 0.0
     if augment:
         augment_star_ucsf(df, inplace=True)
     return df
 
 
-def write_star(starfile, df, resort_fields=True, simplify=True):
+def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True):
     if not starfile.endswith(".star"):
         starfile += ".star"
+    if resort_records:
+        df = sort_records(df, inplace=True)
     if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
         df = simplify_star_ucsf(df)
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
@@ -379,7 +392,7 @@ def augment_star_ucsf(df, inplace=True):
     return df
 
 
-def simplify_star_ucsf(df, inplace=True):
+def simplify_star_ucsf(df, resort_index=False, inplace=True):
     df = df if inplace else df.copy()
     if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH in df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[UCSF.IMAGE_ORIGINAL_INDEX].map(
@@ -390,7 +403,7 @@ def simplify_star_ucsf(df, inplace=True):
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
     df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
             axis=1, inplace=True)
-    if "index" in df.columns:
+    if resort_index and "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
     return df

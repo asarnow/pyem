@@ -1,29 +1,23 @@
-# UCSF PyEM
-UCSF PyEM is a collection of Python modules and command-line utilities for electron microscopy of biological samples.
-
-The entire collection is licensed under the terms of the GNU Public License, version 3 (GPLv3).
-
-Copyright information is listed within each individual file. Current copyright holders include:
- * Eugene Palovcak (UCSF)
- * Daniel Asarnow (UCSF)
+# UCSF pyem
+UCSF pyem is a collection of Python modules and command-line utilities for electron microscopy of biological samples.
 
 Documentation for the programs can be found in their usage text, comments in code, and in the Wiki of this repository.
 
-## Programs
- 1. `projection_subtraction.py` - Perform projection subtraction using per-particle FRC normalization.
- + `recenter.py` - Recenter particles on the center-of-mass of corresponding 2D class-averages.
- + `angdist.py` - Graph angular distributions on polar scatter plots. Supports particle subset selection.
- + `pyem/star.py` - Alter .star files. Supports dropping arbitrary fields, Euler angles, etc.
- + `project.py` - Project a map according to .star file entries (angles, CTF, etc.).
- + `csparc2star.py` - Convert Cryosparc metadata files to Relion .star format.
+The entire collection is licensed under the terms of the GNU Public License, version 3 (GPLv3).
 
-## Library modules
- 1. `pyem/mrc.py` - Simple, standalone MRC I/O functions.
- + `pyem/star.py` - Parse and write .star files. Uses pandas.DataFrame as a backend.
+# How to cite
 
-## Other files
- 1. `activate` - Place in `EMAN2/bin` to turn EMAN2 into a Python virtual environment.
+Please cite the DOI for the UCSF pyem code repository.
 
+# Installation
 
-(C) 2016 Daniel Asarnow  
+To install UCSF pyem, please follow the
+[instructions](https://github.com/asarnow/pyem/wiki/Install-pyem-with-Miniconda) in the project wiki.
+
+# Exporting from cryoSPARC to Relion
+
+The most popular feature of UCSF pyem is exporting particle metadata from cryoSPARC.
+Detailed [instructions](https://github.com/asarnow/pyem/wiki/Export-from-cryoSPARC-v2) can be found in the project wiki.
+
+(C) 2016-2019 Daniel Asarnow  
 University of California, San Francisco

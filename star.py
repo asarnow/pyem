@@ -232,10 +232,10 @@ def main(args):
         return 0
 
     if args.auxout is not None and dfaux is not None:
-        star.write_star(args.auxout, dfaux, simplify=args.augment_output)
+        star.write_star(args.auxout, dfaux, resort_records=args.sort, simplify=args.augment_output)
 
     if args.output is not None:
-        star.write_star(args.output, df, simplify=args.augment_output)
+        star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output)
     return 0
 
 
@@ -317,6 +317,7 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("--invert-hand", help="Alter Euler angles to invert handedness of reconstruction",
                         action="store_true")
+    parser.add_argument("--sort", help="Natsort the output file", action="store_true")
     parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))

@@ -38,10 +38,9 @@ def relion_symmetry_group(sym):
     if relion is None:
         raise RuntimeError(
             "Need relion_refine on PATH to obtain symmetry operators")
-    stdout = subprocess.check_output(
-        ("%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" %
-         (relion, sym)).split())
-    lines = stdout.split("\n")[2:-1]
+    stdout = subprocess.getoutput(
+        "%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" % (relion, sym))
+    lines = stdout.split("\n")[2:]
     return [np.array(
         [[np.double(val) for val in l.split()] for l in lines[i:i + 3]])
         for i in range(1, len(lines), 4)]
@@ -74,7 +73,7 @@ def join_struct_arrays(arrays):
 
 
 def dataframe_from_records_mapped(rec, field_dict):
-    names = [str(k) for k in field_dict if field_dict[k] is not None and k in rec.dtype.names]
+    names = list(set([str(k) for k in field_dict if field_dict[k] is not None and k in rec.dtype.names]))
     df = pd.DataFrame.from_records(rec[names])
     df.columns = [field_dict[k] for k in names]
     return df

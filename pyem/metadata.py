@@ -1,4 +1,3 @@
-#!/usr/bin/env python2.7
 # Copyright (C) 2017 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -82,47 +81,51 @@ def parse_fx_par(fn):
 
 
 def write_f9_par(fn, df):
-    formatters = {"C": lambda x: "%d" % x,
-                  "PSI": lambda x: "%0.2f" % x,
-                  "THETA": lambda x: "%0.2f" % x,
-                  "PHI": lambda x: "%0.2f" % x,
-                  "SHX": lambda x: "%0.2f" % x,
-                  "SHY": lambda x: "%0.2f" % x,
-                  "MAG": lambda x: "%d" % x,
-                  "INCLUDE": lambda x: "%d" % x,
-                  "DF1": lambda x: "%0.1f" % x,
-                  "DF2": lambda x: "0.1f" % x,
-                  "ANGAST": lambda x: "%0.2f" % x,
-                  "PSHIFT": lambda x: "%0.2f" % x,
-                  "OCC": lambda x: "%0.2f" % x,
-                  "LOGP": lambda x: "%d" % x,
-                  "SIGMA": lambda x: "%0.4f" % x,
-                  "SCORE": lambda x: "%0.2f" % x,
-                  "CHANGE": lambda x: "%0.2f" % x}
+    formatters = {"C": lambda x: "%7d" % x,
+                  "PSI": lambda x: "%7.2f" % x,
+                  "THETA": lambda x: "%7.2f" % x,
+                  "PHI": lambda x: "%7.2f" % x,
+                  "SHX": lambda x: "%9.2f" % x,
+                  "SHY": lambda x: "%9.2f" % x,
+                  "MAG": lambda x: "%7.0f" % x,
+                  "INCLUDE": lambda x: "%5d" % x,
+                  "DF1": lambda x: "%8.1f" % x,
+                  "DF2": lambda x: "%8.1f" % x,
+                  "ANGAST": lambda x: "%7.2f" % x,
+                  "PSHIFT": lambda x: "%7.2f" % x,
+                  "OCC": lambda x: "%7.2f" % x,
+                  "LogP": lambda x: "%9d" % x,
+                  "SIGMA": lambda x: "%10.4f" % x,
+                  "SCORE": lambda x: "%7.2f" % x,
+                  "CHANGE": lambda x: "%7.2f" % x}
     with open(fn, 'w') as f:
         f.write(df.to_string(formatters=formatters, index=False))
 
 
 def write_fx_par(fn, df):
-    formatters = {"C": lambda x: "%d" % x,
-                  "PSI": lambda x: "%0.2f" % x,
-                  "THETA": lambda x: "%0.2f" % x,
-                  "PHI": lambda x: "%0.2f" % x,
-                  "SHX": lambda x: "%0.2f" % x,
-                  "SHY": lambda x: "%0.2f" % x,
-                  "MAG": lambda x: "%d" % x,
-                  "INCLUDE": lambda x: "%d" % x,
-                  "DF1": lambda x: "%0.1f" % x,
-                  "DF2": lambda x: "0.1f" % x,
-                  "ANGAST": lambda x: "%0.2f" % x,
-                  "PSHIFT": lambda x: "%0.2f" % x,
-                  "OCC": lambda x: "%0.2f" % x,
-                  "LOGP": lambda x: "%d" % x,
-                  "SIGMA": lambda x: "%0.4f" % x,
-                  "SCORE": lambda x: "%0.2f" % x,
-                  "CHANGE": lambda x: "%0.2f" % x}
+    formatters = {"C": lambda x: "%7d" % x,
+                  "PSI": lambda x: "%7.2f" % x,
+                  "THETA": lambda x: "%7.2f" % x,
+                  "PHI": lambda x: "%7.2f" % x,
+                  "SHX": lambda x: "%9.2f" % x,
+                  "SHY": lambda x: "%9.2f" % x,
+                  "MAG": lambda x: "%7.0f" % x,
+                  "INCLUDE": lambda x: "%5d" % x,
+                  "DF1": lambda x: "%8.1f" % x,
+                  "DF2": lambda x: "%8.1f" % x,
+                  "ANGAST": lambda x: "%7.2f" % x,
+                  "PSHIFT": lambda x: "%7.2f" % x,
+                  "OCC": lambda x: "%7.2f" % x,
+                  "LogP": lambda x: "%9d" % x,
+                  "SIGMA": lambda x: "%10.4f" % x,
+                  "SCORE": lambda x: "%7.2f" % x,
+                  "CHANGE": lambda x: "%7.2f" % x}
     with open(fn, 'w') as f:
-        f.write(df.to_string(formatters=formatters, index=False))
+        f.write("C           PSI   THETA     PHI       SHX       SHY     "
+                "MAG  INCLUDE   DF1      DF2  ANGAST  PSHIFT     "
+                "OCC      LogP      SIGMA   SCORE  CHANGE\n")
+        df.to_string(buf=f, formatters=formatters, index=False, header=None)
+        f.write("\nC Blank line\n")
 
 
 def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=True):
@@ -221,6 +224,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     df = meta[[h for h in meta.columns if
                h in general and general[h] is not None]].copy()
     df.columns = rlnheaders
+    df = star.augment_star_ucsf(df, inplace=True)
     if "rlnRandomSubset" in df.columns:
         df["rlnRandomSubset"] = df["rlnRandomSubset"].apply(
             lambda x: ord(x) - 64)
@@ -272,6 +276,30 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False):
     return df
 
 
+def cryosparc_2_cs_ctf_parameters(cs, df=None):
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    if 'ctf/tilt_A' in cs.dtype.names:
+        log.debug("Recovering beam tilt")
+        df[star.Relion.BEAMTILTX] = cs['ctf/tilt_A'][:, 0]
+        df[star.Relion.BEAMTILTY] = cs['ctf/tilt_A'][:, 1]
+    if 'ctf/shift_A' in cs.dtype.names:
+        pass
+    if 'ctf/trefoil_A' in cs.dtype.names:
+        pass
+        # df[star.Relion.ODDZERNIKE] = cs['ctf/trefoil_A']
+    if 'ctf/tetrafoil_A' in cs.dtype.names:
+        pass
+        # df[star.Relion.EVENZERNIKE] = cs['ctf/tetra_A']
+    if 'ctf/anisomag' in cs.dtype.names:
+        df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
+        df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
+        df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
+        df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
+    return df
+
+
 def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
     model = {u'split': "rlnRandomSubset",
              u'shift': star.Relion.ORIGINS,
@@ -320,7 +348,8 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
 
 
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swapxy=False):
-    micrograph = {u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
+    micrograph = {u'uid': star.UCSF.UID,
+                  u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                   u'mscope_params/accel_kv': None,
                   u'mscope_params/cs_mm': None,
@@ -331,9 +360,9 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                   u'ctf/df2_A': star.Relion.DEFOCUSV,
                   u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
                   u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
-                  u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
-                  u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution"}
-    general = {u'uid': star.UCSF.PARTICLE_UID,
+                  u'ctf/cross_corr_ctffind4': star.Relion.CTFFIGUREOFMERIT,
+                  u'ctf/ctf_fit_to_A': star.Relion.CTFMAXRESOLUTION}
+    general = {u'uid': star.UCSF.UID,
                u'ctf/accel_kv': star.Relion.VOLTAGE,
                u'blob/psize_A': star.Relion.DETECTORPIXELSIZE,
                u'ctf/ac': star.Relion.AC,
@@ -343,8 +372,10 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                u'ctf/df2_A': star.Relion.DEFOCUSV,
                u'ctf/df_angle_rad': star.Relion.DEFOCUSANGLE,
                u'ctf/phase_shift_rad': star.Relion.PHASESHIFT,
-               u'ctf/cross_corr_ctffind4': "rlnCtfFigureOfMerit",
-               u'ctf/ctf_fit_to_A': "rlnCtfMaxResolution",
+               u'ctf/cross_corr_ctffind4': star.Relion.CTFFIGUREOFMERIT,
+               u'ctf/ctf_fit_to_A': star.Relion.CTFMAXRESOLUTION,
+               u'ctf/bfactor': star.Relion.CTFBFACTOR,
+               u'ctf/exp_group_id': star.Relion.OPTICSGROUP,
                u'blob/path': star.UCSF.IMAGE_PATH,
                u'blob/idx': star.UCSF.IMAGE_INDEX,
                u'location/center_x_frac': None,
@@ -367,16 +398,10 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                 pt = np.load(passthrough)
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
-                if 'micrograph_blob/idx' in pt.dtype.names:
-                    log.info("Micrograph file detected")
-                    ptdf = util.dataframe_from_records_mapped(pt, micrograph)
-                    key = star.Relion.MICROGRAPH_NAME
-                else:
-                    log.info("Particle file detected")
-                    ptdf = util.dataframe_from_records_mapped(pt, general)
-                    ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
-                    ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
-                    key = star.UCSF.PARTICLE_UID
+                ptdf = util.dataframe_from_records_mapped(pt, {**general, **micrograph})
+                ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
+                ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
+                key = star.UCSF.UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
                 log.info("Merging: %s" % ", ".join(fields))
@@ -390,7 +415,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
         if star.UCSF.IMAGE_PATH in df:
             df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
-    star.simplify_star_ucsf(df)
     df[star.Relion.MAGNIFICATION] = 10000.0
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
@@ -424,7 +448,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     elif star.Relion.ANGLEPSI in df:
         log.debug("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
-    else:
+    elif star.is_particle_star(df):
         log.warn("Angular alignment parameters not found")
     return df
 

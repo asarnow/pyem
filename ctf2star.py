@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright (C) 2019 Daniel Asarnow
 # University of California, San Francisco
 #

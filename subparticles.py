@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 # Copyright (C) 2017 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -37,7 +37,7 @@ def main(args):
     if args.target is None and args.sym is None and args.transform is None and args.euler is None:
         log.error("At least a target, transformation matrix, Euler angles, or a symmetry group must be provided")
         return 1
-    elif args.target is not None and args.boxsize is None and args.origin is None:
+    elif (args.target is not None or args.transform is not None) and args.boxsize is None and args.origin is None:
         log.error("An origin must be provided via --boxsize or --origin")
         return 1
 
