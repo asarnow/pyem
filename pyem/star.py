@@ -423,7 +423,7 @@ def sort_records(df, inplace=False):
         if UCSF.IMAGE_INDEX in df:
             # df.sort_values([UCSF.IMAGE_PATH, UCSF.IMAGE_INDEX], inplace=True)
             df = natsort_values(df, df[UCSF.IMAGE_PATH] + "_" + df[UCSF.IMAGE_INDEX].astype(str), inplace=True)
-    else:
+    elif Relion.MICROGRAPH_NAME in df:
         df = natsort_values(df, Relion.MICROGRAPH_NAME, inplace=True)
     return df
 
