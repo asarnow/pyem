@@ -56,6 +56,7 @@ def main(args):
         df = star.select_classes(df, args.cls)
 
     if args.copy_micrograph_coordinates is not None:
+        df = star.augment_star_ucsf(df, inplace=True)
         coord_star = pd.concat(
             (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")

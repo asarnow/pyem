@@ -124,11 +124,11 @@ def merge_key(s1, s2, threshold=0.5):
         shared = sum(c[i] for i in set(s2[Relion.IMAGE_NAME]))
         if shared >= s1.shape[0] * threshold:
             return Relion.IMAGE_NAME
-        if UCSF.IMAGE_BASENAME in inter:
-            c = Counter(s1[UCSF.IMAGE_BASENAME])
-            shared = sum(c[i] for i in set(s2[UCSF.IMAGE_BASENAME]))
-            if shared >= s1.shape[0] * threshold:
-                return [UCSF.IMAGE_BASENAME, UCSF.IMAGE_INDEX]
+    if UCSF.IMAGE_BASENAME in inter:
+        c = Counter(s1[UCSF.IMAGE_BASENAME])
+        shared = sum(c[i] for i in set(s2[UCSF.IMAGE_BASENAME]))
+        if shared >= s1.shape[0] * threshold:
+            return [UCSF.IMAGE_BASENAME, UCSF.IMAGE_INDEX]
     mgraph_coords = inter.intersection(Relion.MICROGRAPH_COORDS)
     if Relion.MICROGRAPH_NAME in mgraph_coords:
         c = Counter(s1[Relion.MICROGRAPH_NAME])
@@ -260,7 +260,7 @@ def scale_magnification(df, factor, inplace=False):
     return df
 
 
-def parse_star(starfile, keep_index=False, augment=False, nrows=None):
+def parse_star(starfile, keep_index=False, augment=True, nrows=None):
     headers = []
     foundheader = False
     ln = 0
@@ -376,7 +376,6 @@ def augment_star_ucsf(df, inplace=True):
         df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
             df[Relion.IMAGE_NAME].str.split("@").str
         df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
-        df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_PATH].apply(os.path.basename)
 
         if Relion.IMAGE_ORIGINAL_NAME not in df:
             df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
@@ -385,6 +384,11 @@ def augment_star_ucsf(df, inplace=True):
         df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
             df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
         df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
+
+    if UCSF.IMAGE_PATH in df:
+        df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_PATH].apply(os.path.basename)
+
+    if UCSF.IMAGE_ORIGINAL_PATH in df:
         df[UCSF.IMAGE_ORIGINAL_BASENAME] = df[UCSF.IMAGE_ORIGINAL_PATH].apply(os.path.basename)
 
     if Relion.MICROGRAPH_NAME in df:
@@ -406,6 +410,8 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True):
     if resort_index and "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
+    elif "index" in df.columns:
+        df.drop("index", axis=1, inplace=True)
     return df
 
 
