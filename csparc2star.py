@@ -75,6 +75,9 @@ def main(args):
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
+    
+    if args.relion2:
+        df.drop(df.columns.intersection(star.Relion.RELION3), axis=1, inplace=True)
 
     # Write Relion .star file with correct headers.
     star.write_star(args.output, df, resort_records=True)
@@ -102,5 +105,6 @@ if __name__ == "__main__":
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
+    parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
