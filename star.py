@@ -128,8 +128,7 @@ def main(args):
         df = star.transform_star(df, r, inplace=True)
 
     if args.invert_hand:
-        df[star.Relion.ANGLEROT] = -df[star.Relion.ANGLEROT]
-        df[star.Relion.ANGLETILT] = 180 - df[star.Relion.ANGLETILT]
+        df = star.invert_hand(df, inplace=True)
 
     if args.copy_paths is not None:
         path_star = star.parse_star(args.copy_paths)

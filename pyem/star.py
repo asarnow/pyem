@@ -264,6 +264,13 @@ def scale_magnification(df, factor, inplace=False):
     return df
 
 
+def invert_hand(df, inplace=False):
+    df = df if inplace else df.copy()
+    df[star.Relion.ANGLEROT] = -df[star.Relion.ANGLEROT]
+    df[star.Relion.ANGLETILT] = 180 - df[star.Relion.ANGLETILT]
+    return df
+
+
 def parse_star(starfile, keep_index=False, augment=True, nrows=None):
     headers = []
     foundheader = False
