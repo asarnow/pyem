@@ -266,8 +266,8 @@ def scale_magnification(df, factor, inplace=False):
 
 def invert_hand(df, inplace=False):
     df = df if inplace else df.copy()
-    df[star.Relion.ANGLEROT] = -df[star.Relion.ANGLEROT]
-    df[star.Relion.ANGLETILT] = 180 - df[star.Relion.ANGLETILT]
+    df[Relion.ANGLEROT] = -df[Relion.ANGLEROT]
+    df[Relion.ANGLETILT] = 180 - df[Relion.ANGLETILT]
     return df
 
 
