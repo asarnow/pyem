@@ -17,10 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
-from .quat import distq
-from .quat import meanq
+from .quat_numba import distq
 from .quat_numba import qslerp
 from .quat_numba import qtimes
+from .quat import meanq
 
 
 def double_center(arr, reference=None, inplace=False):
