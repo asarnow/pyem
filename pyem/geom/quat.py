@@ -49,10 +49,6 @@ def meanq(q, w=None):
         return np.linalg.eigh(np.einsum('ij,ik,i->...jk', q, q, w))[1][:, -1]
 
 
-def distq(q1, q2):
-    return 2 * np.arccos(np.abs(np.dot(q1, q2)))
-
-
 def pdistq(q1, q2=None):
     if q2 is None:
         q2 = q1

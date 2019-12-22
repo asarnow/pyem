@@ -83,6 +83,19 @@ def qslerp(q1, q2, t, longest=False):
     return (q1 * a + q2 * b) / sin_half_theta
 
 
+@numba.jit(cache=False, nopython=True, nogil=True)
+def distq(q1, q2):
+    pi_half = np.pi / 2
+    v = np.abs(np.sum(q1 * q2))
+    if v > 1.0:
+        v = 1.0
+    v = np.arccos(v)
+    v *= 2
+    if v > pi_half:
+        v = np.pi - v
+    return v
+
+
 @numba.jit(cache=False, nopython=True, parallel=True)
 def cdistq(q1, q2, d):
     # if q2 is None:
@@ -244,3 +257,4 @@ def dqblend(q1, q2, t):
     q3 = (1 - t) * q1 + t * q2
     q3 /= np.linalg.norm(q3)
     return q3
+
