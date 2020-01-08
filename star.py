@@ -200,7 +200,8 @@ def main(args):
         gb = df.groupby(star.Relion.MICROGRAPH_NAME)
         dupes = []
         for n, g in gb:
-            nb = algo.query_connected(g[star.Relion.COORDS], args.min_separation / star.calculate_apix(df))
+            nb = algo.query_connected(g[star.Relion.COORDS].values - g[star.Relion.ORIGINS],
+                                      args.min_separation / star.calculate_apix(df))
             dupes.extend(g.index[~np.isnan(nb)])
         dfaux = df.loc[dupes]
         df.drop(dupes, inplace=True)
