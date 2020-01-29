@@ -9,6 +9,9 @@ The entire collection is licensed under the terms of the GNU Public License, ver
 
 Please cite the UCSF pyem code repository DOI: [10.5281/zenodo.3576630](https://doi.org/10.5281/zenodo.3576630).
 
+For example, the [formatting for a Nature journal](https://www.nature.com/nature/for-authors/formatting-guide) is:
+Asarnow, D., Palovcak, E., Cheng, Y. UCSF pyem v0.5. Zenodo https://doi.org/10.5281/zenodo.3576630 (2019)
+
 # Installation
 
 To install UCSF pyem, please follow the
