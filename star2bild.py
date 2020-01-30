@@ -44,7 +44,7 @@ def main(args):
         df[star.Relion.ANGLEPSI] = 0
         rots = geom.e2r_vec(np.deg2rad(df[star.Relion.ANGLES].values))
         dfs = [star.transform_star(df, op, rots=rots) for op in args.sym]
-        dfi = pd.concat(dfs, axis=0, keys=np.arange(len(args.sym))
+        dfi = pd.concat(dfs, axis=0, keys=np.arange(len(args.sym)))
         newrots = np.array([geom.e2r_vec(np.deg2rad(x[star.Relion.ANGLES].values)) for x in dfs])
         mag = np.array([geom.phi5(r) for r in newrots.reshape(-1, 3, 3)]).reshape(len(args.sym), -1)
         idx = np.argmin(mag, axis=0)
