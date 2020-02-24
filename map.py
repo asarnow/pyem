@@ -68,8 +68,7 @@ def main(args):
         else:
             final, mu, sigma = vop.normalize(data, return_stats=True)
         final = (data - mu) / sigma
-        if args.verbose:
-            log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
+        log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
 
     if args.apix is None:
         args.apix = hdr["xlen"] / hdr["nx"]
