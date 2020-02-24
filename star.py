@@ -79,6 +79,8 @@ def main(args):
         if not args.augment:
             star.augment_star_ucsf(df, inplace=True)
         star.set_original_fields(df, inplace=True)
+        df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
+                             star.UCSF.IMAGE_ORIGINAL_INDEX])
         df[star.UCSF.IMAGE_PATH] = args.restack
         df[star.UCSF.IMAGE_INDEX] = np.arange(df.shape[0])
 
