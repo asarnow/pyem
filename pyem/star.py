@@ -524,4 +524,12 @@ def check_defaults(df, inplace=False):
     df = df if inplace else df.copy()
     if Relion.PHASESHIFT not in df:
         df[Relion.PHASESHIFT] = 0.0
+    if Relion.IMAGEPIXELSIZE in df:
+        if Relion.DETECTORPIXELSIZE not in df and Relion.MAGNIFICATION not in df:
+            df[Relion.DETECTORPIXELSIZE] = df[Relion.IMAGEPIXELSIZE]
+            df[Relion.MAGNIFICATION] = 10000
+        elif Relion.DETECTORPIXELSIZE in df:
+            df[Relion.MAGNIFICATION] = df[Relion.DETECTORPIXELSIZE] / df[Relion.IMAGEPIXELSIZE] * 10000
+        elif Relion.MAGNIFICATION in df:
+            df[Relion.DETECTORPIXELSIZE] = df[Relion.MAGNIFICATION] * df[Relion.IMAGEPIXELSIZE] / 10000
     return df
