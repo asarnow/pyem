@@ -22,6 +22,7 @@ import os.path
 from collections import Counter
 import numpy as np
 import pandas as pd
+import sys
 from math import modf
 from pyem.geom import e2r_vec
 from pyem.geom import rot2euler
@@ -62,6 +63,7 @@ class Relion:
     CTFFIGUREOFMERIT = "rlnCtfFigureOfMerit"
     GROUPNUMBER = "rlnGroupNumber"
     OPTICSGROUP = "rlnOpticsGroup"
+    OPTICSGROUPNAME = "rlnOpticsName"
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
     ODDZERNIKE = "rlnOddZernike"
@@ -70,6 +72,9 @@ class Relion:
     MAGMAT01 = "rlnMagMat01"
     MAGMAT10 = "rlnMagMat10"
     MAGMAT11 = "rlnMagMat11"
+    IMAGEPIXELSIZE = "rlnImagePixelSize"
+    IMAGESIZE = "rlnImageSize"
+    IMAGEDIMENSION = "rlnImageDimensionality"
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
@@ -86,9 +91,15 @@ class Relion:
                    COORDS + ALIGNMENTS + MICROSCOPE_PARAMS + CTF_PARAMS + \
                   [CLASS + GROUPNUMBER + RANDOMSUBSET]
 
-    RELION3 = [BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, OPTICSGROUP, ODDZERNIKE, EVENZERNIKE, MAGMAT00,
-                MAGMAT01, MAGMAT10, MAGMAT11]
-                
+    RELION3 = [BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, OPTICSGROUP, OPTICSGROUPNAME,
+               ODDZERNIKE, EVENZERNIKE, MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11,
+               IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
+
+    OPTICSGROUPTABLE = [BEAMTILTX, BEAMTILTY, OPTICSGROUPNAME, ODDZERNIKE, EVENZERNIKE,
+                        MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
+
+    OPTICDATA = "data_optics"
+    PARTICLEDATA = "data_particles"
 
 
 class UCSF:
@@ -271,13 +282,14 @@ def invert_hand(df, inplace=False):
     return df
 
 
-def parse_star(starfile, keep_index=False, augment=True, nrows=None):
+def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
-    with open(starfile, 'rU') as f:
+    with open(starfile, 'r') as f:
+        f.seek(offset)
         for l in f:
-            if l.strip().startswith("_"):
+            if l.lstrip().startswith("_"):
                 foundheader = True
                 lastheader = True
                 if keep_index:
@@ -290,13 +302,68 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=None):
             if foundheader and not lastheader:
                 break
             ln += 1
-    df = pd.read_csv(starfile, skiprows=ln, delimiter='\s+', header=None, nrows=nrows)
+        f.seek(offset)
+        df = pd.read_csv(f, delimiter='\s+', header=None, skiprows=ln, nrows=nrows)
     df.columns = headers
-    if Relion.PHASESHIFT not in df:
-        df[Relion.PHASESHIFT] = 0.0
+    return df
+
+
+def star_table_offsets(starfile):
+    tables = {}
+    with open(starfile) as f:
+        l = f.readline()  # Current line
+        ln = 0  # Current line number.
+        offset = 0  # Char offset of current table.
+        cnt = 0  # Number of tables.
+        in_table = False  # True if file cursor is inside a table.
+        in_loop = False
+        blank_terminates = False
+        while l:
+            if l.startswith("data"):
+                table_name = l.strip()
+                if in_table:
+                    tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
+                in_table = True
+                in_loop = False
+                blank_terminates = False
+                offset = f.tell()  # Record byte offset of table.
+                lineno = ln  # Record start line of table.
+                cnt += 1  # Increment table count.
+            if l.startswith("loop"):
+                in_loop = True
+            elif in_loop and not l.startswith("_"):
+                in_loop = False
+                blank_terminates = True
+                data_line = ln
+            if blank_terminates and in_table and l == "\n":  # Allow blankline to terminate table.
+                in_table = False
+                tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
+            l = f.readline()  # Read next line.
+            ln += 1  # Increment line number.
+        if in_table and table_name not in tables:
+            tables[table_name] = (offset, lineno, ln, ln - data_line)
+        return tables
+
+
+def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
+    tables = star_table_offsets(starfile)
+    dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
+           for t in tables}
+    if Relion.OPTICDATA in dfs and Relion.PARTICLEDATA in dfs:
+        df = pd.merge(dfs[Relion.OPTICDATA], dfs[Relion.PARTICLEDATA], on=Relion.OPTICSGROUP)
+    else:
+        df = dfs[next(iter(dfs))]
+    df = check_defaults(df, inplace=True)
     if augment:
         augment_star_ucsf(df, inplace=True)
     return df
+
+
+def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
+    tables = star_table_offsets(starfile)
+    dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
+           for t in tables}
+    return dfs
 
 
 def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True):
@@ -451,3 +518,10 @@ def original_field(field):
     lead = re.match(r".*?[a-z].*?(?=[A-Z])", field).group()
     field = lead + tok
     return field
+
+
+def check_defaults(df, inplace=False):
+    df = df if inplace else df.copy()
+    if Relion.PHASESHIFT not in df:
+        df[Relion.PHASESHIFT] = 0.0
+    return df
