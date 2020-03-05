@@ -227,6 +227,9 @@ def main(args):
         merge_star = star.parse_star(args.merge_source, augment=args.augment)
         df = star.smart_merge(df, merge_star, fields=args.merge_fields, key=args.merge_key, left_key=args.by_original)
 
+    if args.revert_original:
+        df = star.revert_original(df, inplace=True)
+
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
         for mg in dfs:
@@ -268,6 +271,7 @@ if __name__ == "__main__":
     parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
                         metavar="f1,f2...fN", type=str)
     parser.add_argument("--by-original", help="Merge using \"original\" field name in input .star", action="store_true")
+    parser.add_argument("--revert-original", help="Swap ImageName and ImageOriginalName before writing", action="store_true")
     parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
                         action="store_true")
     parser.add_argument("--drop-containing",

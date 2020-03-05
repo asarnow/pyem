@@ -533,3 +533,28 @@ def check_defaults(df, inplace=False):
         elif Relion.MAGNIFICATION in df:
             df[Relion.DETECTORPIXELSIZE] = df[Relion.MAGNIFICATION] * df[Relion.IMAGEPIXELSIZE] / 10000
     return df
+
+
+def revert_original(df, inplace=False):
+    df = df if inplace else df.copy()
+    if Relion.IMAGE_ORIGINAL_NAME in df and Relion.IMAGE_NAME in df:
+        df.rename(columns={Relion.IMAGE_NAME: Relion.IMAGE_ORIGINAL_NAME,
+                       Relion.IMAGE_ORIGINAL_NAME: Relion.IMAGE_NAME}, inplace=True)
+    elif Relion.IMAGE_ORIGINAL_NAME in df:
+        df[Relion.IMAGE_NAME] = df[Relion.IMAGE_ORIGINAL_NAME]
+
+    if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH in df \
+            and UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH in df:
+        df.rename(columns={UCSF.IMAGE_INDEX: UCSF.IMAGE_ORIGINAL_INDEX,
+                       UCSF.IMAGE_ORIGINAL_INDEX: UCSF.IMAGE_INDEX,
+                       UCSF.IMAGE_PATH: UCSF.IMAGE_ORIGINAL_PATH,
+                       UCSF.IMAGE_ORIGINAL_PATH: UCSF.IMAGE_PATH}, inplace=True)
+        if UCSF.IMAGE_ORIGINAL_BASENAME in df and UCSF.IMAGE_BASENAME in df:
+            df.rename(columns={UCSF.IMAGE_BASENAME: UCSF.IMAGE_ORIGINAL_BASENAME,
+                               UCSF.IMAGE_ORIGINAL_BASENAME: UCSF.IMAGE_BASENAME}, inplace=True)
+    elif UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH in df:
+        df[UCSF.IMAGE_INDEX] = df[UCSF.IMAGE_ORIGINAL_INDEX]
+        df[UCSF.IMAGE_PATH] = df[UCSF.IMAGE_ORIGINAL_PATH]
+        if UCSF.IMAGE_ORIGINAL_BASENAME in df:
+            df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_ORIGINAL_BASENAME]
+    return df
