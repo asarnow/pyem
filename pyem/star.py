@@ -30,6 +30,7 @@ from pyem.util import natsort_values
 
 
 class Relion:
+    # Relion 2+ fields.
     MICROGRAPH_NAME = "rlnMicrographName"
     MICROGRAPH_NAME_NODW = "rlnMicrographNameNoDW"
     IMAGE_NAME = "rlnImageName"
@@ -62,6 +63,8 @@ class Relion:
     CTFMAXRESOLUTION = "rlnCtfMaxResolution"
     CTFFIGUREOFMERIT = "rlnCtfFigureOfMerit"
     GROUPNUMBER = "rlnGroupNumber"
+
+    # Relion 3 fields.
     OPTICSGROUP = "rlnOpticsGroup"
     OPTICSGROUPNAME = "rlnOpticsName"
     RANDOMSUBSET = "rlnRandomSubset"
@@ -75,9 +78,16 @@ class Relion:
     IMAGEPIXELSIZE = "rlnImagePixelSize"
     IMAGESIZE = "rlnImageSize"
     IMAGEDIMENSION = "rlnImageDimensionality"
+    ORIGINXANGST = "rlnOriginXAngst"
+    ORIGINYANGST = "rlnOriginYAngst"
+    ORIGINZANGST = "rlnOriginZAngst"
+
+    # Field lists.
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
+    ORIGINSANGST = [ORIGINXANGST, ORIGINYANGST]
+    ORIGINSANGST3D = [ORIGINXANGST, ORIGINYANGST, ORIGINZANGST]
     ANGLES = [ANGLEROT, ANGLETILT, ANGLEPSI]
     ALIGNMENTS = ANGLES + ORIGINS3D
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
@@ -98,6 +108,7 @@ class Relion:
     OPTICSGROUPTABLE = [BEAMTILTX, BEAMTILTY, OPTICSGROUPNAME, ODDZERNIKE, EVENZERNIKE,
                         MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
 
+    # Data tables.
     OPTICDATA = "data_optics"
     PARTICLEDATA = "data_particles"
 
@@ -523,7 +534,8 @@ def original_field(field):
 def check_defaults(df, inplace=False):
     df = df if inplace else df.copy()
     if Relion.PHASESHIFT not in df:
-        df[Relion.PHASESHIFT] = 0.0
+        df[Relion.PHASESHIFT] = 0
+
     if Relion.IMAGEPIXELSIZE in df:
         if Relion.DETECTORPIXELSIZE not in df and Relion.MAGNIFICATION not in df:
             df[Relion.DETECTORPIXELSIZE] = df[Relion.IMAGEPIXELSIZE]
@@ -532,6 +544,14 @@ def check_defaults(df, inplace=False):
             df[Relion.MAGNIFICATION] = df[Relion.DETECTORPIXELSIZE] / df[Relion.IMAGEPIXELSIZE] * 10000
         elif Relion.MAGNIFICATION in df:
             df[Relion.DETECTORPIXELSIZE] = df[Relion.MAGNIFICATION] * df[Relion.IMAGEPIXELSIZE] / 10000
+    elif Relion.DETECTORPIXELSIZE in df and Relion.MAGNIFICATION in df:
+        df[Relion.IMAGEPIXELSIZE] = df[Relion.DETECTORPIXELSIZE] * df[Relion.MAGNIFICATION] / 10000
+
+    for it in zip(Relion.ORIGINSANGST3D, Relion.ORIGINS3D):
+        if it[0] in df:
+            df[it[1]] = df[it[0]] / df[Relion.IMAGEPIXELSIZE]
+        elif it[1] in df:
+            df[it[0]] = df[it[1]] * df[Relion.IMAGEPIXELSIZE]
     return df
 
 
