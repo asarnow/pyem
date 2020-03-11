@@ -63,12 +63,12 @@ class Relion:
     CTFMAXRESOLUTION = "rlnCtfMaxResolution"
     CTFFIGUREOFMERIT = "rlnCtfFigureOfMerit"
     GROUPNUMBER = "rlnGroupNumber"
+    RANDOMSUBSET = "rlnRandomSubset"
+    AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
 
     # Relion 3 fields.
     OPTICSGROUP = "rlnOpticsGroup"
     OPTICSGROUPNAME = "rlnOpticsGroupName"
-    RANDOMSUBSET = "rlnRandomSubset"
-    AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
     ODDZERNIKE = "rlnOddZernike"
     EVENZERNIKE = "rlnEvenZernike"
     MAGMAT00 = "rlnMagMat00"
