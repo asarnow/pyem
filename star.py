@@ -238,9 +238,9 @@ def main(args):
 
     if args.auxout is not None and dfaux is not None:
         if not args.relion2:
-            star.remove_deprecated_relion2(dfaux, inplace=True)
+            df = star.remove_deprecated_relion2(dfaux, inplace=True)
         else:
-            star.remove_new_relion31(dfaux, inplace=True)
+            df = star.remove_new_relion31(dfaux, inplace=True)
         star.write_star(args.auxout, dfaux, resort_records=args.sort, simplify=args.augment_output)
 
     if args.output is not None:

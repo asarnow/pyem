@@ -565,13 +565,13 @@ def check_defaults(df, inplace=False):
 
 def remove_deprecated_relion2(df, inplace=False):
     df = df if inplace else df.copy()
-    df = df.drop(Relion.RELION2, axis=1, inplace=True, errors="ignore")
+    df.drop(Relion.RELION2, axis=1, inplace=True, errors="ignore")
     return df
 
 
 def remove_new_relion31(df, inplace=False):
     df = df if inplace else df.copy()
-    df = df.drop(Relion.RELION31, axis=1, inplace=True, errors="ignore")
+    df.drop(Relion.RELION31, axis=1, inplace=True, errors="ignore")
     return df
 
 
