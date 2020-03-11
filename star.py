@@ -239,18 +239,18 @@ def main(args):
     if args.auxout is not None and dfaux is not None:
         if not args.relion2:
             df = star.remove_deprecated_relion2(dfaux, inplace=True)
-            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=False)
+            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=True)
         else:
             df = star.remove_new_relion31(dfaux, inplace=True)
-            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=True)
+            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=False)
 
     if args.output is not None:
-        if not args.relion2:
+        if not args.relion2:  # Relion 3.1 style output.
             df = star.remove_deprecated_relion2(df, inplace=True)
-            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=False)
+            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=True)
         else:
             df = star.remove_new_relion31(df, inplace=True)
-            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=True)
+            star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=False)
     return 0
 
 
