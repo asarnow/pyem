@@ -380,7 +380,7 @@ def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
     return dfs
 
 
-def write_star_table(starfile, df, table="data_", resort_fields=True):
+def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     if not indexed:
         if resort_fields:
@@ -388,7 +388,7 @@ def write_star_table(starfile, df, table="data_", resort_fields=True):
         names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
         names = df.columns
-    with open(starfile, 'a+') as f:
+    with open(starfile, mode) as f:
         f.write('\n')
         f.write(table + '\n')
         f.write('\n')
@@ -401,8 +401,9 @@ def write_star_table(starfile, df, table="data_", resort_fields=True):
 
 
 def write_star_tables(starfile, dfs, resort_fields=True):
-    for t in dfs:
-        write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields)
+    for i, t in enumerate(dfs):
+        mode = 'w' if i == 0 else 'a+'
+        write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
 
 
 def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
