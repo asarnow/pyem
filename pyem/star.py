@@ -101,9 +101,11 @@ class Relion:
                    COORDS + ALIGNMENTS + MICROSCOPE_PARAMS + CTF_PARAMS + \
                   [CLASS + GROUPNUMBER + RANDOMSUBSET]
 
-    RELION3 = [BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, OPTICSGROUP, OPTICSGROUPNAME,
-               ODDZERNIKE, EVENZERNIKE, MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11,
-               IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
+    RELION2 = ORIGINS3D + [MAGNIFICATION, DETECTORPIXELSIZE, BEAMTILTCLASS]
+
+    RELION31 = [BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, OPTICSGROUP, OPTICSGROUPNAME,
+                ODDZERNIKE, EVENZERNIKE, MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11,
+                IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
 
     OPTICSGROUPTABLE = [BEAMTILTX, BEAMTILTY, OPTICSGROUPNAME, ODDZERNIKE, EVENZERNIKE,
                         MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION]
@@ -552,6 +554,24 @@ def check_defaults(df, inplace=False):
             df[it[1]] = df[it[0]] / df[Relion.IMAGEPIXELSIZE]
         elif it[1] in df:
             df[it[0]] = df[it[1]] * df[Relion.IMAGEPIXELSIZE]
+
+    if Relion.OPTICSGROUPNAME in df and Relion.OPTICSGROUP not in df:
+        df[Relion.OPTICSGROUP] = df[Relion.OPTICSGROUPNAME].astype('category').cat.codes
+
+    if Relion.BEAMTILTCLASS in df and Relion.OPTICSGROUP not in df:
+        df[Relion.OPTICSGROUP] = df[Relion.BEAMTILTCLASS]
+    return df
+
+
+def remove_deprecated_relion2(df, inplace=False):
+    df = df if inplace else df.copy()
+    df = df.drop(Relion.RELION2, axis=1, inplace=True, errors="ignore")
+    return df
+
+
+def remove_new_relion31(df, inplace=False):
+    df = df if inplace else df.copy()
+    df = df.drop(Relion.RELION31, axis=1, inplace=True, errors="ignore")
     return df
 
 

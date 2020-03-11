@@ -237,9 +237,17 @@ def main(args):
         return 0
 
     if args.auxout is not None and dfaux is not None:
+        if not args.relion2:
+            star.remove_deprecated_relion2(dfaux, inplace=True)
+        else:
+            star.remove_new_relion31(dfaux, inplace=True)
         star.write_star(args.auxout, dfaux, resort_records=args.sort, simplify=args.augment_output)
 
     if args.output is not None:
+        if not args.relion2:
+            df = star.remove_deprecated_relion2(df, inplace=True)
+        else:
+            df = star.remove_new_relion31(df, inplace=True)
         star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output)
     return 0
 
@@ -323,6 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("--invert-hand", help="Alter Euler angles to invert handedness of reconstruction",
                         action="store_true")
     parser.add_argument("--sort", help="Natsort the output file", action="store_true")
+    parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
     parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))

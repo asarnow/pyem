@@ -77,7 +77,7 @@ def main(args):
         df = star.transform_star(df, r, inplace=True)
     
     if args.relion2:
-        df.drop(df.columns.intersection(star.Relion.RELION3), axis=1, inplace=True)
+        df.drop(df.columns.intersection(star.Relion.RELION31), axis=1, inplace=True)
 
     # Write Relion .star file with correct headers.
     star.write_star(args.output, df, resort_records=True)
