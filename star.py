@@ -241,14 +241,14 @@ def main(args):
             df = star.remove_deprecated_relion2(dfaux, inplace=True)
         else:
             df = star.remove_new_relion31(dfaux, inplace=True)
-        star.write_star(args.auxout, dfaux, resort_records=args.sort, simplify=args.augment_output)
+        star.write_star(args.auxout, dfaux, resort_records=args.sort, simplify=args.augment_output, optics=not args.relion2)
 
     if args.output is not None:
         if not args.relion2:
             df = star.remove_deprecated_relion2(df, inplace=True)
         else:
             df = star.remove_new_relion31(df, inplace=True)
-        star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output)
+        star.write_star(args.output, df, resort_records=args.sort, simplify=args.augment_output, optics=not args.relion2)
     return 0
 
 

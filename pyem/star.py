@@ -113,6 +113,7 @@ class Relion:
     # Data tables.
     OPTICDATA = "data_optics"
     PARTICLEDATA = "data_particles"
+    IMAGEDATA = "data_images"
 
 
 class UCSF:
@@ -379,13 +380,7 @@ def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
     return dfs
 
 
-def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True):
-    if not starfile.endswith(".star"):
-        starfile += ".star"
-    if resort_records:
-        df = sort_records(df, inplace=True)
-    if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
-        df = simplify_star_ucsf(df)
+def write_star_table(starfile, df, table="data_", resort_fields=True, resort_records=False):
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     if not indexed:
         if resort_fields:
@@ -393,9 +388,9 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
         names = df.columns
-    with open(starfile, 'w') as f:
+    with open(starfile, 'a') as f:
         f.write('\n')
-        f.write("data_images" + '\n')
+        f.write(table + '\n')
         f.write('\n')
         f.write("loop_" + '\n')
         for name in names:
@@ -403,6 +398,30 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
             line = line if line.startswith('_') else '_' + line
             f.write(line)
     df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
+
+
+def write_star_tables(starfile, dfs, resort_fields=True):
+    for t in dfs:
+        write_star_table(starfile, dfs[t], resort_fields=resort_fields)
+
+
+def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
+    if not starfile.endswith(".star"):
+        starfile += ".star"
+    if resort_records:
+        df = sort_records(df, inplace=True)
+    if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
+        df = simplify_star_ucsf(df)
+
+    data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.IMAGEDATA
+    if optics:
+        gb = df.groupby(Relion.OPTICSGROUP)
+        df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].mean().reset_index(drop=False)
+        df = df.drop(Relion.OPTICSGROUPTABLE, axis=1, errors="ignore")
+        dfs = {Relion.OPTICDATA: df_optics, data_table: df}
+        write_star_tables(starfile, dfs, resort_fields=resort_fields)
+    else:
+        write_star_table(starfile, df, table=data_table, resort_fields=resort_fields)
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
@@ -554,6 +573,11 @@ def check_defaults(df, inplace=False):
             df[it[1]] = df[it[0]] / df[Relion.IMAGEPIXELSIZE]
         elif it[1] in df:
             df[it[0]] = df[it[1]] * df[Relion.IMAGEPIXELSIZE]
+
+    if Relion.ORIGINZANGST in df:
+        df[Relion.IMAGEDIMENSION] = 3
+    else:
+        df[Relion.IMAGEDIMENSION] = 2
 
     if Relion.OPTICSGROUPNAME in df and Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = df[Relion.OPTICSGROUPNAME].astype('category').cat.codes
