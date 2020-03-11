@@ -66,7 +66,7 @@ class Relion:
 
     # Relion 3 fields.
     OPTICSGROUP = "rlnOpticsGroup"
-    OPTICSGROUPNAME = "rlnOpticsName"
+    OPTICSGROUPNAME = "rlnOpticsGroupName"
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
     ODDZERNIKE = "rlnOddZernike"
@@ -380,7 +380,7 @@ def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
     return dfs
 
 
-def write_star_table(starfile, df, table="data_", resort_fields=True, resort_records=False):
+def write_star_table(starfile, df, table="data_", resort_fields=True):
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     if not indexed:
         if resort_fields:
@@ -402,7 +402,7 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, resort_rec
 
 def write_star_tables(starfile, dfs, resort_fields=True):
     for t in dfs:
-        write_star_table(starfile, dfs[t], resort_fields=resort_fields)
+        write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields)
 
 
 def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
@@ -417,7 +417,7 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
     if optics:
         gb = df.groupby(Relion.OPTICSGROUP)
         df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].mean().reset_index(drop=False)
-        df = df.drop(Relion.OPTICSGROUPTABLE, axis=1, errors="ignore")
+        df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
         dfs = {Relion.OPTICDATA: df_optics, data_table: df}
         write_star_tables(starfile, dfs, resort_fields=resort_fields)
     else:
@@ -589,13 +589,13 @@ def check_defaults(df, inplace=False):
 
 def remove_deprecated_relion2(df, inplace=False):
     df = df if inplace else df.copy()
-    df.drop(Relion.RELION2, axis=1, inplace=True, errors="ignore")
+    df.drop(columns=Relion.RELION2, inplace=True, errors="ignore")
     return df
 
 
 def remove_new_relion31(df, inplace=False):
     df = df if inplace else df.copy()
-    df.drop(Relion.RELION31, axis=1, inplace=True, errors="ignore")
+    df.drop(columns=Relion.RELION31, inplace=True, errors="ignore")
     return df
 
 
