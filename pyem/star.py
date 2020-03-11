@@ -388,7 +388,7 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, resort_rec
         names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
         names = df.columns
-    with open(starfile, 'a') as f:
+    with open(starfile, 'a+') as f:
         f.write('\n')
         f.write(table + '\n')
         f.write('\n')
