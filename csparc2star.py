@@ -75,15 +75,15 @@ def main(args):
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
-    
-    if args.relion2:
-        df.drop(df.columns.intersection(star.Relion.RELION31), axis=1, inplace=True)
 
-    # Write Relion .star file with correct headers.
-    if star.is_particle_star(df):
-        star.write_star(args.output, df, resort_records=True)
+    star.check_defaults(df)
+
+    if args.relion2:
+        df = star.remove_new_relion31(df, inplace=True)
     else:
-        star.write_star(args.output, df, resort_records=True, optics=False)
+        df = star.remove_deprecated_relion2(df, inplace=True)
+
+    star.write_star(args.output, df, resort_records=True)
     log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 
