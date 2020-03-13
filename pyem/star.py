@@ -351,7 +351,7 @@ def star_table_offsets(starfile):
                 data_line = ln
             if blank_terminates and in_table and l == "\n":  # Allow blankline to terminate table.
                 in_table = False
-                tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
+                tables[table_name] = (offset, lineno, ln - 1, ln - data_line)
             l = f.readline()  # Read next line.
             ln += 1  # Increment line number.
         if in_table and table_name not in tables:
@@ -416,6 +416,8 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
 
     data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.IMAGEDATA
     if optics:
+        if Relion.OPTICSGROUP not in df:
+            df[Relion.OPTICSGROUP] = 1
         gb = df.groupby(Relion.OPTICSGROUP)
         df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].mean().reset_index(drop=False)
         df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
