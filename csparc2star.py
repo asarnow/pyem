@@ -80,7 +80,10 @@ def main(args):
         df.drop(df.columns.intersection(star.Relion.RELION31), axis=1, inplace=True)
 
     # Write Relion .star file with correct headers.
-    star.write_star(args.output, df, resort_records=True)
+    if star.is_particle_star(df):
+        star.write_star(args.output, df, resort_records=True)
+    else:
+        star.write_star(args.output, df, resort_records=True, optics=False)
     log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 
