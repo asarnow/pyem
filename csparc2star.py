@@ -80,10 +80,11 @@ def main(args):
 
     if args.relion2:
         df = star.remove_new_relion31(df, inplace=True)
+        star.write_star(args.output, df, resort_records=True, optics=False)
     else:
         df = star.remove_deprecated_relion2(df, inplace=True)
+        star.write_star(args.output, df, resort_records=True, optics=True)
 
-    star.write_star(args.output, df, resort_records=True)
     log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 
