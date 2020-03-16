@@ -76,7 +76,7 @@ def main(args):
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
 
-    star.check_defaults(df)
+    df = star.check_defaults(df, inplace=True)
 
     if args.relion2:
         df = star.remove_new_relion31(df, inplace=True)
