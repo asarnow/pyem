@@ -349,7 +349,7 @@ def star_table_offsets(starfile):
                 in_loop = False
                 blank_terminates = True
                 data_line = ln
-            if blank_terminates and in_table and l == "\n":  # Allow blankline to terminate table.
+            if blank_terminates and in_table and l.isspace():  # Allow blankline to terminate table.
                 in_table = False
                 tables[table_name] = (offset, lineno, ln - 1, ln - data_line)
             l = f.readline()  # Read next line.
