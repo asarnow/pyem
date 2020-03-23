@@ -230,6 +230,10 @@ def main(args):
     if args.revert_original:
         df = star.revert_original(df, inplace=True)
 
+    if args.set_optics is not None:
+        tok = args.set_optics.split(",")
+        df = star.set_optics_groups(df, sep=tok[0], idx=int(tok[1]), inplace=True)
+
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
         for mg in dfs:
@@ -327,6 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
                         action="store_true")
     parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
+    parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
