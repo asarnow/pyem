@@ -426,7 +426,7 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         if Relion.OPTICSGROUP not in df:
             df[Relion.OPTICSGROUP] = 1
         gb = df.groupby(Relion.OPTICSGROUP)
-        df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].mean().reset_index(drop=False)
+        df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].first().reset_index(drop=False)
         df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
         dfs = {Relion.OPTICDATA: df_optics, data_table: df}
         write_star_tables(starfile, dfs, resort_fields=resort_fields)
