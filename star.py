@@ -233,6 +233,7 @@ def main(args):
     if args.set_optics is not None:
         tok = args.set_optics.split(",")
         df = star.set_optics_groups(df, sep=tok[0], idx=int(tok[1]), inplace=True)
+        df.dropna(axis=0, how="any", inplace=True)
 
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
