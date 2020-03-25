@@ -289,6 +289,12 @@ def scale_magnification(df, factor, inplace=False):
     return df
 
 
+def scale_apix(df, factor, inplace=False):
+    df = df if inplace else df.copy()
+    df[Relion.IMAGEPIXELSIZE] = df[Relion.IMAGEPIXELSIZE] * factor
+    return df
+
+
 def invert_hand(df, inplace=False):
     df = df if inplace else df.copy()
     df[Relion.ANGLEROT] = -df[Relion.ANGLEROT]

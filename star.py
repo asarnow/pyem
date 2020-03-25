@@ -164,6 +164,9 @@ def main(args):
     if args.scale_magnification is not None:
         star.scale_magnification(df, args.scale_magnfication, inplace=True)
 
+    if args.scale_apix is not None:
+        star.scale_apix(df, args.scale_apix, inplace=True)
+
     if args.recenter:
         df = star.recenter(df, inplace=True)
 
@@ -318,6 +321,8 @@ if __name__ == "__main__":
     parser.add_argument("--scale-origins", help="Factor to rescale particle origins",
                         type=float)
     parser.add_argument("--scale-magnification", help="Factor to rescale magnification (pixel size)",
+                        type=float)
+    parser.add_argument("--scale-apix", help="Factor to rescale image pixel size directly (Relion 3.1+)",
                         type=float)
     parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
                         action="store_true")
