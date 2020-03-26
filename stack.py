@@ -94,8 +94,12 @@ def main(args):
         df = pd.concat(dfs, join="inner")
         # df = pd.concat(dfs)
         # df = df.dropna(df, axis=1, how="any")
-        star.write_star(args.star, df)
-
+        if not args.relion2:  # Relion 3.1 style output.
+            df = star.remove_deprecated_relion2(df, inplace=True)
+            star.write_star(args.output, df, resort_records=False, simplify=args.augment_output, optics=True)
+        else:
+            df = star.remove_new_relion31(df, inplace=True)
+            star.write_star(args.output, df, resort_records=False, simplify=args.augment_output, optics=False)
     return 0
 
 
@@ -111,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("--stack-path", help="(PAR file only) Particle stack for input file")
     parser.add_argument("--class", "-c", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
+    parser.add_argument("--relion2", "-r2", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
