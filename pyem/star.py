@@ -305,7 +305,7 @@ def invert_hand(df, inplace=False):
 def set_optics_groups(df, sep="_", idx=4, inplace=False):
     df = df if inplace else df.copy()
     df[Relion.OPTICSGROUPNAME] = df[UCSF.MICROGRAPH_BASENAME].str.split(sep, expand=True).loc[:, idx]
-    df[Relion.OPTICSGROUP] = pd.Categorical(df[Relion.OPTICSGROUPNAME]).codes
+    df[Relion.OPTICSGROUP] = pd.Categorical(df[Relion.OPTICSGROUPNAME]).codes + 1
     return df
 
 
