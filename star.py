@@ -238,6 +238,15 @@ def main(args):
         df = star.set_optics_groups(df, sep=tok[0], idx=int(tok[1]), inplace=True)
         df.dropna(axis=0, how="any", inplace=True)
 
+    if args.drop_optics_group is not None:
+        idx = df[star.Relion.OPTICSGROUP].isin(args.drop_optics_group)
+        if not np.any(idx):
+            idx = df[star.Relion.OPTICSGROUPNAME].isin(args.drop_optics_group)
+        if not np.any(idx):
+            print("No group found to drop")
+            return 1
+        df = df.loc[~idx]
+
     if args.split_micrographs:
         dfs = star.split_micrographs(df)
         for mg in dfs:
@@ -295,6 +304,7 @@ if __name__ == "__main__":
     parser.add_argument("--drop-containing",
                         help="Drop fields containing string from output, may be passed multiple times",
                         action="append")
+    parser.add_argument("--drop-optics-group", help="Drop this optics group, may be passed multiple times", action="append")
     parser.add_argument("--info", help="Print information about initial file",
                         action="store_true")
     parser.add_argument("--invert", help="Invert field match conditions",
