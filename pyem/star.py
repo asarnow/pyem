@@ -112,6 +112,7 @@ class Relion:
 
     # Data tables.
     OPTICDATA = "data_optics"
+    MICROGRAPHDATA = "data_micrographs"
     PARTICLEDATA = "data_particles"
     IMAGEDATA = "data_images"
 
@@ -376,8 +377,19 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     tables = star_table_offsets(starfile)
     dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
            for t in tables}
-    if Relion.OPTICDATA in dfs and Relion.PARTICLEDATA in dfs:
-        df = pd.merge(dfs[Relion.OPTICDATA], dfs[Relion.PARTICLEDATA], on=Relion.OPTICSGROUP)
+    if Relion.OPTICDATA in dfs:
+        if Relion.PARTICLEDATA in dfs:
+            data_table = Relion.PARTICLEDATA
+        elif Relion.MICROGRAPHDATA in dfs:
+            data_table = Relion.MICROGRAPHDATA
+        elif Relion.IMAGEDATA in dfs:
+            data_table = Relion.IMAGEDATA
+        else:
+            data_table = None
+        if data_table is not None:
+            df = pd.merge(dfs[Relion.OPTICDATA], dfs[data_table], on=Relion.OPTICSGROUP)
+        else:
+            df = dfs[Relion.OPTICDATA]
     else:
         df = dfs[next(iter(dfs))]
     df = check_defaults(df, inplace=True)
@@ -426,18 +438,18 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         df = sort_records(df, inplace=True)
     if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
         df = simplify_star_ucsf(df)
-
-    data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.IMAGEDATA
+    
     if optics:
         if Relion.OPTICSGROUP not in df:
             df[Relion.OPTICSGROUP] = 1
         gb = df.groupby(Relion.OPTICSGROUP)
         df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].first().reset_index(drop=False)
         df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
+        data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.MICROGRAPHDATA
         dfs = {Relion.OPTICDATA: df_optics, data_table: df}
         write_star_tables(starfile, dfs, resort_fields=resort_fields)
     else:
-        write_star_table(starfile, df, table=data_table, resort_fields=resort_fields)
+        write_star_table(starfile, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
