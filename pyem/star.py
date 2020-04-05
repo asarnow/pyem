@@ -81,6 +81,9 @@ class Relion:
     ORIGINXANGST = "rlnOriginXAngst"
     ORIGINYANGST = "rlnOriginYAngst"
     ORIGINZANGST = "rlnOriginZAngst"
+    MICROGRAPHPIXELSIZE = "rlnMicrographPixelSize"
+    MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
+    MTFFILENAME = "rlnMtfFileName"
 
     # Field lists.
     COORDS = [COORDX, COORDY]
@@ -183,8 +186,16 @@ def is_particle_star(df):
 def calculate_apix(df):
     try:
         if df.ndim == 2:
+            if Relion.IMAGEPIXELSIZE in df:
+                return df.iloc[0][Relion.IMAGEPIXELSIZE]
+            if Relion.MICROGRAPHPIXELSIZE in df:
+                return df.iloc[0][Relion.MICROGRAPHPIXELSIZE]
             return 10000.0 * df.iloc[0][Relion.DETECTORPIXELSIZE] / df.iloc[0][Relion.MAGNIFICATION]
         elif df.ndim == 1:
+            if Relion.IMAGEPIXELSIZE in df:
+                return df[Relion.IMAGEPIXELSIZE]
+            if Relion.MICROGRAPHPIXELSIZE in df:
+                return df[Relion.MICROGRAPHPIXELSIZE]
             return 10000.0 * df[Relion.DETECTORPIXELSIZE] / df[Relion.MAGNIFICATION]
         else:
             raise ValueError
