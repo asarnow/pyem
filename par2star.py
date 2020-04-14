@@ -46,9 +46,16 @@ def main(args):
     df = df.drop_duplicates("C", keep="last")
     df = df.sort_values(by="C")
 
+    if args.min_score is not None:
+        if args.min_score < 1:
+            args.min_score = np.percentile(df["SCORE"], (1 - args.min_score) * 100)
+        df = df.loc[df["SCORE"] >= args.min_score]
+
     df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
                            ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
-    
+
+    # TODO Merge with original .star file here
+
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
@@ -67,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--cs", help="Spherical abberation", type=float)
     parser.add_argument("--voltage", "--kv", "-v", help="Acceleration voltage (kV)", type=float)
     parser.add_argument("--min-occ", help="Minimum occupancy for inclusion in output", type=float)
+    parser.add_argument("--min-score", help="Minimum score (or percentile if < 1) for inclusion in output", type=float)
     parser.add_argument("--class", "-c", help="Classes to preserve in output", action="append", dest="cls")
     parser.add_argument("--relion", help=argparse.SUPPRESS, action="store_true")
     parser.add_argument("--invert-eulers", help="Invert Euler angles (generally unnecessary)", action="store_true")
