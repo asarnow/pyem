@@ -99,10 +99,10 @@ def main(args):
         # df = df.dropna(df, axis=1, how="any")
         if not args.relion2:  # Relion 3.1 style output.
             df = star.remove_deprecated_relion2(df, inplace=True)
-            star.write_star(args.output, df, resort_records=False, optics=True)
+            star.write_star(args.star, df, resort_records=False, optics=True)
         else:
             df = star.remove_new_relion31(df, inplace=True)
-            star.write_star(args.output, df, resort_records=False, optics=False)
+            star.write_star(args.star, df, resort_records=False, optics=False)
     return 0
 
 
