@@ -49,11 +49,14 @@ def main(args):
                 if args.cls is not None:
                     df = star.select_classes(df, args.cls)
                 star.set_original_fields(df, inplace=True)
-                df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
-                                     star.UCSF.IMAGE_ORIGINAL_INDEX])
+                if args.resort:
+                    df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
+                                         star.UCSF.IMAGE_ORIGINAL_INDEX])
                 gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
                 for name, g in gb:
-                    with mrc.ZSliceReader(name) as reader:
+                    if args.stack_path is not None:
+                        input_stack_path = os.path.join(args.stack_path, name)
+                    with mrc.ZSliceReader(input_stack_path) as reader:
                         for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX].values:
                             writer.write(reader.read(i))
             elif fn.endswith(".par"):
@@ -118,4 +121,5 @@ if __name__ == "__main__":
     parser.add_argument("--relion2", "-r2", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
+    parser.add_argument("--resort", help="Natural sort the particle image names", action="store_true")
     sys.exit(main(parser.parse_args()))
