@@ -162,7 +162,7 @@ def main(args):
         star.scale_origins(df, args.scale_origins, inplace=True)
 
     if args.scale_magnification is not None:
-        star.scale_magnification(df, args.scale_magnfication, inplace=True)
+        star.scale_magnification(df, args.scale_magnification, inplace=True)
 
     if args.scale_apix is not None:
         star.scale_apix(df, args.scale_apix, inplace=True)
