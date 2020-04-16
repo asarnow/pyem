@@ -56,6 +56,8 @@ def main(args):
                 for name, g in gb:
                     if args.stack_path is not None:
                         input_stack_path = os.path.join(args.stack_path, name)
+                    else:
+                        input_stack_path = name
                     with mrc.ZSliceReader(input_stack_path) as reader:
                         for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX].values:
                             writer.write(reader.read(i))
