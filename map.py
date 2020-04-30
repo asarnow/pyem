@@ -41,6 +41,13 @@ def main(args):
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
     data, hdr = read(args.input, inc_header=True)
+    if args.half2 is not None:
+        half2, hdr_half2 = read(args.input, inc_header=True)
+        if data.shape == half2.shape:
+            data += half2
+        else:
+            log.error("--half2 map is not the same shape as input map!")
+            return 1
     final = None
     box = np.array([hdr[a] for a in ["nx", "ny", "nz"]])
     center = box // 2
@@ -67,7 +74,6 @@ def main(args):
             final, mu, sigma = vop.normalize(data, ref=ref, return_stats=True)
         else:
             final, mu, sigma = vop.normalize(data, return_stats=True)
-        final = (data - mu) / sigma
         log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
 
     if args.apix is None:
@@ -212,5 +218,6 @@ if __name__ == "__main__":
     parser.add_argument("--spline-order",
                         help="Order of spline interpolation (0 for nearest, 1 for trilinear, default is cubic)",
                         type=int, default=3, choices=np.arange(6))
+    parser.add_argument("--half2", help="A second map, which will be added to the input map prior to other operations")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
