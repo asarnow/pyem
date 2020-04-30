@@ -197,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
-    parser.add_argument("--mask", help="Final mask (applied before scaling)", dest="final_mask")
+    parser.add_argument("--mask", help="Final mask (applied after normalization, but before scaling)", dest="final_mask")
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
