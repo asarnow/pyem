@@ -51,15 +51,31 @@ def main(args):
             args.min_score = np.percentile(df["SCORE"], (1 - args.min_score) * 100)
         df = df.loc[df["SCORE"] >= args.min_score]
 
-    df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
-                           ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
-
-    # TODO Merge with original .star file here
+    if args.merge is not None:
+        dfo = star.parse_star(args.merge)
+        if args.stack is None:
+            args.stack = dfo.iloc[0][star.UCSF.IMAGE_PATH]
+        args.apix = star.calculate_apix(dfo)
+        args.cs = dfo.iloc[0][star.Relion.CS]
+        args.ac = dfo.iloc[0][star.Relion.AC]
+        args.voltage = dfo.iloc[0][star.Relion.VOLTAGE]
+        df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
+                               ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
+        key = [star.UCSF.IMAGE_INDEX, star.UCSF.IMAGE_PATH]
+        fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_ORIGINAL_INDEX, star.UCSF.IMAGE_ORIGINAL_PATH]
+        df = star.smart_merge(df, dfo, fields=fields, key=key)
+        if args.revert_original:
+            df = star.revert_original(df, inplace=True)
+    else:
+        df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
+                               ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
-    star.write_star(args.output, df)
+    df = star.check_defaults(df, inplace=True)
+    df = star.compatible(df, relion2=args.relion2, inplace=True)
+    star.write_star(args.output, df, optics=(not args.relion2))
     return 0
 
 
@@ -68,15 +84,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Frealign .par file", nargs="*")
     parser.add_argument("output", help="Output Relion .star file")
+    parser.add_argument("--merge", "-m", help="Merge this .star file")
     parser.add_argument("--stack", "-s", help="Particle stack path")
     parser.add_argument("--apix", "--angpix", help="Pixel size in Angstroms", type=float)
-    parser.add_argument("--ac", help="Amplitude contrast", type=float)
-    parser.add_argument("--cs", help="Spherical abberation", type=float)
-    parser.add_argument("--voltage", "--kv", "-v", help="Acceleration voltage (kV)", type=float)
+    parser.add_argument("--ac", "-ac", help="Amplitude contrast", type=float)
+    parser.add_argument("--cs", "-cs", help="Spherical abberation", type=float)
+    parser.add_argument("--voltage", "--kv", "-kv", help="Acceleration voltage (kV)", type=float)
     parser.add_argument("--min-occ", help="Minimum occupancy for inclusion in output", type=float)
     parser.add_argument("--min-score", help="Minimum score (or percentile if < 1) for inclusion in output", type=float)
     parser.add_argument("--class", "-c", help="Classes to preserve in output", action="append", dest="cls")
-    parser.add_argument("--relion", help=argparse.SUPPRESS, action="store_true")
+    parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
+    parser.add_argument("--revert-original", "-v", help="Swap ImageName and ImageOriginalName before writing",
+                        action="store_true")
     parser.add_argument("--invert-eulers", help="Invert Euler angles (generally unnecessary)", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
