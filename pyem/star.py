@@ -643,8 +643,8 @@ def remove_new_relion31(df, inplace=False):
 
 def compatible(df, version=None, inplace=False, relion2=False):
     df = df if inplace else df.copy()
-    if version is None and relion2:
-        version = 30
+    if version is None:
+        version = 30 if relion2 else 31
     if version < 10:
         version = int(10 * version)
     if version < 30:
