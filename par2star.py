@@ -54,7 +54,8 @@ def main(args):
     if args.merge is not None:
         dfo = star.parse_star(args.merge)
         if args.stack is None:
-            args.stack = dfo.iloc[0][star.UCSF.IMAGE_PATH]
+            df[star.UCSF.IMAGE_INDEX] = dfo[star.UCSF.IMAGE_INDEX]
+            df[star.UCSF.IMAGE_INDEX] = dfo[star.UCSF.IMAGE_PATH]
         args.apix = star.calculate_apix(dfo)
         args.cs = dfo.iloc[0][star.Relion.CS]
         args.ac = dfo.iloc[0][star.Relion.AC]
