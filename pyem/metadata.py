@@ -147,20 +147,18 @@ def par2star(par, data_path, apix=1.0, cs=2.0, ac=0.07, kv=300, invert_eulers=Tr
     df.columns = rlnheaders
     df[star.UCSF.IMAGE_INDEX] = par["C"] - 1
     df[star.UCSF.IMAGE_PATH] = data_path
-    df[star.Relion.DETECTORPIXELSIZE] = apix
-    df[star.Relion.MAGNIFICATION] = 10000.0
+    df[star.Relion.IMAGEPIXELSIZE] = apix
     df[star.Relion.CS] = cs
     df[star.Relion.AC] = ac
     df[star.Relion.VOLTAGE] = kv
-    df[star.Relion.ORIGINX] = -par["SHX"] / apix
-    df[star.Relion.ORIGINY] = -par["SHY"] / apix
+    df[star.Relion.ORIGINXANGST] = -par["SHX"]
+    df[star.Relion.ORIGINYANGST] = -par["SHY"]
     if invert_eulers:
         df[star.Relion.ANGLEROT] = -par["PSI"]
         df[star.Relion.ANGLETILT] = -par["THETA"]
         df[star.Relion.ANGLEPSI] = -par["PHI"]
     else:
         df[star.Relion.ANGLES] = par[["PHI", "THETA", "PSI"]]
-    star.simplify_star_ucsf(df)
     return df
 
 
