@@ -104,7 +104,9 @@ class Relion:
                    COORDS + ALIGNMENTS + MICROSCOPE_PARAMS + CTF_PARAMS + \
                   [CLASS + GROUPNUMBER + RANDOMSUBSET + OPTICSGROUP]
 
-    RELION2 = ORIGINS3D + [MAGNIFICATION, DETECTORPIXELSIZE, BEAMTILTCLASS]
+    RELION2 = ORIGINS3D + [MAGNIFICATION, DETECTORPIXELSIZE]
+
+    RELION30 = [BEAMTILTCLASS]
 
     RELION31 = ORIGINSANGST3D + [BEAMTILTX, BEAMTILTY, OPTICSGROUP, OPTICSGROUPNAME,
                 ODDZERNIKE, EVENZERNIKE, MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11,
@@ -545,7 +547,7 @@ def augment_star_ucsf(df, inplace=True):
     return df
 
 
-def simplify_star_ucsf(df, resort_index=False, inplace=True):
+def simplify_star_ucsf(df, resort_index=False, inplace=True, drop=True):
     df = df if inplace else df.copy()
     if UCSF.IMAGE_ORIGINAL_INDEX in df and UCSF.IMAGE_ORIGINAL_PATH in df:
         df[Relion.IMAGE_ORIGINAL_NAME] = df[UCSF.IMAGE_ORIGINAL_INDEX].map(
@@ -554,12 +556,13 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True):
     if UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH in df:
         df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
-    df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
-            axis=1, inplace=True)
+    if drop:
+        df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
+                axis=1, inplace=True)
     if resort_index and "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
-    elif "index" in df.columns:
+    elif drop and "index" in df.columns:
         df.drop("index", axis=1, inplace=True)
     return df
 
@@ -628,13 +631,28 @@ def check_defaults(df, inplace=False):
 
 def remove_deprecated_relion2(df, inplace=False):
     df = df if inplace else df.copy()
-    df.drop(columns=Relion.RELION2, inplace=True, errors="ignore")
+    df.drop(columns=Relion.RELION2 + Relion.RELION30, inplace=True, errors="ignore")
     return df
 
 
 def remove_new_relion31(df, inplace=False):
     df = df if inplace else df.copy()
     df.drop(columns=Relion.RELION31, inplace=True, errors="ignore")
+    return df
+
+
+def compatible(df, version=None, inplace=False, relion2=False):
+    df = df if inplace else df.copy()
+    if version is None and relion2:
+        version = 30
+    if version < 10:
+        version = int(10 * version)
+    if version < 30:
+        df.drop(columns=Relion.RELION30 + Relion.RELION31, inplace=True, errors="ignore")
+    if version == 30:
+        df.drop(columns=Relion.RELION31, inplace=True, errors="ignore")
+    if version >= 31:
+        df.drop(columns=Relion.RELION2 + Relion.RELION30, inplace=True, errors="ignore")
     return df
 
 
