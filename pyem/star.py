@@ -141,12 +141,16 @@ def smart_merge(s1, s2, fields, key=None, left_key=None):
     if left_key is None:
         left_key = key
     s2 = s2.set_index(key, drop=False)
-    s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=left_key, right_index=True, suffixes=["_x", ""])
-    x = [c for c in s1.columns if "_x" in c]
-    if len(x) > 0:
-        y = [c.split("_")[0] for c in s1.columns if c in x]
-        s1[y] = s1[y].fillna(s1[x])
-        s1 = s1.drop(x, axis=1)
+    s1 = s1.merge(s2[s2.columns.intersection(fields)], left_on=left_key, right_index=True, suffixes=["", "_y"])
+    y = [c for c in s1.columns if "_y" in c]  # Columns duplicated in the merge source.
+    if len(y) > 0:
+        x = [c.split("_")[0] for c in s1.columns if c in y]  # Corresponding original columns.
+        for xi, yi in zip(x, y):
+            if xi in fields:  # Use values from merge source, default to original values.
+                s1[xi] = s1[yi].fillna(s1[xi])
+            else:  # Use original values, default to merge source values.
+                s1[xi] = s1[xi].fillna(s1[yi])
+        s1 = s1.drop(y, axis=1)
     return s1.reset_index(drop=True)
 
 
