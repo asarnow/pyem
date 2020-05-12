@@ -53,15 +53,15 @@ def main(args):
 
     if args.merge is not None:
         dfo = star.parse_star(args.merge)
-        if args.stack is None:
-            df[star.UCSF.IMAGE_INDEX] = dfo[star.UCSF.IMAGE_INDEX]
-            df[star.UCSF.IMAGE_PATH] = dfo[star.UCSF.IMAGE_PATH]
         args.apix = star.calculate_apix(dfo)
         args.cs = dfo.iloc[0][star.Relion.CS]
         args.ac = dfo.iloc[0][star.Relion.AC]
         args.voltage = dfo.iloc[0][star.Relion.VOLTAGE]
         df = metadata.par2star(df, data_path=args.stack, apix=args.apix, cs=args.cs,
                                ac=args.ac, kv=args.voltage, invert_eulers=args.invert_eulers)
+        if args.stack is None:
+            df[star.UCSF.IMAGE_INDEX] = dfo[star.UCSF.IMAGE_INDEX]
+            df[star.UCSF.IMAGE_PATH] = dfo[star.UCSF.IMAGE_PATH]
         key = [star.UCSF.IMAGE_INDEX, star.UCSF.IMAGE_PATH]
         fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_ORIGINAL_INDEX, star.UCSF.IMAGE_ORIGINAL_PATH]
         df = star.smart_merge(df, dfo, fields=fields, key=key)
