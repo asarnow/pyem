@@ -52,15 +52,14 @@ def main(args):
                 if args.resort:
                     df = df.sort_values([star.UCSF.IMAGE_ORIGINAL_PATH,
                                          star.UCSF.IMAGE_ORIGINAL_INDEX])
-                gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
-                for name, g in gb:
+                for idx, row in df.iterrows():
                     if args.stack_path is not None:
-                        input_stack_path = os.path.join(args.stack_path, name)
+                        input_stack_path = os.path.join(args.stack_path, row[star.UCSF.IMAGE_ORIGINAL_PATH])
                     else:
-                        input_stack_path = name
+                        input_stack_path = row[star.UCSF.IMAGE_ORIGINAL_PATH]
                     with mrc.ZSliceReader(input_stack_path) as reader:
-                        for i in g[star.UCSF.IMAGE_ORIGINAL_INDEX].values:
-                            writer.write(reader.read(i))
+                        i = row[star.UCSF.IMAGE_ORIGINAL_INDEX]
+                        writer.write(reader.read(i))
             elif fn.endswith(".par"):
                 if args.stack_path is None:
                     log.error(".par file input requires --stack-path")
