@@ -398,7 +398,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             if len(names) > 0:
                 ptdf = util.dataframe_from_records_mapped(pt, {**general, **micrograph})
                 ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
-                ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
+                # ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
                 key = star.UCSF.UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
