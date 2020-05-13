@@ -45,6 +45,7 @@ def main(args):
     df = df.sort_values(by="OCC")
     df = df.drop_duplicates("C", keep="last")
     df = df.sort_values(by="C")
+    df.reset_index(inplace=True)
 
     if args.min_score is not None:
         if args.min_score < 1:
