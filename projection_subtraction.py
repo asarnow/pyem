@@ -1,5 +1,6 @@
-#!/usr/bin/env python2.7
-# Copyright (C) 2015 Eugene Palovcak, Daniel Asarnow
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright (C) 2015-2018 Daniel Asarnow, Eugene Palovcak
 # University of California, San Francisco
 #
 # Program for projection subtraction in electron microscopy.
@@ -17,217 +18,298 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import sys
-import os.path
+from __future__ import print_function
 import logging
-from pathos.multiprocessing import Pool
-from EMAN2 import EMANVERSION, EMArgumentParser, EMData, Transform, Vec3f
-from EMAN2star import StarFile
-from pyem.particle import particles, make_proj, MetaData
+import numba
+import numpy as np
+import os.path
+try:
+    import Queue
+except ImportError:
+    import queue
+import sys
+import threading
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool
+from numpy.fft import fftshift
+from pyem import mrc
+from pyem import star
+from pyem import algo
+from pyem import ctf
+from pyem import vop
+from pyem.geom.convert_numba import euler2rot
+from pyfftw.builders import rfft2
+from pyfftw.builders import irfft2
 
 
-def main(options):
+def main(args):
     """
     Projection subtraction program entry point.
-    :param options: Command-line arguments parsed by ArgumentParser.parse_args()
+    :param args: Command-line arguments parsed by ArgumentParser.parse_args()
     :return: Exit status
     """
-    rchop = lambda x, y: x if not x.endswith(y) or len(y) == 0 else x[:-len(y)]
-    options.output = rchop(options.output, ".star")
-    options.suffix = rchop(options.suffix, ".mrc")
-    options.suffix = rchop(options.suffix, ".mrcs")
+    log = logging.getLogger('root')
+    hdlr = logging.StreamHandler(sys.stdout)
+    log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    star = StarFile(options.input)
-    npart = len(star['rlnImageName'])
-    
-    sub_dens = EMData(options.submap)
+    if args.dest is None and args.suffix == "":
+        args.dest = ""
+        args.suffix = "_subtracted"
 
-    if options.wholemap is not None:
-        dens = EMData(options.wholemap)
+    log.info("Reading particle .star file")
+    df = star.parse_star(args.input, keep_index=False)
+    star.augment_star_ucsf(df)
+    if not args.original:
+        df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
+        df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
+    df.sort_values(star.UCSF.IMAGE_ORIGINAL_PATH, inplace=True, kind="mergesort")
+    gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
+    df[star.UCSF.IMAGE_INDEX] = gb.cumcount()
+    df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_ORIGINAL_PATH].map(
+        lambda x: os.path.join(
+            args.dest,
+            args.prefix +
+            os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
+
+    if args.submap_ft is None:
+        log.info("Reading volume")
+        submap = mrc.read(args.submap, inc_header=False, compat="relion")
+        if args.submask is not None:
+            log.info("Masking volume")
+            submask = mrc.read(args.submask, inc_header=False, compat="relion")
+            submap *= submask
+        log.info("Preparing 3D FFT of volume")
+        submap_ft = vop.vol_ft(submap, pfac=args.pfac, threads=min(args.threads, cpu_count()))
+        log.info("Finished 3D FFT of volume")
     else:
-        print "Reference map is required."
+        log.info("Loading 3D FFT from %s" % args.submap_ft)
+        submap_ft = np.load(args.submap_ft)
+        log.info("Loaded 3D FFT from %s" % args.submap_ft)
+
+    sz = (submap_ft.shape[0] - 3) // args.pfac
+
+    maxshift = np.round(np.max(np.abs(df[star.Relion.ORIGINS].values)))
+    if args.crop is not None and sz < 2 * maxshift + args.crop:
+        log.error("Some shifts are too large to crop (maximum crop is %d)" % (sz - 2 * maxshift))
         return 1
 
-    # Write star header for output.star.
-    top_header = "\ndata_\n\nloop_\n"
-    headings = star.keys()
-    output_star = open("{0}.star".format(options.output), 'w')
+    sx, sy = np.meshgrid(np.fft.rfftfreq(sz), np.fft.fftfreq(sz))
+    s = np.sqrt(sx ** 2 + sy ** 2)
+    r = s * sz
+    r = np.round(r).astype(np.int64)
+    r[r > sz // 2] = sz // 2 + 1
+    nr = np.max(r) + 1
+    a = np.arctan2(sy, sx)
 
-    output_star.write(top_header)
-    for i, heading in enumerate(headings):
-        output_star.write("_{0} #{1}\n".format(heading, i + 1))
-
-    if options.recenter:  # Compute difference vector between new and old mass centers.
-        if options.wholemap is None:
-            print "Reference map required for recentering."
-            return 1
-
-        new_dens = dens - sub_dens
-        # Note the sign of the shift in coordinate frame is opposite the shift in the CoM.
-        recenter = Vec3f(*dens.phase_cog()[:3]) - Vec3f(*new_dens.phase_cog()[:3])
+    if args.refmap is not None:
+        coefs_method = 1
+        if args.refmap_ft is None:
+            refmap = mrc.read(args.refmap, inc_header=False, compat="relion")
+            refmap_ft = vop.vol_ft(refmap, pfac=args.pfac, threads=min(args.threads, cpu_count()))
+        else:
+            log.info("Loading 3D FFT from %s" % args.refmap_ft)
+            refmap_ft = np.load(args.refmap_ft)
+            log.info("Loaded 3D FFT from %s" % args.refmap_ft)
     else:
-        recenter = None
+        coefs_method = 0
+        refmap_ft = np.empty(submap_ft.shape, dtype=submap_ft.dtype)
 
-    pool = None
-    if options.nproc > 1:  # Compute subtraction in parallel.
-        pool = Pool(processes=options.nproc)
-        results = pool.imap(
-            lambda x: subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc,
-                               low_cutoff=options.low_cutoff,
-                               high_cutoff=options.high_cutoff), particles(star),
-            chunksize=min(npart / options.nproc, options.maxchunk))
-    else:  # Use serial generator.
-        results = (subtract(x, dens, sub_dens, recenter=recenter, no_frc=options.no_frc, low_cutoff=options.low_cutoff,
-                            high_cutoff=options.high_cutoff) for x in particles(star))
+    apix = star.calculate_apix(df)
+    log.info("Computed pixel size is %f A" % apix)
 
-    # Write subtraction results to .mrcs and .star files.
-    i = 0
-    nfile = 1
-    starpath = None
-    mrcs = None
-    mrcs_orig = None
-    for r in results:
-        if i % options.maxpart == 0:
-            mrcsuffix = options.suffix + "_%d" % nfile
-            nfile += 1
-            starpath = "{0}.mrcs".format(
-                os.path.sep.join(os.path.relpath(mrcsuffix, options.output).split(os.path.sep)[1:]))
-            mrcs = "{0}.mrcs".format(mrcsuffix)
-            mrcs_orig = "{0}_original.mrcs".format(mrcsuffix)
-            if os.path.exists(mrcs):
-                os.remove(mrcs)
-            if os.path.exists(mrcs_orig):
-                os.remove(mrcs_orig)
+    log.debug("Grouping particles by output stack")
+    gb = df.groupby(star.UCSF.IMAGE_PATH)
 
-        r.ptcl_norm_sub.append_image(mrcs)
+    iothreads = threading.BoundedSemaphore(args.io_thread_pairs)
+    qsize = args.io_queue_length
+    fftthreads = args.fft_threads
 
-        if options.original:
-            r.ptcl.append_image(mrcs_orig)
+    def init():
+        global tls
+        tls = threading.local()
 
-        if logger.getEffectiveLevel() == logging.DEBUG:  # Write additional debug output.
-            ptcl_sub_img = r.ptcl.process("math.sub.optimal",
-                                          {"ref": r.ctfproj, "actual": r.ctfproj_sub, "return_subim": True})
-            ptcl_lowpass = r.ptcl.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
-            ptcl_sub_lowpass = r.ptcl_norm_sub.process("filter.lowpass.gauss", {"apix": 1.22, "cutoff_freq": 0.05})
-            ptcl_sub_img.write_image("poreclass_subimg.mrcs", -1)
-            ptcl_lowpass.write_image("poreclass_lowpass.mrcs", -1)
-            ptcl_sub_lowpass.write_image("poreclass_sublowpass.mrcs", -1)
-            r.ctfproj.write_image("poreclass_ctfproj.mrcs", -1)
-            r.ctfproj_sub.write_image("poreclass_ctfprojsub.mrcs", -1)
+    log.info("Instantiating thread pool with %d workers" % args.threads)
+    pool = Pool(processes=args.threads, initializer=init)
+    threads = []
+    
+    log.info("Performing projection subtraction")
 
-        assert r.meta.i == i  # Assert particle order is preserved.
-        star['rlnImageName'][i] = "{0:06d}@{1}".format(i % options.maxpart + 1, starpath)  # Set new image name.
-        r.meta.update(star)  # Update StarFile with altered fields.
-        line = '  '.join(str(star[key][i]) for key in headings)
-        output_star.write("{0}\n".format(line))
-        i += 1
+    try:
+        for fname, particles in gb:
+            log.debug("Instantiating queue")
+            queue = Queue.Queue(maxsize=qsize)
+            log.debug("Create producer for %s" % fname)
+            prod = threading.Thread(
+                target=producer,
+                args=(pool, queue, submap_ft, refmap_ft, fname, particles,
+                      sx, sy, s, a, apix, coefs_method, r, nr, fftthreads, args.crop, args.pfac))
+            log.debug("Create consumer for %s" % fname)
+            cons = threading.Thread(
+                target=consumer,
+                args=(queue, fname, apix, iothreads))
+            threads.append((prod, cons))
+            iothreads.acquire()
+            log.debug("iotheads at %d" % iothreads._Semaphore__value)
+            log.debug("Start consumer for %s" % fname)
+            cons.start()
+            log.debug("Start producer for %s" % fname)
+            prod.start()
+    except KeyboardInterrupt:
+        log.debug("Main thread wants out!")
 
-    output_star.close()
+    for pair in threads:
+        for thread in pair:
+            try:
+                thread.join()
+            except RuntimeError as e:
+                log.debug(e)
 
-    if pool is not None:
-        pool.close()
-        pool.join()
+    pool.close()
+    pool.join()
+    pool.terminate()
+
+    log.info("Finished projection subtraction")
+
+    log.info("Writing output .star file")
+    if args.crop is not None:
+        df = star.recenter(df, inplace=True)
+    star.simplify_star_ucsf(df)
+    star.write_star(args.output, df)
 
     return 0
 
 
-def subtract(particle, dens, sub_dens, recenter=None, no_frc=False, low_cutoff=0.0, high_cutoff=0.7071):
-    """
-    Perform projection subtraction on one particle image.
-    :param particle: Tuple holding original (particle EMData, particle MetaData)
-    :param dens: Whole density map
-    :param sub_dens: Subtraction density map
-    :param recenter: Vector between CoM before and after subtraction, or None to skip recenter operation (default None)
-    :param no_frc: Skip FRC normalization (default False)
-    :param low_cutoff: Low cutoff frequency in FRC normalization (default 0.0)
-    :param high_cutoff: High cutoff frequency in FRC normalization (default 0.7071)
-    :return: Result object
-    """
-    ptcl, meta = particle[0], particle[1]
-    ctfproj = make_proj(dens, meta)
-    ctfproj_sub = make_proj(sub_dens, meta)
+def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr, **kwargs):
+    log = logging.getLogger('root')
+    log.debug("%d@%s Exp %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r)))
+    ft = getattr(tls, 'ft', None)
+    if ft is None:
+        ft = rfft2(fftshift(p1r.copy()), threads=kwargs["fftthreads"],
+                   planner_effort="FFTW_ESTIMATE",
+                   overwrite_input=False,
+                   auto_align_input=True,
+                   auto_contiguous=True)
+        tls.ft = ft
+    if coefs_method >= 1:
+        p1 = ft(p1r.copy(), np.zeros(ft.output_shape, dtype=ft.output_dtype)).copy()
+    else:
+        p1 = np.empty(ft.output_shape, ft.output_dtype)
 
-    if no_frc:  # Direct subtraction only.
-        ptcl_sub = ptcl - ctfproj_sub
-    else:  # Per-particle FRC normalization.
-        ptcl_sub = ptcl.process("math.sub.optimal", {"ref": ctfproj, "actual": ctfproj_sub,
-                                                     "low_cutoff_frequency": low_cutoff,
-                                                     "high_cutoff_frequency": high_cutoff})
+    p1s = subtract(p1, submap_ft, refmap_ft, sx, sy, s, a, apix,
+                   ptcl[star.Relion.DEFOCUSU], ptcl[star.Relion.DEFOCUSV], ptcl[star.Relion.DEFOCUSANGLE],
+                   ptcl[star.Relion.PHASESHIFT], ptcl[star.Relion.VOLTAGE], ptcl[star.Relion.AC], ptcl[star.Relion.CS],
+                   ptcl[star.Relion.ANGLEROT], ptcl[star.Relion.ANGLETILT], ptcl[star.Relion.ANGLEPSI],
+                   ptcl[star.Relion.ORIGINX], ptcl[star.Relion.ORIGINY], coefs_method, r, nr, kwargs["pfac"])
 
-    ptcl_norm_sub = ptcl_sub.process("normalize")
-
-    if recenter is not None:
-        # Rotate the coordinate frame of the CoM difference vector by the Euler angles.
-        t = Transform()
-        t.set_rotation({'psi': meta.psi, 'phi': meta.phi, 'theta': meta.theta, 'type': 'spider'})
-        shift = t.transform(recenter)
-        # The change in the origin is the projection of the transformed difference vector on the new xy plane.
-        meta.x_origin += shift[0]
-        meta.y_origin += shift[1]
-
-    return Result(ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub)
-
-
-class Result:
-    """
-    Class representing the metadata, intermediate calculation and final result of a subtraction operation.
-    """
-
-    def __init__(self, ptcl, meta, ctfproj, ctfproj_sub, ptcl_sub, ptcl_norm_sub):
-        """
-        Instantiate Result object.
-        :param ptcl: Original particle EMData object
-        :param meta: Original particle MetaData object
-        :param ctfproj: CTF-filtered projection of whole map
-        :param ctfproj_sub: CTF-filtered projection of subtraction map
-        :param ptcl_sub: Subtracted particle EMData object
-        :param ptcl_norm_sub: Normalized, subtracted particle EMData object
-        """
-        self.ptcl = ptcl
-        self.meta = meta
-        self.ctfproj = ctfproj
-        self.ctfproj_sub = ctfproj_sub
-        self.ptcl_sub = ptcl_sub
-        self.ptcl_norm_sub = ptcl_norm_sub
+    ift = getattr(tls, 'ift', None)
+    if ift is None:
+        ift = irfft2(p1s.copy(), threads=kwargs["fftthreads"],
+                     planner_effort="FFTW_ESTIMATE",
+                     auto_align_input=True,
+                     auto_contiguous=True)
+        tls.ift = ift
+    p1sr = fftshift(ift(p1s.copy(), np.zeros(ift.output_shape, dtype=ift.output_dtype)).copy())
+    log.debug("%d@%s Exp %f +/- %f, Sub %f +/- %f" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], np.mean(p1r), np.std(p1r), np.mean(p1sr), np.std(p1sr)))
+    new_image = p1r - p1sr
+    if kwargs["crop"] is not None:
+        orihalf = new_image.shape[0] // 2
+        newhalf = kwargs["crop"] // 2
+        x = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINX]))
+        y = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINY]))
+        new_image = new_image[y - newhalf:y + newhalf, x - newhalf:x + newhalf]
+    return new_image
 
 
-def update(self, star):
-    """
-    Updates StarFile entry to match MetaData instance.
-    Beware: ONLY UPDATES FIELDS MODIFIED ELSEWHERE IN THIS PROGRAM!
-    :param self: The MetaData object.
-    :param star: StarFile object with matching indices
-    :return: None
-    """
-    star['rlnOriginX'][self.i] = self.x_origin
-    star['rlnOriginY'][self.i] = self.y_origin
-MetaData.update = update  # Monkey patch the MetaData class.
+@numba.jit(cache=False, nopython=True, nogil=True)
+def subtract(p1, submap_ft, refmap_ft,
+             sx, sy, s, a, apix, def1, def2, angast, phase, kv, ac, cs,
+             az, el, sk, xshift, yshift, coefs_method, r, nr, pfac):
+    c = ctf.eval_ctf(s / apix, a, def1, def2, angast, phase, kv, ac, cs, bf=0, lp=2 * apix)
+    orient = euler2rot(np.deg2rad(az), np.deg2rad(el), np.deg2rad(sk))
+    pshift = np.exp(-2 * np.pi * 1j * (-xshift * sx + -yshift * sy))
+    p2 = vop.interpolate_slice_numba(submap_ft, orient, pfac=pfac)
+    p2 *= pshift
+    if coefs_method < 1:
+        # p1s = p1 - p2 * c
+        p1s = p2 * c
+    elif coefs_method == 1:
+        p3 = vop.interpolate_slice_numba(refmap_ft, orient, pfac=pfac)
+        p3 *= pshift
+        frc = np.abs(algo.bincorr_nb(p1, p3 * c, r, nr))
+        coefs = np.take(frc, r)
+        # p1s = p1 - p2 * c * coefs
+        p1s = p2 * c * coefs
+    return p1s
+
+
+def producer(pool, queue, submap_ft, refmap_ft, fname, particles,
+             sx, sy, s, a, apix, coefs_method, r, nr, fftthreads=1, crop=None, pfac=2):
+    log = logging.getLogger('root')
+    log.debug("Producing %s" % fname)
+    zreader = mrc.ZSliceReader(particles[star.UCSF.IMAGE_ORIGINAL_PATH].iloc[0])
+    for i, ptcl in particles.iterrows():
+        log.debug("Produce %d@%s" % (ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX], ptcl[star.UCSF.IMAGE_ORIGINAL_PATH]))
+        # p1r = mrc.read_imgs(stack[i], idx[i] - 1, compat="relion")
+        p1r = zreader.read(ptcl[star.UCSF.IMAGE_ORIGINAL_INDEX])
+        log.debug("Apply")
+        ri = pool.apply_async(
+            subtract_outer,
+            (p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_method, r, nr),
+            {"fftthreads": fftthreads, "crop": crop, "pfac": pfac})
+        log.debug("Put")
+        queue.put((ptcl[star.UCSF.IMAGE_INDEX], ri), block=True)
+        log.debug("Queue for %s is size %d" % (ptcl[star.UCSF.IMAGE_ORIGINAL_PATH], queue.qsize()))
+    zreader.close()
+    log.debug("Put poison pill")
+    queue.put((-1, None), block=True)
+
+
+def consumer(queue, stack, apix=1.0, iothreads=None):
+    log = logging.getLogger('root')
+    with mrc.ZSliceWriter(stack, psz=apix) as zwriter:
+        while True:
+            log.debug("Get")
+            i, ri = queue.get(block=True)
+            log.debug("Got %d, queue for %s is size %d" %
+                      (i, stack, queue.qsize()))
+            if i == -1:
+                break
+            new_image = ri.get()
+            log.debug("Result for %d was shape (%d,%d)" %
+                      (i, new_image.shape[0], new_image.shape[1]))
+            zwriter.write(new_image)
+            queue.task_done()
+            log.debug("Wrote %d to %d@%s" % (i, zwriter.i, stack))
+    if iothreads is not None:
+        iothreads.release()
 
 
 if __name__ == "__main__":
-    usage = "projection_subtraction.py [options] output_suffix"
-    parser = EMArgumentParser(usage=usage, version="projection_subtraction.py 1.0a, " + EMANVERSION)
-    parser.add_argument("--input", type=str, help="RELION .star file listing input particle image stack(s)")
-    parser.add_argument("--wholemap", type=str, help="Map used to calculate projections for normalization")
-    parser.add_argument("--submap", type=str, help="Map used to calculate subtracted projections")
-    parser.add_argument("--output", type=str, help="RELION .star file for listing output particle image stack(s)")
-    parser.add_argument("--nproc", type=int, default=1, help="Number of parallel processes")
-    parser.add_argument("--maxchunk", type=int, default=1000, help="Maximum task chunk size")
-    parser.add_argument("--maxpart", type=int, default=65000, help="Maximum no. of particles per image stack file")
-    parser.add_argument("--loglevel", type=str, default="WARNING", help="Logging level and debug output")
-    parser.add_argument("--recenter", action="store_true", default=False,
-                        help="Shift particle origin to new center of mass")
-    parser.add_argument("--original", action="store_true", default=False,
-                        help="Also write original (not subtracted) particles to new image stack(s)")
-    parser.add_argument("--low-cutoff", type=float, default=0.0, help="Low cutoff frequency in FRC normalization")
-    parser.add_argument("--high-cutoff", type=float, default=0.7071, help="High cutoff frequency in FRC normalization")
-    parser.add_argument("--no-frc", action="store_true", default=False,
-                        help="Perform direct subtraction without FRC normalization")
-    # parser.add_argument("--append", action="store_true", default=False, help="Append")
-    parser.add_argument("suffix", type=str, help="Relative path and suffix for output image stack(s)")
-    (opts, args) = parser.parse_args()
+    import argparse
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.getLevelName(opts.loglevel.upper()))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str,
+                        help="STAR file with original particles")
+    parser.add_argument("output", type=str,
+                        help="STAR file with subtracted particles)")
+    parser.add_argument("--dest", "-d", type=str, help="Destination directory for subtracted particle stacks")
+    parser.add_argument("--refmap", "-r", type=str, help=argparse.SUPPRESS)
+    parser.add_argument("--submap", "-s", type=str, help="Map used to calculate subtracted projections")
+    parser.add_argument("--refmap_ft", type=str, help=argparse.SUPPRESS)
+    parser.add_argument("--submap_ft", type=str, help=argparse.SUPPRESS)
+    parser.add_argument("--submask", type=str, help="Mask to apply to submap before subtracting")
+    parser.add_argument("--original", help="Read original particle images instead of current", action="store_true")
+    parser.add_argument("--threads", "-j", type=int, default=None, help="Number of simultaneous threads")
+    parser.add_argument("--io-thread-pairs", type=int, default=1)
+    parser.add_argument("--io-queue-length", type=int, default=1000)
+    parser.add_argument("--fft-threads", type=int, default=1)
+    parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)
+    parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
+    parser.add_argument("--low-cutoff", "-L", type=float, default=0.0, help=argparse.SUPPRESS)
+    parser.add_argument("--high-cutoff", "-H", type=float, default=0.5, help=argparse.SUPPRESS)
+    parser.add_argument("--crop", help="Size to crop recentered output images", type=int)
+    parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
+    parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks", default="")
 
-    sys.exit(main(opts))
+    sys.exit(main(parser.parse_args()))

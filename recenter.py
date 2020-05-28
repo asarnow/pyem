@@ -1,4 +1,4 @@
-#! /usr/bin/python2.7
+#!/usr/bin/env python
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
 #
@@ -98,7 +98,4 @@ if __name__ == "__main__":
     parser.add_argument("--zero-origin", help="Subtract particle origin from particle coordinates in output")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
-    args = parser.parse_args()
-    #logger = logging.getLogger(__name__)
-    #logger.setLevel(logging.getLevelName(args.loglevel.upper()))
-    sys.exit(main(args))
+    sys.exit(main(parser.parse_args()))

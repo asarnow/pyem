@@ -1,17 +1,18 @@
 # Copyright (C) 2016 Daniel Asarnow
 # University of California, San Francisco
-from distutils.core import setup
+from setuptools import setup
+from setuptools import find_packages
 
 setup(
     name='pyem',
-    version='0.1',
-    packages=['pyem'],
-#    scripts=['angdist', 'project', 'projection_subtraction', 'recenter', 'pyem/star'],
-#    scripts=['pyem/star'],
+    version='0.4',
+    packages=find_packages(),
     url='https://github.com/asarnow/pyem',
     license='GNU Public License Version 3',
     author='Daniel Asarnow',
-    author_email='dasarnow@gmail.com',
+    author_email='asarnow@msg.ucsf.edu',
     description='Python programs for electron microscopy',
-    install_requires=['future', 'numpy', 'scipy', 'matplotlib', 'seaborn', 'pandas', 'pathos']
+    install_requires=['future', 'numba', 'numpy', 'scipy', 'matplotlib',
+                      'seaborn', 'pandas', 'pathos', 'pyfftw', 'healpy', 'natsort'],
+    zip_safe=False
 )
