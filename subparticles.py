@@ -137,10 +137,12 @@ def main(args):
             df = util.interleave(dfs)
         else:
             df = dfs[0]
-        star.write_star(args.output, df)
+        df = star.compatible(df, relion2=args.relion2, inplace=True)
+        star.write_star(args.output, df, optics=(not args.relion2))
     else:
         for i, s in enumerate(dfs):
-            star.write_star(os.path.join(args.output, args.suffix + "_%d" % i), s)
+            s = star.compatible(s, relion2=args.relion2, inplace=True)
+            star.write_star(os.path.join(args.output, args.suffix + "_%d" % i), s, optics=(not args.relion2))
     return 0
 
 
@@ -188,6 +190,6 @@ if __name__ == "__main__":
     parser.add_argument("--suffix", help="Suffix for multiple output files")
     parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles ("
                                       "Relion conventions)")
-
+    parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
     sys.exit(main(parser.parse_args()))
 
