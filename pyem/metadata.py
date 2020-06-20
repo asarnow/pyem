@@ -299,7 +299,7 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
 
 
 def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
-    model = {u'split': "rlnRandomSubset",
+    model = {u'split': star.Relion.RANDOMSUBSET,
              u'shift': star.Relion.ORIGINS,
              u'pose': star.Relion.ANGLES,
              u'error': None,
