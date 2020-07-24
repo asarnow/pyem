@@ -64,7 +64,7 @@ def main(args):
             df[star.UCSF.IMAGE_INDEX] = dfo[star.UCSF.IMAGE_INDEX]
             df[star.UCSF.IMAGE_PATH] = dfo[star.UCSF.IMAGE_PATH]
         key = [star.UCSF.IMAGE_INDEX, star.UCSF.IMAGE_PATH]
-        fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_ORIGINAL_INDEX, star.UCSF.IMAGE_ORIGINAL_PATH] + [star.Relion.OPTICSGROUP] + star.Relion.OPTICSGROUPTABLE
+        fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_ORIGINAL_INDEX, star.UCSF.IMAGE_ORIGINAL_PATH] + [star.Relion.OPTICSGROUP] + star.Relion.OPTICSGROUPTABLE + [star.Relion.RANDOMSUBSET]
         df = star.smart_merge(df, dfo, fields=fields, key=key)
         if args.revert_original:
             df = star.revert_original(df, inplace=True)
