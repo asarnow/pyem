@@ -389,7 +389,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     if passthroughs is not None:
         for passthrough in passthroughs:
             if type(passthrough) is np.ndarray:
-                log.info("Passing np.ndarray at %s" % str(id(pt)))
+                log.info("Passing np.ndarray at %s" % str(id(passthrough)))
                 pt = passthrough
             else:
                 log.info("Reading auxiliary file %s" % passthrough)
