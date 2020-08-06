@@ -50,7 +50,7 @@ def main(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Use equals sign when passing arguments with negative numbers.")
-    parser.add_argument("input", help="Input volume (MRC file)", nargs="?")
+    parser.add_argument("input", help="Input volume (MRC file)", nargs="*")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", help="Output pixel size")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
