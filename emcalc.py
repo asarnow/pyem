@@ -19,6 +19,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import numexpr as ne
+import numpy as np
 import sys
 from pyem.mrc import read
 from pyem.mrc import write
@@ -43,7 +44,7 @@ def main(args):
     if args.apix is None:
         args.apix = hdr[ascii_lowercase[0]]['xlen'] / hdr[ascii_lowercase[0]]['nx']
     
-    write(args.output, final, psz=args.apix)
+    write(args.output, final.astype(np.single), psz=args.apix)
     return 0
 
 
