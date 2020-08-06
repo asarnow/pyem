@@ -150,3 +150,4 @@ def normalize(vol, ref=None, return_stats=False):
     if return_stats:
         return (vol - mu) / sigma, mu, sigma
     return (vol - mu) / sigma
+

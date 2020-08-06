@@ -23,6 +23,7 @@ import numpy as np
 import sys
 from pyem.mrc import read
 from pyem.mrc import write
+from pyem import vop
 from string import ascii_lowercase
 
 
@@ -36,6 +37,8 @@ def main(args):
     hdr = {}
     for i,inp in enumerate(args.input[1:]):
         d, h = read(inp, inc_header=True)
+        if args.normalize:
+            d = vop.normalize(d)
         data[ascii_lowercase[i]] = d
         hdr[ascii_lowercase[i]] = h
     
@@ -54,6 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input volume (MRC file)", nargs="*")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", help="Output pixel size")
+    parser.add_argument("--normalize", "-n", help="Normalize all input maps", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
 
