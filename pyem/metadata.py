@@ -414,6 +414,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
     df[star.Relion.MAGNIFICATION] = 10000.0
+    df[star.Relion.IMAGESIZE] = cs["blob/shape"][:, 0]
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
     if star.Relion.DEFOCUSANGLE in df:
