@@ -345,6 +345,16 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
     return df
 
 
+def cryosparc_2_cs_array_parameters(cs, df=None):
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    if "blob/shape" in cs.dtype.names:
+        log.info("Copying image size")
+        df[star.Relion.IMAGESIZE] = cs["blob/shape"][:, 0]
+    return df
+
+
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swapxy=False):
     micrograph = {u'uid': star.UCSF.UID,
                   u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
@@ -386,6 +396,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     df = util.dataframe_from_records_mapped(cs, general)
     df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy)
     df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
+    df = cryosparc_2_cs_array_parameters(cs, df)
     if passthroughs is not None:
         for passthrough in passthroughs:
             if type(passthrough) is np.ndarray:
@@ -399,6 +410,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
                 ptdf = util.dataframe_from_records_mapped(pt, {**general, **micrograph})
                 ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
                 # ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
+                ptdf = cryosparc_2_cs_array_parameters(pt, ptdf)
                 key = star.UCSF.UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
@@ -414,7 +426,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
 
     df[star.Relion.MAGNIFICATION] = 10000.0
-    df[star.Relion.IMAGESIZE] = cs["blob/shape"][:, 0]
+
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
     if star.Relion.DEFOCUSANGLE in df:
