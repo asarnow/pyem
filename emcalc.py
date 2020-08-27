@@ -41,8 +41,10 @@ def main(args):
             d = vop.normalize(d)
         data[ascii_lowercase[i]] = d
         hdr[ascii_lowercase[i]] = h
-    
-    final = ne.evaluate(args.input[0], local_dict=data)
+    if args.eval:
+        final = eval(args.input[0], globals(), data)
+    else:
+        final = ne.evaluate(args.input[0], local_dict=data)
 
     if args.apix is None:
         args.apix = hdr[ascii_lowercase[0]]['xlen'] / hdr[ascii_lowercase[0]]['nx']
@@ -58,6 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", help="Output pixel size")
     parser.add_argument("--normalize", "-n", help="Normalize all input maps", action="store_true")
+    parser.add_argument("--eval", "-e", help="Use eval builtin instead of numexpr.evaluate", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
 
