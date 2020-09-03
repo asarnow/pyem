@@ -82,6 +82,9 @@ def main(args):
         df[star.UCSF.IMAGE_PATH] = args.restack
         df[star.UCSF.IMAGE_INDEX] = np.arange(df.shape[0])
 
+    if args.subset is not None:
+        df = df.loc[df[star.Relion.RANDOMSUBSET] == args.subset]
+
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
             print("Only particle sampling allows bootstrapping")
@@ -173,9 +176,6 @@ def main(args):
 
     if args.pick:
         df.drop(df.columns.difference(star.Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
-
-    if args.subset is not None:
-        df = df.loc[df[star.Relion.RANDOMSUBSET] == args.subset]
 
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
