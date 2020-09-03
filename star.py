@@ -84,6 +84,7 @@ def main(args):
 
     if args.subset is not None:
         df = df.loc[df[star.Relion.RANDOMSUBSET] == args.subset]
+        df.reset_index(inplace=True)
 
     if args.subsample_micrographs is not None:
         if args.bootstrap is not None:
