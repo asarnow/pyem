@@ -174,6 +174,9 @@ def main(args):
     if args.pick:
         df.drop(df.columns.difference(star.Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
 
+    if args.subset is not None:
+        df = df.loc[df[star.Relion.RANDOMSUBSET] == args.subset]
+
     if args.subsample is not None and args.suffix != "":
         if args.subsample < 1:
             print("Specific integer sample size")
@@ -336,6 +339,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--micrograph-range", help="Write micrographs with alphanumeric sort index [m, n) to output file",
                         metavar="m,n")
+    parser.add_argument("--subset", help="Select one half-set", type=int)
     parser.add_argument("--subsample", help="Randomly subsample remaining particles",
                         type=float, metavar="N")
     parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
