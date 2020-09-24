@@ -39,7 +39,9 @@ def main(args):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
         try:
-            df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic, boxsize=args.boxsize, swapxy=args.swapxy)
+            df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
+                                               boxsize=args.boxsize, swapxy=args.swapxy,
+                                               invertx=args.invertx, inverty=args.inverty)
         except (KeyError, ValueError) as e:
             log.error(e, exc_info=True)
             log.error("Required fields could not be mapped. Are you using the right input file(s)?")
@@ -103,7 +105,11 @@ if __name__ == "__main__":
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
-    parser.add_argument("--swapxy", help="Swap X and Y axes when converting particle coordinates", action="store_true")
+    parser.add_argument("--swapxy",
+                        help="Swap X and Y axes when converting particle coordinates from normalized to absolute",
+                        action="store_true")
+    parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
+    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",

@@ -256,7 +256,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False):
+def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False, invertx=False, inverty=True):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
@@ -265,6 +265,10 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False):
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
+        if invertx:
+            df[star.Relion.COORDX] = 1 - df[star.Relion.COORDX]
+        if inverty:
+            df[star.Relion.COORDY] = 1 - df[star.Relion.COORDY]
         if swapxy:
             df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
                                               cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
@@ -355,7 +359,8 @@ def cryosparc_2_cs_array_parameters(cs, df=None):
     return df
 
 
-def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swapxy=False):
+def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
+                         swapxy=False, invertx=False, inverty=False):
     micrograph = {u'uid': star.UCSF.UID,
                   u'micrograph_blob/path': star.Relion.MICROGRAPH_NAME,
                   u'micrograph_blob/psize_A': star.Relion.DETECTORPIXELSIZE,
@@ -394,7 +399,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
     log.debug("Reading primary file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
     df = util.dataframe_from_records_mapped(cs, general)
-    df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy)
+    df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy, invertx=invertx, inverty=inverty)
     df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
     df = cryosparc_2_cs_array_parameters(cs, df)
     if passthroughs is not None:
@@ -408,7 +413,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None, swa
             names = [n for n in pt.dtype.names if n != 'uid' and n not in cs.dtype.names]
             if len(names) > 0:
                 ptdf = util.dataframe_from_records_mapped(pt, {**general, **micrograph})
-                ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy)
+                ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy, invertx=invertx, inverty=inverty)
                 # ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
                 ptdf = cryosparc_2_cs_array_parameters(pt, ptdf)
                 key = star.UCSF.UID
