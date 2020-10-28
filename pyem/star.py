@@ -364,7 +364,7 @@ def star_table_offsets(starfile):
         in_loop = False
         blank_terminates = False
         while l:
-            if l.startswith("data"):
+            if l.lstrip().startswith("data"):
                 table_name = l.strip()
                 if in_table:
                     tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
@@ -374,7 +374,7 @@ def star_table_offsets(starfile):
                 offset = f.tell()  # Record byte offset of table.
                 lineno = ln  # Record start line of table.
                 cnt += 1  # Increment table count.
-            if l.startswith("loop"):
+            if l.lstrip().startswith("loop"):
                 in_loop = True
             elif in_loop and not l.startswith("_"):
                 in_loop = False
