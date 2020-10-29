@@ -457,6 +457,10 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.debug("Changing CLASS to 1-based index")
         df[star.Relion.CLASS] += 1
 
+    if star.Relion.OPTICSGROUP in df.columns:
+        log.debug("Changing OPTICSGROUP to 1-based index")
+        df[star.Relion.OPTICSGROUP] += 1
+
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
         log.debug("Converting Rodrigues coordinates to Euler angles")
         df[star.Relion.ANGLES] = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
