@@ -121,6 +121,9 @@ class Relion:
     PARTICLEDATA = "data_particles"
     IMAGEDATA = "data_images"
 
+    # Data type specification.
+    DATATYPES = {OPTICSGROUP: np.int}
+
 
 class UCSF:
     IMAGE_PATH = "ucsfImagePath"
@@ -223,7 +226,8 @@ def to_micrographs(df):
     gb = df.groupby(Relion.MICROGRAPH_NAME)
     mu = gb.mean()
     df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
-             [Relion.MICROGRAPH_NAME] if c in mu]].reset_index()
+             [Relion.MICROGRAPH_NAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
+    df = df.astype(Relion.DATATYPES)
     return df
 
 
