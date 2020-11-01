@@ -227,7 +227,8 @@ def to_micrographs(df):
     mu = gb.mean()
     df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
              [Relion.MICROGRAPH_NAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
-    df = df.astype(Relion.DATATYPES)
+    if Relion.OPTICSGROUP in df:
+        df = df.astypes(Relion.DATATYPES)
     return df
 
 
