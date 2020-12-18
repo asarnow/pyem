@@ -54,7 +54,7 @@ def mrc_header_complete(data, psz=1.0, origin=None):
     header_f[54] = np.sqrt(np.mean(data**2))
     if origin is None:
         header_f[49:52] = (0, 0, 0)
-    elif origin is "center":
+    elif origin == "center":
         header_f[49:52] = psz * header[:3] / 2
     else:
         header_f[49:52] = origin
