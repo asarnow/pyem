@@ -240,6 +240,9 @@ def main(args):
         df = star.set_optics_groups(df, sep=tok[0], idx=int(tok[1]), inplace=True)
         df.dropna(axis=0, how="any", inplace=True)
 
+    if args.offset_optics is not None:
+        df[star.Relion.OPTICSGROUP] += args.offset_optics
+
     if args.drop_optics_group is not None:
         idx = df[star.Relion.OPTICSGROUP].isin(args.drop_optics_group)
         if not np.any(idx):
@@ -351,6 +354,7 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
     parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
+    parser.add_argument("--offset-optics", help="Offset the optics groups by N", type=int, metavar="N")
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
