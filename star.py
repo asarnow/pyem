@@ -45,7 +45,7 @@ def main(args):
         if star.is_particle_star(df) and star.Relion.CLASS in df.columns:
             c = df[star.Relion.CLASS].value_counts()
             print("%s particles in %d classes" % ("{:,}".format(df.shape[0]), len(c)))
-            print("    ".join(['%d: %s (%.2f %%)' % (i, "{:,}".format(s), 100. * s / c.sum())
+            print("    ".join(['%d: %s (%.2f%%)' % (i, "{:,}".format(s), 100. * s / c.sum())
                                for i, s in iteritems(c.sort_index())]))
         elif star.is_particle_star(df):
             print("%s particles" % "{:,}".format(df.shape[0]))
