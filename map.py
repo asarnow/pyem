@@ -68,17 +68,20 @@ def main(args):
             log.error("Transpose axes must be comma-separated list of three integers")
             return 1
 
-    if args.normalize:
-        if args.reference is not None:
-            ref, refhdr = read(args.reference, inc_header=True)
-            final, mu, sigma = vop.normalize(data, ref=ref, return_stats=True)
-        else:
-            final, mu, sigma = vop.normalize(data, return_stats=True)
-        log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
-
     if args.apix is None:
         args.apix = hdr["xlen"] / hdr["nx"]
         log.info("Using computed pixel size of %f Angstroms" % args.apix)
+
+    if args.normalize:
+        if args.diameter is not None:
+            if args.diameter > 1.0:
+                args.diameter /= args.apix * 2  # Convert Angstrom diameter to pixel radius.
+        if args.reference is not None:
+            ref, refhdr = read(args.reference, inc_header=True)
+            final, mu, sigma = vop.normalize(data, ref=ref, return_stats=True, rmask=args.diameter)
+        else:
+            final, mu, sigma = vop.normalize(data, return_stats=True, rmask=args.diameter)
+        log.info("Mean: %f, Standard deviation: %f" % (mu, sigma))
 
     if args.apix_out is not None:
         if args.scale is not None:
@@ -201,6 +204,7 @@ if __name__ == "__main__":
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
+    parser.add_argument("--diameter", "-d", help="Particle diameter during refinement (Angstroms, or fraction if < 1)", type=float)
     parser.add_argument("--fft", help="Cache padded 3D FFT for projections.", action="store_true")
     parser.add_argument("--threads", help="Thread count for FFTW", type=int, default=1)
     parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)

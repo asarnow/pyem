@@ -131,13 +131,15 @@ def vol_ft(vol, pfac=2, threads=1, normfft=1):
     return ftc
 
 
-def normalize(vol, ref=None, return_stats=False):
+def normalize(vol, ref=None, return_stats=False, rmask=1.0):
     volm = vol.view(ma.MaskedArray)
     sz = volm.shape[0]
-    rng = np.arange(-sz/2, sz)
+    half = sz / 2
+    rng = np.arange(-half, half)
     x, y, z = np.meshgrid(rng, rng, rng)
     r2 = x**2 + y**2 + z**2
-    mask = r2 > sz**2
+    rmask = (half * rmask) if rmask <= 1.0 else rmask
+    mask = r2 > rmask**2
     volm.mask = mask
     if ref is not None:
         ref = ref.view(ma.MaskedArray)
