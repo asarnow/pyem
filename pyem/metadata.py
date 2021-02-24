@@ -363,9 +363,9 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
-    if "filament/filament_uid" in cs.dtype.names:
-        log.info("Copying helical filament ID")
-        df[star.Relion.HELICALTUBEID] = cs["filament/filament_uid"]
+    if 'filament/filament_pose' in cs.dtype.names:
+        log.info('Copying filament pose')
+        df[star.Relion.ANGLEPSI] = -cs['filament/filament_pose'] + np.pi/2
     return df
 
 
@@ -405,7 +405,8 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                u'location/center_y_frac': None,
                u'location/micrograph_path': star.Relion.MICROGRAPH_NAME,
                u'location/micrograph_shape': None,
-               u'filament/filament_uid': star.Relion.HELICALTUBEID}
+               u'filament/filament_uid': star.Relion.HELICALTUBEID,
+               u'filament/filament_pose': None}
     log = logging.getLogger('root')
     log.debug("Reading primary file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
@@ -428,7 +429,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                 ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy, invertx=invertx, inverty=inverty)
                 # ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
                 ptdf = cryosparc_2_cs_array_parameters(pt, ptdf)
-                ptdf = cryosparc_2_cs_filament_parameters(cs, ptdf)
+                ptdf = cryosparc_2_cs_filament_parameters(pt, ptdf)
                 key = star.UCSF.UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
