@@ -68,6 +68,13 @@ def main(args):
             log.error("Transpose axes must be comma-separated list of three integers")
             return 1
 
+    if args.flip is not None:
+        if args.flip.isnumeric():
+            args.flip = int(args.flip)
+        else:
+            args.flip = vop.label_to_axis(args.flip)
+        data = np.flip(data, axis=args.flip)
+
     if args.apix is None:
         args.apix = hdr["xlen"] / hdr["nx"]
         log.info("Using computed pixel size of %f Angstroms" % args.apix)
@@ -202,6 +209,7 @@ if __name__ == "__main__":
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
     parser.add_argument("--mask", help="Final mask (applied after normalization, but before scaling)", dest="final_mask")
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
+    parser.add_argument("--flip", "-f", help="Flip volume over axis (integer or x, y, or z)", metavar="AXIS")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
     parser.add_argument("--diameter", "-d", help="Particle diameter during refinement (Angstroms, or fraction if < 1)", type=float)

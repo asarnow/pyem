@@ -153,3 +153,14 @@ def normalize(vol, ref=None, return_stats=False, rmask=1.0):
         return (vol - mu) / sigma, mu, sigma
     return (vol - mu) / sigma
 
+
+def label_to_axis(label):
+    label = label.lower()
+    if label == "z":
+        return 2
+    if label == "y":
+        return 1
+    if label == "x":
+        return 0
+    return None
+
