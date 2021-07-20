@@ -84,6 +84,7 @@ class Relion:
     MICROGRAPHPIXELSIZE = "rlnMicrographPixelSize"
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
     MTFFILENAME = "rlnMtfFileName"
+    HELICALTUBEID = "rlnHelicalTubeID"
 
     # Field lists.
     COORDS = [COORDX, COORDY]
@@ -460,7 +461,7 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         df = sort_records(df, inplace=True)
     if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
         df = simplify_star_ucsf(df)
-    
+
     if optics:
         if Relion.OPTICSGROUP not in df:
             df[Relion.OPTICSGROUP] = 1

@@ -60,7 +60,7 @@ def parse_f9_par(fn):
                            "MAG", "FILM", "DF1", "DF2", "ANGAST",
                            "OCC", "LogP", "SIGMA", "SCORE", "CHANGE"]
                 break
-                
+
             ln += 1
 
     if skip == 0:
@@ -359,6 +359,16 @@ def cryosparc_2_cs_array_parameters(cs, df=None):
     return df
 
 
+def cryosparc_2_cs_filament_parameters(cs, df=None):
+    log = logging.getLogger('root')
+    if df is None:
+        df = pd.DataFrame()
+    if 'filament/filament_pose' in cs.dtype.names:
+        log.info('Copying filament pose')
+        df[star.Relion.ANGLEPSI] = -cs['filament/filament_pose'] + np.pi/2
+    return df
+
+
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                          swapxy=False, invertx=False, inverty=False):
     micrograph = {u'uid': star.UCSF.UID,
@@ -394,7 +404,9 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                u'location/center_x_frac': None,
                u'location/center_y_frac': None,
                u'location/micrograph_path': star.Relion.MICROGRAPH_NAME,
-               u'location/micrograph_shape': None}
+               u'location/micrograph_shape': None,
+               u'filament/filament_uid': star.Relion.HELICALTUBEID,
+               u'filament/filament_pose': None}
     log = logging.getLogger('root')
     log.debug("Reading primary file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
@@ -402,6 +414,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
     df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy, invertx=invertx, inverty=inverty)
     df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
     df = cryosparc_2_cs_array_parameters(cs, df)
+    df = cryosparc_2_cs_filament_parameters(cs, df)
     if passthroughs is not None:
         for passthrough in passthroughs:
             if type(passthrough) is np.ndarray:
@@ -416,6 +429,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                 ptdf = cryosparc_2_cs_particle_locations(pt, ptdf, swapxy=swapxy, invertx=invertx, inverty=inverty)
                 # ptdf = cryosparc_2_cs_model_parameters(pt, ptdf, minphic=minphic)
                 ptdf = cryosparc_2_cs_array_parameters(pt, ptdf)
+                ptdf = cryosparc_2_cs_filament_parameters(pt, ptdf)
                 key = star.UCSF.UID
                 log.info("Trying to merge: %s" % ", ".join(names))
                 fields = [c for c in ptdf.columns if c not in df.columns]
