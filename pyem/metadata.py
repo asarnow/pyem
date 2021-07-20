@@ -394,7 +394,8 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                u'location/center_x_frac': None,
                u'location/center_y_frac': None,
                u'location/micrograph_path': star.Relion.MICROGRAPH_NAME,
-               u'location/micrograph_shape': None}
+               u'location/micrograph_shape': None,
+               u'filament/filament_uid': star.Relion.HELICALTUBEID}
     log = logging.getLogger('root')
     log.debug("Reading primary file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)

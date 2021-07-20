@@ -65,6 +65,7 @@ class Relion:
     GROUPNUMBER = "rlnGroupNumber"
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
+    HELICALTUBEID = "rlnHelicalTubeID"
 
     # Relion 3 fields.
     OPTICSGROUP = "rlnOpticsGroup"
