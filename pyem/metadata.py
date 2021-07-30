@@ -465,7 +465,10 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
 
     if star.Relion.RANDOMSUBSET in df.columns:
         log.debug("Changing RANDOMSUBSET to 1-based index")
-        df[star.Relion.RANDOMSUBSET] += 1
+        if df[star.Relion.RANDOMSUBSET].value_counts().size == 1:
+            df.drop(star.Relion.RANDOMSUBSET, axis=1, inplace=True)
+        else:
+            df[star.Relion.RANDOMSUBSET] += 1
 
     if star.Relion.CLASS in df.columns:
         log.debug("Changing CLASS to 1-based index")
