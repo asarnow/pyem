@@ -345,6 +345,10 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
         log.info("Assigning pose from 2D classes")
         log.info("Assigning skew angle from 2D classification")
         model["pose"] = star.Relion.ANGLEPSI
+        for k in model:
+            if model[k] is not None:
+                name = "alignments2D/" + k
+                df[model[k]] = pd.DataFrame(cs[name])
     else:
         log.info("Particle poses not found")
     return df
