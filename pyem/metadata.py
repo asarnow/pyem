@@ -323,9 +323,15 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
     if df is None:
         df = pd.DataFrame()
     phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
-    if len(phic_names) > 1:
-        log.info("Collecting particle parameters from most likely classes")
-        phic = np.array([cs[p] for p in phic_names])
+    if u'alignments3D/class_posterior' in cs.dtype.names:
+        log.info("Assigning pose from single 3D refinement")
+        for k in model:
+            if model[k] is not None:
+                name = phic_names[0].replace("class_posterior", k)
+                df[model[k]] = pd.DataFrame(cs[name])
+    elif len(phic_names) > 1:
+        log.info("Assigning pose from most likely 3D classes")
+        phic = np.array([cs[p] for p in phic_names if u'alignments2D' not in p])
         cls = np.argmax(phic, axis=0)
         cls_prob = np.choose(cls, phic)
         for k in model:
@@ -335,17 +341,12 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
                     [cs[names[c]][i] for i, c in enumerate(cls)]))
         if minphic > 0:
             df.drop(df.loc[cls_prob < minphic].index, inplace=True)
-    elif len(phic_names) == 1:
-        log.info("Assigning parameters 2D classes or single 3D class")
-        if "alignments2D" in phic_names[0]:
-            log.info("Assigning skew angle from 2D classification")
-            model["pose"] = star.Relion.ANGLEPSI
-        for k in model:
-            if model[k] is not None:
-                name = phic_names[0].replace("class_posterior", k)
-                df[model[k]] = pd.DataFrame(cs[name])
+    elif u'alignments2D/class_posterior' in cs.dtype.names:
+        log.info("Assigning pose from 2D classes")
+        log.info("Assigning skew angle from 2D classification")
+        model["pose"] = star.Relion.ANGLEPSI
     else:
-        log.info("Classification parameters not found")
+        log.info("Particle poses not found")
     return df
 
 

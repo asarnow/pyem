@@ -143,6 +143,10 @@ def main(args):
         ctf_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_ctf)), join="inner")
         df = star.smart_merge(df, ctf_star, star.Relion.CTF_PARAMS, key=args.merge_key)
 
+    if args.copy_optics is not None:
+        optics_star = pd.concat((star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_optics)), join="inner")
+        df = star.smart_merge(df, optics_star, [star.Relion.OPTICSGROUP], key=[star.UCSF.MICROGRAPH_BASENAME])
+
     if args.copy_micrograph_coordinates is not None:
         coord_star = pd.concat(
             (star.parse_star(inp, augment=args.augment) for inp in glob.glob(args.copy_micrograph_coordinates)), join="inner")
@@ -293,6 +297,7 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("--copy-alignments", help="Source for alignment parameters (angles and shifts)")
     parser.add_argument("--copy-ctf", help="Source for CTF parameters (file or quoted glob)")
+    parser.add_argument("--copy-optics", help="Source for optics groups")
     parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
     parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
