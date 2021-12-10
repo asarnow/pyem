@@ -63,6 +63,10 @@ def main(args):
             (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
         key = star.merge_key(df, coord_star)
+        if key is None:
+            log.debug('Unable to get coordinates merge key. Removing leading UIDs and trying again')
+            df = star.remove_cryosparc_leading_uid(df, inplace=True)
+            key = star.merge_key(df, coord_star)
         log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
             fields = star.Relion.MICROGRAPH_COORDS
