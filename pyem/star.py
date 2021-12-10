@@ -207,6 +207,14 @@ def remove_cryosparc_leading_uid(df, inplace=False):
         UCSF.IMAGE_BASENAME,
         Relion.MICROGRAPH_NAME,
         UCSF.MICROGRAPH_BASENAME]
+    
+    def remove_uids(path):
+        # only remove the UID if it exists in the path
+        if re.search(uid_match_re, os.path.basename(path)):
+            pos = re.search(uid_match_re, os.path.basename(path)).end()
+            return os.path.join(os.path.dirname(path), os.path.basename(path)[pos:])
+        else:
+            return path
 
     for column_name in path_columns:
         if column_name in df:
@@ -214,10 +222,8 @@ def remove_cryosparc_leading_uid(df, inplace=False):
             leading_uid_exists = any(filter(lambda path: re.match(
                 uid_match_re, os.path.basename(path)), list(df[column_name])))
             if leading_uid_exists:
-                # remove the leading UID
-                df[column_name] = df[column_name].apply(
-                    lambda x: os.path.join(os.path.dirname(x), 
-                        '_'.join(os.path.basename(x).split('_')[1:])))
+                # remove leading UIDs
+                df[column_name] = df[column_name].apply(remove_uids)
     
     return df
 
