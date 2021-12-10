@@ -65,7 +65,7 @@ def main(args):
         key = star.merge_key(df, coord_star)
         if key is None:
             log.debug('Unable to get coordinates merge key. Removing leading UIDs and trying again')
-            df = star.remove_cryosparc_leading_uid(df, inplace=True)
+            df = metadata.remove_cryosparc_leading_uid(df, inplace=True)
             key = star.merge_key(df, coord_star)
         log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
