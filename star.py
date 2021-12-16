@@ -112,7 +112,7 @@ def main(args):
             dfaux = df.loc[~mask]
         df = df.loc[mask]
 
-    if args.strip_uid:
+    if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
 
     if args.copy_angles is not None:

@@ -57,12 +57,19 @@ def main(args):
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
+    if args.strip_uid is not None:
+        df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
+
     if args.copy_micrograph_coordinates is not None:
         df = star.augment_star_ucsf(df, inplace=True)
         coord_star = pd.concat(
             (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
         key = star.merge_key(df, coord_star)
+        if key is None:
+            log.debug("Merge key not found, removing leading UIDs")
+            df = star.strip_path_uids(df, inplace=True)
+            key = star.merge_key(df, coord_star)
         log.debug("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
             fields = star.Relion.MICROGRAPH_COORDS
@@ -77,8 +84,6 @@ def main(args):
     if args.transform is not None:
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
-
-    df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
 
     df = star.check_defaults(df, inplace=True)
 
