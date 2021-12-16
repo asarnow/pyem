@@ -78,6 +78,8 @@ def main(args):
         r = np.array(json.loads(args.transform))
         df = star.transform_star(df, r, inplace=True)
 
+    df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
+
     df = star.check_defaults(df, inplace=True)
 
     if args.relion2:
@@ -116,5 +118,6 @@ if __name__ == "__main__":
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
+    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, type=int)
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))

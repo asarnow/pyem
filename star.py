@@ -112,6 +112,9 @@ def main(args):
             dfaux = df.loc[~mask]
         df = df.loc[mask]
 
+    if args.strip_uid:
+        df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
+
     if args.copy_angles is not None:
         angle_star = star.parse_star(args.copy_angles, augment=args.augment)
         df = star.smart_merge(df, angle_star, fields=star.Relion.ANGLES, key=args.merge_key)
@@ -358,6 +361,7 @@ if __name__ == "__main__":
     parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
                         action="store_true")
     parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
+    parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int, default=0)
     parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
     parser.add_argument("--offset-optics", help="Offset the optics groups by N", type=int, metavar="N")
     parser.add_argument("--transform",
