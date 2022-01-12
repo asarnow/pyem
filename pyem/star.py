@@ -692,10 +692,14 @@ def revert_original(df, inplace=False):
     return df
 
 
-def strip_path_uids(df, inplace=False, count=0):
+def strip_path_uids(df, inplace=False, count=-1):
     df = df if inplace else df.copy()
     pat = re.compile("[0-9]{21}_")
-    df[UCSF.IMAGE_PATH] = df[UCSF.IMAGE_PATH].str.replace(pat, "", regex=True)
-    df[Relion.MICROGRAPH_NAME] = df[Relion.MICROGRAPH_NAME].str.replace(pat, "", regex=True, count=count)
+    if UCSF.IMAGE_BASENAME in df:
+        df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_BASENAME].str.replace(pat, "", regex=True, n=count)
+    elif Relion.IMAGE_NAME in df:
+        df[Relion.IMAGE_NAME] = df[Relion.IMAGE_NAME].str.replace(pat, "", regex=True, n=count)
+    if Relion.MICROGRAPH_NAME in df:
+        df[Relion.MICROGRAPH_NAME] = df[Relion.MICROGRAPH_NAME].str.replace(pat, "", regex=True, n=count)
     return df
 
