@@ -327,7 +327,7 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
         log.info("Assigning pose from single 3D refinement")
         for k in model:
             if model[k] is not None:
-                name = "alignments3D/" + k
+                name = u'alignments3D/' + k
                 df[model[k]] = pd.DataFrame(cs[name])
     elif len(phic_names) > 1:
         log.info("Assigning pose from most likely 3D classes")
