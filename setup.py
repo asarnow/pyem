@@ -14,5 +14,10 @@ setup(
     description='Python programs for electron microscopy',
     install_requires=['future', 'numba', 'numpy', 'scipy', 'matplotlib',
                       'seaborn', 'pandas', 'pathos', 'pyfftw', 'healpy', 'natsort'],
-    zip_safe=False
+    zip_safe=False,
+    entry_points={
+        'console_scripts': [
+            'pyem_csparc2star.py = scripts.csparc2star:_main_'
+            ]
+        }
 )

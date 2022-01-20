@@ -97,8 +97,7 @@ def main(args):
     log.info("Output fields: %s" % ", ".join(df.columns))
     return 0
 
-
-if __name__ == "__main__":
+def _main_():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Cryosparc metadata .csv (v0.6.5) or .cs (v2+) files", nargs="*")
     parser.add_argument("output", help="Output .star file")
@@ -126,3 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, type=int)
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
