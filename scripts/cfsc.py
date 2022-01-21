@@ -98,8 +98,7 @@ def calc_fsc(f3d1, f3d2):
     nr = np.max(r) + 1
     return np.abs(bincorr(f3d1, f3d2, r, minlength=nr)[:-1])
 
-
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("volume1")
@@ -111,3 +110,6 @@ if __name__ == "__main__":
     parser.add_argument("--threads", "-j", help="Number of threads for FFTW", type=int, default=1)
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
+
+if __name__ == "__main__":
+    _main_()
