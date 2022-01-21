@@ -31,6 +31,7 @@ setup(
             'pyem_project.py = scripts.project:_main_',
             'pyem_projection_subtraction.py = scripts.projection_subtraction:_main_',
             'pyem_reconstruct.py = scripts.reconstruct:_main_',
+            'pyem_sort.py = scripts.sort:_main_',
 
         ]
         }
