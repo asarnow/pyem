@@ -22,6 +22,7 @@ setup(
             'pyem_recenter.py = scripts.recenter:_main_',
             'pyem_angdist.py = scripts.angdist:_main_',
             'pyem_cfsc.py = scripts.cfsc:_main_',
+            'pyem_ctf2star.py = scripts.ctf2star:_main_',
             ]
         }
 )
