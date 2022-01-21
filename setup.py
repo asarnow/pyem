@@ -17,7 +17,9 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'pyem_csparc2star.py = scripts.csparc2star:_main_'
+            'pyem_csparc2star.py = scripts.csparc2star:_main_',
+            'pyem_star.py = scripts.star:_main_',
+            'pyem_recenter.py = scripts.recenter:_main_'
             ]
         }
 )
