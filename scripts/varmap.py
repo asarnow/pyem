@@ -38,10 +38,14 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input map path(s)", nargs="*")
     parser.add_argument("output", help="Variance map output path")
     parser.add_argument("--mean", help="Mean map output path")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

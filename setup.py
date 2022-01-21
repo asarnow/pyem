@@ -34,6 +34,9 @@ setup(
             'pyem_sort.py = scripts.sort:_main_',
             'pyem_stack.py = scripts.stack:_main_',
             'pyem_star2bild.py = scripts.star2bild:_main_',
+            'pyem_subparticles.py = scripts.subparticles:_main_',
+            'pyem_subset.py = scripts.subset:_main_',
+            'pyem_varmap.py = scripts.varmap:_main_',
 
         ]
         }
