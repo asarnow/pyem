@@ -65,7 +65,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -90,10 +90,17 @@ if __name__ == "__main__":
                         default="sinusoid")
     parser.add_argument("--fill", "-f", help="Flood fill initial mask",
                         action="store_true")
-    parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments (pass -1 for largest segment only)", type=int, default=0)
+    parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments (pass -1 for largest segment only)",
+                        type=int, default=0)
     parser.add_argument("--close", "-c", help="Perform morphological closing", action="store_true")
     parser.add_argument("--relion", help="Mimics relion_mask_create output (slower)", action="store_true")
-    parser.add_argument("--base-map", "-b", help="Create and write a matched mask instead of regular output (see project wiki)")
-    parser.add_argument("--overlap", "-o", help="Overlap width for matched mask (default: %(default)d)", type=int, default=0)
+    parser.add_argument("--base-map", "-b",
+                        help="Create and write a matched mask instead of regular output (see project wiki)")
+    parser.add_argument("--overlap", "-o", help="Overlap width for matched mask (default: %(default)d)", type=int,
+                        default=0)
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
 

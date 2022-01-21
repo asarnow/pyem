@@ -25,6 +25,7 @@ setup(
             'pyem_ctf2star.py = scripts.ctf2star:_main_',
             'pyem_emcalc.py = scripts.emcalc:_main_',
             'pyem_map.py = scripts.map:_main_',
+            'pyem_mask.py = scripts.mask:_main_',
 
         ]
         }
