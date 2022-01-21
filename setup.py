@@ -33,6 +33,7 @@ setup(
             'pyem_reconstruct.py = scripts.reconstruct:_main_',
             'pyem_sort.py = scripts.sort:_main_',
             'pyem_stack.py = scripts.stack:_main_',
+            'pyem_star2bild.py = scripts.star2bild:_main_',
 
         ]
         }

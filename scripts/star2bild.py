@@ -92,7 +92,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input .star file")
@@ -112,3 +112,7 @@ if __name__ == "__main__":
                         type=int, action="append", dest="cls")
     parser.add_argument("--sym", help="Symmetry group to impose on distribution (Relion conventions)")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
