@@ -29,6 +29,7 @@ setup(
             'pyem_par2star.py = scripts.par2star:_main_',
             'pyem_pose.py = scripts.pose:_main_',
             'pyem_project.py = scripts.project:_main_',
+            'pyem_projection_subtraction.py = scripts.projection_subtraction:_main_',
 
         ]
         }
