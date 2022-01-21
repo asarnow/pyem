@@ -200,19 +200,20 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
-
     parser = argparse.ArgumentParser(description="Use equals sign when passing arguments with negative numbers.")
     parser.add_argument("input", help="Input volume (MRC file)")
     parser.add_argument("output", help="Output volume (MRC file)")
     parser.add_argument("--apix", "--angpix", "-a", help="Pixel size in Angstroms", type=float)
-    parser.add_argument("--mask", help="Final mask (applied after normalization, but before scaling)", dest="final_mask")
+    parser.add_argument("--mask", help="Final mask (applied after normalization, but before scaling)",
+                        dest="final_mask")
     parser.add_argument("--transpose", help="Swap volume axes order", metavar="a1,a2,a3")
     parser.add_argument("--flip", "-f", help="Flip volume over axis (integer or x, y, or z)", metavar="AXIS")
     parser.add_argument("--normalize", "-n", help="Convert map densities to Z-scores", action="store_true")
     parser.add_argument("--reference", "-r", help="Normalization reference volume (MRC file)")
-    parser.add_argument("--diameter", "-d", help="Particle diameter during refinement (Angstroms, or fraction if < 1)", type=float)
+    parser.add_argument("--diameter", "-d", help="Particle diameter during refinement (Angstroms, or fraction if < 1)",
+                        type=float)
     parser.add_argument("--fft", help="Cache padded 3D FFT for projections.", action="store_true")
     parser.add_argument("--threads", help="Thread count for FFTW", type=int, default=1)
     parser.add_argument("--pfac", help="Padding factor for 3D FFT", type=int, default=2)
@@ -224,7 +225,8 @@ if __name__ == "__main__":
     parser.add_argument("--translate", help="Translation coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--transform",
                         help="Transformation matrix (3x3 or 3x4 with translation in Angstroms) in Numpy/json format")
-    parser.add_argument("--boxsize", help="Output box size (pads/crops with --scale or --apix-out, otherwise scales)", type=int)
+    parser.add_argument("--boxsize", help="Output box size (pads/crops with --scale or --apix-out, otherwise scales)",
+                        type=int)
     parser.add_argument("--scale", help="Scale factor for output pixel size", type=float)
     parser.add_argument("--apix-out", help="Pixel size in output (similar to --scale)", type=float)
     parser.add_argument("--spline-order",
@@ -233,3 +235,7 @@ if __name__ == "__main__":
     parser.add_argument("--half2", help="A second map, which will be added to the input map prior to other operations")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

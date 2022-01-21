@@ -24,6 +24,8 @@ setup(
             'pyem_cfsc.py = scripts.cfsc:_main_',
             'pyem_ctf2star.py = scripts.ctf2star:_main_',
             'pyem_emcalc.py = scripts.emcalc:_main_',
-            ]
+            'pyem_map.py = scripts.map:_main_',
+
+        ]
         }
 )
