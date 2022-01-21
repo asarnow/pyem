@@ -174,8 +174,7 @@ def setup_axes(fig, rect, rmax):
     ax1.patch.zorder = 0.9
     return ax1, aux_ax
 
-
-if __name__ == "__main__":
+def _main_():
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -209,3 +208,6 @@ if __name__ == "__main__":
     sns.set()
 
     sys.exit(main(parser.parse_args()))
+
+if __name__ == "__main__":
+    _main_()
