@@ -26,6 +26,7 @@ setup(
             'pyem_emcalc.py = scripts.emcalc:_main_',
             'pyem_map.py = scripts.map:_main_',
             'pyem_mask.py = scripts.mask:_main_',
+            'pyem_par2star.py = scripts.par2star:_main_',
 
         ]
         }
