@@ -107,14 +107,15 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input",
                         help="Input image(s), stack(s) and/or .star file(s)",
                         nargs="*")
     parser.add_argument("output", help="Output stack")
-    parser.add_argument("--abs-path", "-a", help="Don't solve relative path between star and stack", action="store_true")
+    parser.add_argument("--abs-path", "-a", help="Don't solve relative path between star and stack",
+                        action="store_true")
     parser.add_argument("--star", "-s", help="Optional composite .star output file")
     parser.add_argument("--stack-path", help="(PAR file only) Particle stack for input file")
     parser.add_argument("--class", "-c", help="Keep this class in output, may be passed multiple times",
@@ -124,3 +125,7 @@ if __name__ == "__main__":
                         help="Logging level and debug output")
     parser.add_argument("--resort", help="Natural sort the particle image names", action="store_true")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
