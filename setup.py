@@ -27,6 +27,7 @@ setup(
             'pyem_map.py = scripts.map:_main_',
             'pyem_mask.py = scripts.mask:_main_',
             'pyem_par2star.py = scripts.par2star:_main_',
+            'pyem_pose.py = scripts.pose:_main_',
 
         ]
         }
