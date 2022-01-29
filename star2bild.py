@@ -73,6 +73,12 @@ def main(args):
     color_scale[color_scale < -1] = -1
     color_scale /= 6
     color_scale += 1 / 6.
+    imin = np.argmin(cnts)
+    imax = np.argmax(cnts)
+    log.info("Min %d particles (%.2f%); color %f,0,%f" %
+        (cnts[imin], frac[imin] * 100, color_scale[imin], 1 - color_scale[imin]))
+    log.info("Max %d particles (%.2f%); color %f,0,%f" %
+        (cnts[imax], frac[imax] * 100, color_scale[imax], 1 - color_scale[imax]))
     r = args.boxsize * args.apix / 2
     rp = np.reshape(r + r * frac * args.height_scale, (-1, 1))
     base1 = hp * r
