@@ -68,6 +68,8 @@ def main(args):
     frac = cnts / np.max(cnts).astype(np.float64)
     mu = np.mean(frac)
     sigma = np.std(frac)
+    log.info("%.0f (%.2f%) +/- %.1f (%.2f%) particles per bin" %
+        (np.mean(cnts), mu, np.std(cnts), sigma))
     color_scale = (frac - mu) / sigma
     color_scale[color_scale > 5] = 5
     color_scale[color_scale < -1] = -1
