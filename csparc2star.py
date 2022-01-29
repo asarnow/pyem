@@ -65,7 +65,7 @@ def main(args):
         coord_star = pd.concat(
             (star.parse_star(inp, keep_index=False, augment=True) for inp in
              glob(args.copy_micrograph_coordinates)), join="inner")
-        key = star.merge_key(df, coord_star)
+        key = star.merge_key(df, coord_star, threshold=0)
         if key is None:
             log.debug("Merge key not found, removing leading UIDs")
             df = star.strip_path_uids(df, inplace=True)
@@ -75,8 +75,11 @@ def main(args):
             fields = star.Relion.MICROGRAPH_COORDS
         else:
             fields = star.Relion.MICROGRAPH_COORDS + [star.UCSF.IMAGE_INDEX, star.UCSF.IMAGE_PATH]
+        n = df.shape[0]
         df = star.smart_merge(df, coord_star, fields=fields, key=key)
         star.simplify_star_ucsf(df)
+        if df.shape[0] != n:
+            log.warn("%d / %d particles remain after coordinate merge" % (df.shape[0], n))
 
     if args.micrograph_path is not None:
         df = star.replace_micrograph_path(df, args.micrograph_path, inplace=True)
