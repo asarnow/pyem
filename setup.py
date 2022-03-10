@@ -38,7 +38,6 @@ setup(
             f'{entrypoint_prefix}subparticles.py = scripts.subparticles:_main_',
             f'{entrypoint_prefix}subset.py = scripts.subset:_main_',
             f'{entrypoint_prefix}varmap.py = scripts.varmap:_main_',
-
         ]
         }
 )
