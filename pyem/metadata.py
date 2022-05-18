@@ -76,7 +76,9 @@ def parse_f9_par(fn):
 
 
 def parse_fx_par(fn):
-    df = pd.read_csv(fn, delimiter="\s+", skipfooter=2, engine="python")
+    with open(fn, 'r') as f:
+        columns = f.readline().split()
+        df = pd.read_csv(f, delimiter="\s+", header=None, names=columns, comment="C")
     return df
 
 
