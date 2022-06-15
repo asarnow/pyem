@@ -103,7 +103,7 @@ def main(args):
         args.boxsize = int(box[0] * args.scale)
 
     if args.apix_out is None:
-        args.apix_out = args.apix * args.scale
+        args.apix_out = args.apix / args.scale
 
     log.info("Volume will be scaled by %f to size %d @ %f A/px" % (args.scale, args.boxsize, args.apix_out))
 
