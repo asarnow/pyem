@@ -92,31 +92,27 @@ def main(args):
 
     if args.apix_out is not None:
         if args.scale is not None:
-            log.warn("--apix-out supersedes --scale")
+            log.warning("--apix-out supersedes --scale")
         args.scale = args.apix / args.apix_out
     elif args.scale is not None:
             args.apix_out = args.apix / args.scale
-    elif args.boxsize is not None:
-        args.scale = box[0] / np.double(args.boxsize)
-
-    if args.apix_out is None:
-        args.apix_out = args.apix
+    elif args.boxsize is not None:  # Only --boxsize
+        args.scale = np.double(args.boxsize) / box[0]
 
     if args.boxsize is None:
-        if args.scale is None:
-            args.boxsize = box[0]
-            args.scale = 1
-        else:
-            args.boxsize = np.int(box[0] * args.scale)
+        args.boxsize = int(box[0] * args.scale)
+
+    if args.apix_out is None:
+        args.apix_out = args.apix * args.scale
 
     log.info("Volume will be scaled by %f to size %d @ %f A/px" % (args.scale, args.boxsize, args.apix_out))
 
     if args.target and args.transform:
-        log.warn("Target pose transformation will be applied after explicit matrix")
+        log.warning("Target pose transformation will be applied after explicit matrix")
     if args.euler is not None and (args.target is not None or args.transform is not None):
-        log.warn("Euler transformation will be applied after target pose transformation")
+        log.warning("Euler transformation will be applied after target pose transformation")
     if args.translate is not None and (args.euler is not None or args.target is not None or args.transform is not None):
-        log.warn("Translation will be applied after other transformations")
+        log.warning("Translation will be applied after other transformations")
 
     if args.origin is not None:
         try:
