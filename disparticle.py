@@ -39,7 +39,7 @@ def main(args):
     if args.mic is None:
         vc = df.index.value_counts()
         args.mic = vc.index[vc.shape[0] // 2 + args.offset_mics]  # Micrograph with median particle count.
-        mic_path = df.loc[args.mic][star.Relion.MICROGRAPH_NAME]
+        mic_path = df.loc[args.mic].iloc[0][star.Relion.MICROGRAPH_NAME]
     elif np.char.isnumeric(args.mic):
         args.mic = df.index[args.mic]
         mic_path = df.loc[args.mic].iloc[0][star.Relion.MICROGRAPH_NAME]
