@@ -31,7 +31,10 @@ from pyem import star
 
 def main(args):
     sns.set()
-    df = star.parse_star(args.input)
+    if args.fast:
+        df = star.parse_star(args.input, nrows=10000)
+    else:
+        df = star.parse_star(args.input)
     df.set_index(star.UCSF.MICROGRAPH_BASENAME, inplace=True)
     if args.mic is None:
         vc = df.index.value_counts()
@@ -72,7 +75,7 @@ def main(args):
     if args.output is None:
         plt.show()
     else:
-        f.savefig(args.output, dpi=300)
+        f.savefig(args.output, dpi=300, bbox_inches="tight")
     return 0
 
 
@@ -86,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument("--offset-micrographs", "-o", type=int, default=0, dest="offset_mics",
                         help="Display micrograph with N positions more or fewer particles than median"
                              "(e.g. if the automatically selected micrograph is not good)")
+    parser.add_argument("--fast", "-f", action="store_true", help="Only read the first few thousand particles")
     parser.add_argument("--invertx", "-x", action="store_true", help="Subtract coordinate from micrograph size in X")
     parser.add_argument("--inverty", "-y", action="store_true", help="Subtract coordinate from micrograph size in Y")
     parser.add_argument("--swapxy", "-s", action="store_true",
