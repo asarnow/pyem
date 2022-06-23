@@ -42,7 +42,7 @@ def main(args):
         mic_path = df.loc[args.mic][star.Relion.MICROGRAPH_NAME]
     elif np.char.isnumeric(args.mic):
         args.mic = df.index[args.mic]
-        mic_path = df.loc[args.mic][star.Relion.MICROGRAPH_NAME]
+        mic_path = df.loc[args.mic].iloc[0][star.Relion.MICROGRAPH_NAME]
     else:
         mic_path = args.mic
         args.mic = os.path.basename(args.mic)
