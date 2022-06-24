@@ -59,7 +59,7 @@ def main(args):
     g = ski.exposure.rescale_intensity(g, in_range=(p2, p98))
     x = df.loc[args.mic][star.Relion.COORDX]
     y = df.loc[args.mic][star.Relion.COORDY]
-    g = ndi.rotate(g, 90)
+    g = g[:, ::-1].T
     if args.invertx:
         x = im.shape[0] - x
     if args.inverty:
