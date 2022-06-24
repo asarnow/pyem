@@ -268,10 +268,12 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, i
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
         if invertx:
+            # Might rarely be needed, if your K3 images are "tall" in SerialEM.
             df[star.Relion.COORDX] = 1 - df[star.Relion.COORDX]
         if inverty:
-            # cryoSPARC Patch Motion flips em upside down, Motioncor2 doesn't.
-            # Switch from cryoSPARC motion to Motioncor2 images OR use invert Y in Extract Particles job.
+            # cryoSPARC coordinates have origin in "bottom left" so inverting Y is default for Relion correctness
+            # (and therefore also for Import Particles). However, cryoSPARC Patch Motion flips images physically
+            # vs. SerialEM, Motioncor2 doesn't, so "inverting twice" (not inverting) is required if switching.
             df[star.Relion.COORDY] = 1 - df[star.Relion.COORDY]
         if swapxy:
             # In cryoSPARC, fast axis is long axis of K3, 'location/micrograph_shape' is [y, x].

@@ -117,9 +117,9 @@ if __name__ == "__main__":
                         type=str)
     parser.add_argument("--swapxy",
                         help="Swap X and Y axes when converting particle coordinates from normalized to absolute",
-                        action="store_true")
+                        action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
-    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_true")
+    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
