@@ -258,7 +258,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False, invertx=False, inverty=True):
+def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, inverty=True):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
@@ -268,10 +268,18 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False, invertx=False, 
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
         if invertx:
+            # Might rarely be needed, if your K3 images are "tall" in SerialEM.
             df[star.Relion.COORDX] = 1 - df[star.Relion.COORDX]
         if inverty:
+            # cryoSPARC coordinates have origin in "bottom left" so inverting Y is default for Relion correctness
+            # (and therefore also for Import Particles). However, cryoSPARC Patch Motion flips images physically
+            # vs. SerialEM, Motioncor2 doesn't, so "inverting twice" (not inverting) is required if switching.
             df[star.Relion.COORDY] = 1 - df[star.Relion.COORDY]
         if swapxy:
+            # In cryoSPARC, fast axis is long axis of K3, 'location/micrograph_shape' is [y, x].
+            # In Relion and numpy (e.g. pyem.mrc), the fast axis is the short axis of K3, shape is (x, y).
+            # cryoSPARC import particles correctly imports *Relion convention* coordinates, which we also want.
+            # Default behavior is now to always swap.
             df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
                                               cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
         else:

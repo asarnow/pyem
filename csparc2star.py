@@ -35,12 +35,16 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
+    if args.swapxy:
+        log.warning("Axis swapping is now the default and --swapxy has no effect. "
+                    "Use --noswapxy if unswapping is needed (unlikely).")
+
     if args.input[0].endswith(".cs"):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
-                                               boxsize=args.boxsize, swapxy=args.swapxy,
+                                               boxsize=args.boxsize, swapxy=args.noswapxy,
                                                invertx=args.invertx, inverty=args.inverty)
         except (KeyError, ValueError) as e:
             log.error(e, exc_info=True)
@@ -118,8 +122,10 @@ if __name__ == "__main__":
     parser.add_argument("--swapxy",
                         help="Swap X and Y axes when converting particle coordinates from normalized to absolute",
                         action="store_true")
+    parser.add_argument("--noswapxy", help="Do not swap X and Y axes when converting particle coordinates",
+                        action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
-    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_true")
+    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
