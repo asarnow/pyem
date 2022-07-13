@@ -83,6 +83,8 @@ class Relion:
     ORIGINZANGST = "rlnOriginZAngst"
     MICROGRAPHPIXELSIZE = "rlnMicrographPixelSize"
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
+    MICROGRAPHMETADATA = "rlnMicrographMetadata"
+    MICROGRAPHBINNING = "rlnMicrographBinning"
     MTFFILENAME = "rlnMtfFileName"
     HELICALTUBEID = "rlnHelicalTubeID"
 
@@ -335,7 +337,7 @@ def set_optics_groups(df, sep="_", idx=4, inplace=False):
     return df
 
 
-def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
+def parse_star_table_header(starfile, offset=0, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
@@ -355,6 +357,12 @@ def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
             if foundheader and not lastheader:
                 break
             ln += 1
+    return headers, ln
+
+
+def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
+    headers, ln = parse_star_table_header(starfile, offset=offset, keep_index=keep_index)
+    with open(starfile, 'r') as f:
         f.seek(offset)
         df = pd.read_csv(f, delimiter='\s+', header=None, skiprows=ln, nrows=nrows)
     df.columns = headers
@@ -368,11 +376,15 @@ def star_table_offsets(starfile):
         ln = 0  # Current line number.
         offset = 0  # Char offset of current table.
         cnt = 0  # Number of tables.
+        data_line = 0  # First line of a table's data.
         in_table = False  # True if file cursor is inside a table.
-        in_loop = False
-        blank_terminates = False
+        in_loop = False  # True if file cursor is inside a loop header.
+        blank_terminates = False  # True if a blank line should terminate a table.
+        table_name = None
         while l:
             if l.lstrip().startswith("data"):
+                if table_name is not None and table_name not in tables:  # Unterminated table without a loop.
+                    tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
                 table_name = l.strip()
                 if in_table:
                     tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
@@ -425,8 +437,14 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
 
 def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
     tables = star_table_offsets(starfile)
-    dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
-           for t in tables}
+    dfs = {}
+    for t in tables:
+        if tables[t][2] == tables[t][3]:
+            headers, _ = parse_star_table_header(starfile, offset=tables[t][0], keep_index=keep_index)
+            dfs[t] = pd.Series({t.split()[0]: t.split()[1] for t in headers})
+        else:
+            dfs[t] = parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows),
+                                      keep_index=keep_index)
     return dfs
 
 
