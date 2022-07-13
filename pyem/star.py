@@ -410,6 +410,19 @@ def star_table_offsets(starfile):
         return tables
 
 
+def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
+    tables = star_table_offsets(starfile)
+    dfs = {}
+    for t in tables:
+        if tables[t][2] == tables[t][3]:
+            headers, _ = parse_star_table_header(starfile, offset=tables[t][0], keep_index=keep_index)
+            dfs[t] = pd.Series({t.split()[0]: t.split()[1] for t in headers})
+        else:
+            dfs[t] = parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows),
+                                      keep_index=keep_index)
+    return dfs
+
+
 def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     tables = star_table_offsets(starfile)
     dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
@@ -433,19 +446,6 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     if augment:
         augment_star_ucsf(df, inplace=True)
     return df
-
-
-def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
-    tables = star_table_offsets(starfile)
-    dfs = {}
-    for t in tables:
-        if tables[t][2] == tables[t][3]:
-            headers, _ = parse_star_table_header(starfile, offset=tables[t][0], keep_index=keep_index)
-            dfs[t] = pd.Series({t.split()[0]: t.split()[1] for t in headers})
-        else:
-            dfs[t] = parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows),
-                                      keep_index=keep_index)
-    return dfs
 
 
 def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
