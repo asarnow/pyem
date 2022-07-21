@@ -34,9 +34,9 @@ def main(args):
     mic_stars = glob.glob(os.path.join(args.input, "*.star"))
 
     if args.nodw:
-        mics = [m[:-4] + ".mrc" for m in mic_stars]
+        mics = [m[:-5] + ".mrc" for m in mic_stars]
     else:
-        mics = [m[:-4] + "_DW.mrc" for m in mic_stars]
+        mics = [m[:-5] + "_DW.mrc" for m in mic_stars]
     for m in mics:
         if not os.path.exists(m):
             log.warning("%s does not exist" % m)
