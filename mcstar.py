@@ -68,6 +68,7 @@ def main(args):
 
     df[star.Relion.MICROGRAPHORIGINALPIXELSIZE] = args.apix
     df[star.Relion.MICROGRAPHPIXELSIZE] = args.apix * args.bin
+    df[star.Relion.MICROGRAPHBINNING] = args.bin
 
     if args.kv is None and star.Relion.VOLTAGE in mic_star['data_general']:
         args.kv = mic_star['data_general'][star.Relion.VOLTAGE]
