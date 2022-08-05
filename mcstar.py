@@ -57,12 +57,12 @@ def main(args):
 
     if args.apix is None:
         if star.Relion.MICROGRAPHORIGINALPIXELSIZE in mic_star['data_general']:
-            args.apix = mic_star['data_general'][star.Relion.MICROGRAPHORIGINALPIXELSIZE]
+            args.apix = float(mic_star['data_general'][star.Relion.MICROGRAPHORIGINALPIXELSIZE])
         if "rlnOriginalPixelSize" in mic_star['data_general']:
-            args.apix = mic_star["data_general"]["rlnOriginalPixelSize"]
+            args.apix = float(mic_star["data_general"]["rlnOriginalPixelSize"])
 
     if args.bin is None and star.Relion.MICROGRAPHBINNING in mic_star['data_general']:
-        args.bin = mic_star['data_general'][star.Relion.MICROGRAPHBINNING]
+        args.bin = float(mic_star['data_general'][star.Relion.MICROGRAPHBINNING])
     elif args.bin is None:
         args.bin = 1.0
 
