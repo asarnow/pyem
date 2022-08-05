@@ -66,7 +66,7 @@ class Relion:
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
 
-    # Relion 3 fields.
+    # Relion 3+ fields.
     OPTICSGROUP = "rlnOpticsGroup"
     OPTICSGROUPNAME = "rlnOpticsGroupName"
     ODDZERNIKE = "rlnOddZernike"
@@ -77,6 +77,9 @@ class Relion:
     MAGMAT11 = "rlnMagMat11"
     IMAGEPIXELSIZE = "rlnImagePixelSize"
     IMAGESIZE = "rlnImageSize"
+    IMAGESIZEX = "rlnImageSizeX"
+    IMAGESIZEY = "rlnImageSizeY"
+    IMAGESIZEZ = "rlnImageSizeZ"
     IMAGEDIMENSION = "rlnImageDimensionality"
     ORIGINXANGST = "rlnOriginXAngst"
     ORIGINYANGST = "rlnOriginYAngst"
@@ -84,7 +87,19 @@ class Relion:
     MICROGRAPHPIXELSIZE = "rlnMicrographPixelSize"
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
     MICROGRAPHMETADATA = "rlnMicrographMetadata"
+    MICROGRAPHMOVIE_NAME = "rlnMicrographMovieName"
+    MICROGRAPHGAIN_NAME = "rlnMicrographMovieName"
+    MICROGRAPHID = "rlnMicrographId"
     MICROGRAPHBINNING = "rlnMicrographBinning"
+    MICROGRAPHDOSERATE = "rlnMicrographDoseRate"  # Frame dose in e-/Å^2
+    MICROGRAPHFRAMENUMBER = "rlnMicrographFrameNumber"
+    MICROGRAPHSTARTFRAME = "rlnMicrographStartFrame"
+    MICROGRAPHENDFRAME = "rlnMicrographEndFrame"
+    MICROGRAPHSHIFTX = "rlnMicrographShiftX"
+    MICROGRAPHSHIFTY = "rlnMicrographShiftY"
+    MOTIONMODELCOEFFSIDX = "rlnMotionModelCoeffsIdx"
+    MOTIONMODELCOEFF = "rlnMotionModelCoeff"
+    MOTIONMODELVERSION = "rlnMotionModelVersion"
     MTFFILENAME = "rlnMtfFileName"
     HELICALTUBEID = "rlnHelicalTubeID"
 
