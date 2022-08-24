@@ -343,7 +343,7 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
         log.info("Assigning pose from most likely 3D classes")
         phic = np.array([cs[p] for p in phic_names if u'alignments2D' not in p])
         cls = np.argmax(phic, axis=0)
-        cls_prob = np.choose(cls, phic)
+        cls_prob = phic[cls, range(cls.shape[0])]
         for k in model:
             if model[k] is not None:
                 names = [n for n in cs.dtype.names if n.endswith(k)]
