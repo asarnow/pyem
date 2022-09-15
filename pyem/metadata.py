@@ -293,9 +293,9 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if df is None:
         df = pd.DataFrame()
     if 'ctf/tilt_A' in cs.dtype.names:
-        log.debug("Recovering beam tilt")
-        df[star.Relion.BEAMTILTX] = cs['ctf/tilt_A'][:, 0]
-        df[star.Relion.BEAMTILTY] = cs['ctf/tilt_A'][:, 1]
+        log.debug("Recovering beam tilt and converting to mrad")
+        df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
+        df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
     if 'ctf/shift_A' in cs.dtype.names:
         pass
     if 'ctf/trefoil_A' in cs.dtype.names:
