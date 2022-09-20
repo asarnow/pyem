@@ -293,22 +293,47 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if df is None:
         df = pd.DataFrame()
     if 'ctf/tilt_A' in cs.dtype.names:
-        log.debug("Recovering beam tilt")
-        df[star.Relion.BEAMTILTX] = cs['ctf/tilt_A'][:, 0]
-        df[star.Relion.BEAMTILTY] = cs['ctf/tilt_A'][:, 1]
+        log.debug("Recovering beam tilt and converting to mrad")
+        df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
+        df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
+        z_neg13 = np.array(df[star.Relion.BEAMTILTX])
+        z_13 = np.array(df[star.Relion.BEAMTILTY])
     if 'ctf/shift_A' in cs.dtype.names:
-        pass
+        z_neg11 = (2 * np.pi) + cs['ctf/shift_A'][:, 0]
+        z_11 = (2 * np.pi) + cs['ctf/shift_A'][:, 1]
     if 'ctf/trefoil_A' in cs.dtype.names:
-        pass
-        # df[star.Relion.ODDZERNIKE] = cs['ctf/trefoil_A']
-    if 'ctf/tetrafoil_A' in cs.dtype.names:
-        pass
-        # df[star.Relion.EVENZERNIKE] = cs['ctf/tetra_A']
-    if 'ctf/anisomag' in cs.dtype.names:
-        df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
-        df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
-        df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
-        df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
+        # https://www.jeol.co.jp/en/words/emterms/search_result.html?keyword=wavelength%20of%20electron
+        E = cs['ctf/accel_kv']  # convert units?
+        wavelength = 1.23e3 / np.sqrt(E*(1 + 9.78e-7 * E))  # ? TODO: check this
+        unit_conversion = (2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)
+        z_neg33 = unit_conversion * cs['ctf/trefoil_A'][:, 0]
+        z_33 = unit_conversion * cs['ctf/trefoil_A'][:, 1]
+
+    #     odd_zernike = [z_neg11, z_11, z_neg33, z_neg13, z_13, z_33]
+    #     df.at[0, star.Relion.ODDZERNIKE] = odd_zernike
+    # if 'ctf/tetra_A' in cs.dtype.names:
+
+    #     z_00 = cs['ctf/amp_contrast'] - np.arccos(phi)
+    #     unit_factor = np.pi * wavelength
+    #     unit_conversion_odd = -np.pi/2 * (wavelength**3)
+    #     z_neg22 = 
+    #     z_02 = 
+    #     z_22 = 
+    #     z_neg44 = 
+    #     z_neg24 = 
+    #     z_04 = 
+    #     z_24 = 
+    #     z_44 = 
+
+    #     cs['ctf/tetra_A']
+
+    #     even_zernike = [z_00, z_neg22, z_02, z_22, z_neg44, z_neg24, z_04, z_24, z_44]
+    #     df.at[0, star.Relion.EVENZERNIKE] = even_zernike
+    # if 'ctf/anisomag' in cs.dtype.names:
+    #     df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
+    #     df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
+    #     df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
+    #     df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
     return df
 
 
@@ -430,6 +455,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
     df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
     df = cryosparc_2_cs_array_parameters(cs, df)
     df = cryosparc_2_cs_filament_parameters(cs, df)
+    df = cryosparc_2_cs_ctf_parameters(cs, df)
     if passthroughs is not None:
         for passthrough in passthroughs:
             if type(passthrough) is np.ndarray:
