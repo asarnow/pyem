@@ -292,48 +292,80 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
+    if 'ctf/accel_kv' in cs.dtype.names:
+        # Calculate electron wavelentgh
+        # https://www.jeol.co.jp/en/words/emterms/search_result.html?keyword=wavelength%20of%20electron
+        E = cs['ctf/accel_kv']  # convert units?
+        wavelength = 1.23e3 / np.sqrt(E*(1 + 9.78e-7 * E))  # ? TODO: check this
+    else:
+        wavelength = None
+    if 'ctf/anisomag' in cs.dtype.names:
+        df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
+        df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
+        df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
+        df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
     if 'ctf/tilt_A' in cs.dtype.names:
         log.debug("Recovering beam tilt and converting to mrad")
         df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
         df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
-        z_neg13 = np.array(df[star.Relion.BEAMTILTX])
-        z_13 = np.array(df[star.Relion.BEAMTILTY])
+        df[star.Relion.Z_neg1_3] = df[star.Relion.BEAMTILTX]  # does this also require a conversion factor of 2π * Cs * λ^2
+        df[star.Relion.Z_pos1_3] = df[star.Relion.BEAMTILTY]  # does this also require a conversion factor of 2π * Cs * λ^2
     if 'ctf/shift_A' in cs.dtype.names:
-        z_neg11 = (2 * np.pi) + cs['ctf/shift_A'][:, 0]
-        z_11 = (2 * np.pi) + cs['ctf/shift_A'][:, 1]
-    if 'ctf/trefoil_A' in cs.dtype.names:
-        # https://www.jeol.co.jp/en/words/emterms/search_result.html?keyword=wavelength%20of%20electron
-        E = cs['ctf/accel_kv']  # convert units?
-        wavelength = 1.23e3 / np.sqrt(E*(1 + 9.78e-7 * E))  # ? TODO: check this
-        unit_conversion = (2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)
-        z_neg33 = unit_conversion * cs['ctf/trefoil_A'][:, 0]
-        z_33 = unit_conversion * cs['ctf/trefoil_A'][:, 1]
-
-    #     odd_zernike = [z_neg11, z_11, z_neg33, z_neg13, z_13, z_33]
-    #     df.at[0, star.Relion.ODDZERNIKE] = odd_zernike
-    # if 'ctf/tetra_A' in cs.dtype.names:
-
-    #     z_00 = cs['ctf/amp_contrast'] - np.arccos(phi)
-    #     unit_factor = np.pi * wavelength
-    #     unit_conversion_odd = -np.pi/2 * (wavelength**3)
-    #     z_neg22 = 
-    #     z_02 = 
-    #     z_22 = 
-    #     z_neg44 = 
-    #     z_neg24 = 
-    #     z_04 = 
-    #     z_24 = 
-    #     z_44 = 
-
-    #     cs['ctf/tetra_A']
-
-    #     even_zernike = [z_00, z_neg22, z_02, z_22, z_neg44, z_neg24, z_04, z_24, z_44]
-    #     df.at[0, star.Relion.EVENZERNIKE] = even_zernike
-    # if 'ctf/anisomag' in cs.dtype.names:
-    #     df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
-    #     df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
-    #     df[star.Relion.MAGMAT10] = cs['ctf/anisomag'][:, 2]
-    #     df[star.Relion.MAGMAT11] = cs['ctf/anisomag'][:, 3]
+        df[star.Relion.Z_neg1_1] = (2 * np.pi) + cs['ctf/shift_A'][:, 0]
+        df[star.Relion.Z_pos1_1]  = (2 * np.pi) + cs['ctf/shift_A'][:, 1]
+    if 'ctf/trefoil_A' in cs.dtype.names and 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
+        unit_conversion_even = (2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)
+        df[star.Relion.Z_neg3_3] = unit_conversion_even * cs['ctf/trefoil_A'][:, 0]
+        df[star.Relion.Z_pos3_3] = unit_conversion_even * cs['ctf/trefoil_A'][:, 1]
+    if 'ctf/amp_contrast' in cs.dtype.names:
+        df[star.Relion.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(phi)  # what is phi? Could it be cs['ctf/phas_shift_rad'] ?
+    if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and wavelength is not None:
+        df[star.Relion.Z_neg2_2] = np.pi * wavelength * cs['ctf/df1_A'] # defocus asigmatism (X) Z1
+        # df[star.Relion.Z_0_2] = np.pi * wavelength * # average defocus  # how to find this? I have ctf/df_angle_rad ctf/bfactor ctf/scale & ctf/scale_const
+        df[star.Relion.Z_pos2_2] = np.pi * wavelength * cs['ctf/df2_A'] # defocus astigmatism (Y) Z2
+    if 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
+        unit_conversion_odd = -np.pi/2 * (wavelength**3)
+        df[star.Relion.Z_0_4] = unit_conversion_odd * cs['ctf/cs_mm'] # spherical abberation
+    if 'ctf/tetra_A' in cs.dtype.names and wavelength is not None:
+        unit_conversion_odd = -np.pi/2 * (wavelength**3)
+        df[star.Relion.Z_neg4_4] = unit_conversion_odd * cs['ctf/tetra'][:, 0]
+        df[star.Relion.Z_neg2_4] = unit_conversion_odd * cs['ctf/tetra'][:, 1]
+        df[star.Relion.Z_pos2_4] = unit_conversion_odd * cs['ctf/tetra'][:, 2]
+        df[star.Relion.Z_pos4_4] = unit_conversion_odd * cs['ctf/tetra'][:, 3]
+    # Combine the odd Zernike coefficients into one column
+    if pd.Series([star.Relion.Z_neg1_1,
+                  star.Relion.Z_pos1_1,
+                  star.Relion.Z_neg3_3,
+                  star.Relion.Z_neg1_3,
+                  star.Relion.Z_pos1_3,
+                  star.Relion.Z_pos3_3]).isin(df.columns).all():
+        df[star.Relion.ODDZERNIKE] = "[" + \
+            df[star.Relion.Z_neg1_1] + ", " + \
+            df[star.Relion.Z_pos1_1] + ", " + \
+            df[star.Relion.Z_neg3_3] + ", " + \
+            df[star.Relion.Z_neg1_3] + ", " + \
+            df[star.Relion.Z_pos1_3] + ", " + \
+            df[star.Relion.Z_pos3_3] + "]"
+    # Combine the even Zernike coefficients into one column
+    if pd.Series([star.Relion.Z_0_0,
+                  star.Relion.Z_neg2_2,
+                  star.Relion.Z_0_2,
+                  star.Relion.Z_neg4_4,
+                  star.Relion.Z_neg2_4,
+                  star.Relion.Z_0_4,
+                  star.Relion.Z_2_4,
+                  star.Relion.Z_4_4,
+                  star.Relion.Z_pos3_3]).isin(df.columns).all():
+        df[star.Relion.EVENZERNIKE] = "[" + \
+            df[star.Relion.Z_0_0] + ", " + \
+            df[star.Relion.Z_neg2_2] + ", " + \
+            df[star.Relion.Z_0_2] + ", " + \
+            df[star.Relion.Z_pos2_2] + ", " + \
+            df[star.Relion.Z_neg4_4] + ", " + \
+            df[star.Relion.Z_neg2_4] + ", " + \
+            df[star.Relion.Z_0_4] + ", " + \
+            df[star.Relion.Z_2_4] + ", " + \
+            df[star.Relion.Z_4_4] + "]"
     return df
 
 

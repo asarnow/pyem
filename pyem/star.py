@@ -103,6 +103,23 @@ class Relion:
     MTFFILENAME = "rlnMtfFileName"
     HELICALTUBEID = "rlnHelicalTubeID"
 
+    # Zernike coefficients
+    Z_0_0 = "rlnZernike_0_0"
+    Z_neg1_1 = "rlnZernike_neg1_1"
+    Z_pos1_1 = "rlnZernike_pos1_1"
+    Z_neg2_2 = "rlnZernike_neg2_2"
+    Z_0_2 = "rlnZernike_0_2"
+    Z_pos2_2 = "rlnZernike_pos2_2"
+    Z_neg3_3 = "rlnZernike_neg3_3"
+    Z_neg1_3 = "rlnZernike_neg1_3"
+    Z_pos1_3 = "rlnZernike_pos1_3"
+    Z_pos3_3 = "rlnZernike_pos3_3"
+    Z_neg4_4 = "rlnZernike_neg4_4"
+    Z_neg2_4 = "rlnZernike_neg2_4"
+    Z_0_4 = "rlnZernike_0_4"
+    Z_pos2_4 = "rlnZernike_pos2_4"
+    Z_pos4_4 = "rlnZernike_pos4_4"
+
     # Field lists.
     COORDS = [COORDX, COORDY]
     ORIGINS = [ORIGINX, ORIGINY]
