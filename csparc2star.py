@@ -42,6 +42,8 @@ def main(args):
     if args.input[0].endswith(".cs"):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
+        if args.first10k:
+            cs = cs[:10000]
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
                                                boxsize=args.boxsize, swapxy=args.noswapxy,
@@ -132,6 +134,9 @@ if __name__ == "__main__":
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
-    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, type=int)
+    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, const=-1,
+                        type=int)
+    parser.add_argument("--10k", help="Only read first 10,000 particles for rapid testing.", action="store_true",
+                        dest="first10k")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
