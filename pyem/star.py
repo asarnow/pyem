@@ -69,12 +69,6 @@ class Relion:
     # Relion 3+ fields.
     OPTICSGROUP = "rlnOpticsGroup"
     OPTICSGROUPNAME = "rlnOpticsGroupName"
-    ODDZERNIKE = "rlnOddZernike"
-    EVENZERNIKE = "rlnEvenZernike"
-    MAGMAT00 = "rlnMagMat00"
-    MAGMAT01 = "rlnMagMat01"
-    MAGMAT10 = "rlnMagMat10"
-    MAGMAT11 = "rlnMagMat11"
     IMAGEPIXELSIZE = "rlnImagePixelSize"
     IMAGESIZE = "rlnImageSize"
     IMAGESIZEX = "rlnImageSizeX"
@@ -102,6 +96,28 @@ class Relion:
     MOTIONMODELVERSION = "rlnMotionModelVersion"
     MTFFILENAME = "rlnMtfFileName"
     HELICALTUBEID = "rlnHelicalTubeID"
+    MAGMAT00 = "rlnMagMat00"
+    MAGMAT01 = "rlnMagMat01"
+    MAGMAT10 = "rlnMagMat10"
+    MAGMAT11 = "rlnMagMat11"
+    ODDZERNIKE = "rlnOddZernike"
+    EVENZERNIKE = "rlnEvenZernike"
+    Z_0_0 = "Z(0,0)"  # Piston.
+    Z_neg1_1 = "Z(-1,1)"  # Shift ("tilt") X.
+    Z_1_1 = "Z(1,1)"  # Shift ("tilt") Y.
+    Z_neg2_2 = "Z(-2,2)"  # Oblique astigmatism.
+    Z_0_2 = "Z(0,2)"  # Longitudinal defocus.
+    Z_2_2 = "Z(2,2)"  # Vertical astigmatism.
+    Z_neg3_3 = "Z(-3,3)"  # Vertical trefoil.
+    Z_neg1_3 = "Z(-1,3)"  # Vertical coma.
+    Z_1_3 = "Z(1,3)"  # Horizontal coma.
+    Z_3_3 = "Z(3,3)"  # Oblique trefoil.
+    Z_neg4_4 = "Z(-4,4)"  # Oblique quadrafoil.
+    Z_neg2_4 = "Z(-2,4)"  # Oblique 2ary astigmatism.
+    Z_0_4 = "Z(0,4)"  # Primary spherical aberration.
+    Z_2_4 = "Z(2,4)"  # Vertical 2ary astigmatism.
+    Z_4_4 = "Z(4,4)"  # Vertical quadrafoil.
+
 
     # Field lists.
     COORDS = [COORDX, COORDY]
@@ -133,6 +149,9 @@ class Relion:
     OPTICSGROUPTABLE = [AC, CS, VOLTAGE, BEAMTILTX, BEAMTILTY, OPTICSGROUPNAME, ODDZERNIKE, EVENZERNIKE,
                         MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION,
                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
+
+    ZERNIKE_COEFS_ODD = [Z_neg1_1, Z_1_1, Z_neg3_3, Z_neg1_3, Z_1_3, Z_3_3]
+    ZERNIKE_COEFS_EVEN = [Z_0_0, Z_neg2_2, Z_0_2, Z_2_2, Z_neg4_4, Z_neg2_4, Z_0_4, Z_2_4, Z_4_4]
 
     # Data tables.
     OPTICDATA = "data_optics"
