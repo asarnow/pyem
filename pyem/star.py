@@ -38,6 +38,7 @@ class Relion:
     RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
     COORDX = "rlnCoordinateX"
     COORDY = "rlnCoordinateY"
+    COORDZ = "rlnCoordinateZ"
     ORIGINX = "rlnOriginX"
     ORIGINY = "rlnOriginY"
     ORIGINZ = "rlnOriginZ"
@@ -105,6 +106,7 @@ class Relion:
 
     # Field lists.
     COORDS = [COORDX, COORDY]
+    COORDS3D = [COORDX, COORDY, COORDZ]
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ORIGINSANGST = [ORIGINXANGST, ORIGINYANGST]
