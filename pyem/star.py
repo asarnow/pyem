@@ -102,22 +102,6 @@ class Relion:
     MAGMAT11 = "rlnMagMat11"
     ODDZERNIKE = "rlnOddZernike"
     EVENZERNIKE = "rlnEvenZernike"
-    Z_0_0 = "Z(0,0)"  # Piston.
-    Z_neg1_1 = "Z(-1,1)"  # Shift ("tilt") X.
-    Z_1_1 = "Z(1,1)"  # Shift ("tilt") Y.
-    Z_neg2_2 = "Z(-2,2)"  # Oblique astigmatism.
-    Z_0_2 = "Z(0,2)"  # Longitudinal defocus.
-    Z_2_2 = "Z(2,2)"  # Vertical astigmatism.
-    Z_neg3_3 = "Z(-3,3)"  # Vertical trefoil.
-    Z_neg1_3 = "Z(-1,3)"  # Vertical coma.
-    Z_1_3 = "Z(1,3)"  # Horizontal coma.
-    Z_3_3 = "Z(3,3)"  # Oblique trefoil.
-    Z_neg4_4 = "Z(-4,4)"  # Oblique quadrafoil.
-    Z_neg2_4 = "Z(-2,4)"  # Oblique 2ary astigmatism.
-    Z_0_4 = "Z(0,4)"  # Primary spherical aberration.
-    Z_2_4 = "Z(2,4)"  # Vertical 2ary astigmatism.
-    Z_4_4 = "Z(4,4)"  # Vertical quadrafoil.
-
 
     # Field lists.
     COORDS = [COORDX, COORDY]
@@ -150,9 +134,6 @@ class Relion:
                         MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION,
                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
 
-    ZERNIKE_COEFS_ODD = [Z_neg1_1, Z_1_1, Z_neg3_3, Z_neg1_3, Z_1_3, Z_3_3]
-    ZERNIKE_COEFS_EVEN = [Z_0_0, Z_neg2_2, Z_0_2, Z_2_2, Z_neg4_4, Z_neg2_4, Z_0_4, Z_2_4, Z_4_4]
-
     # Data tables.
     OPTICDATA = "data_optics"
     MICROGRAPHDATA = "data_micrographs"
@@ -174,6 +155,24 @@ class UCSF:
     UID = "ucsfUid"
     PARTICLE_UID = "ucsfParticleUid"
     MICROGRAPH_UID = "ucsfMicrographUid"
+    Z_0_0 = "Z(0,0)"  # Piston.
+    Z_neg1_1 = "Z(-1,1)"  # Shift ("tilt") X.
+    Z_1_1 = "Z(1,1)"  # Shift ("tilt") Y.
+    Z_neg2_2 = "Z(-2,2)"  # Oblique astigmatism.
+    Z_0_2 = "Z(0,2)"  # Longitudinal defocus.
+    Z_2_2 = "Z(2,2)"  # Vertical astigmatism.
+    Z_neg3_3 = "Z(-3,3)"  # Vertical trefoil.
+    Z_neg1_3 = "Z(-1,3)"  # Vertical coma.
+    Z_1_3 = "Z(1,3)"  # Horizontal coma.
+    Z_3_3 = "Z(3,3)"  # Oblique trefoil.
+    Z_neg4_4 = "Z(-4,4)"  # Oblique quadrafoil.
+    Z_neg2_4 = "Z(-2,4)"  # Oblique 2ary astigmatism.
+    Z_0_4 = "Z(0,4)"  # Primary spherical aberration.
+    Z_2_4 = "Z(2,4)"  # Vertical 2ary astigmatism.
+    Z_4_4 = "Z(4,4)"  # Vertical quadrafoil.
+    # Zernike coefficients in order for Relion.
+    ZERNIKE_COEFS_ODD = [Z_neg1_1, Z_1_1, Z_neg3_3, Z_neg1_3, Z_1_3, Z_3_3]
+    ZERNIKE_COEFS_EVEN = [Z_0_0, Z_neg2_2, Z_0_2, Z_2_2, Z_neg4_4, Z_neg2_4, Z_0_4, Z_2_4, Z_4_4]
 
 
 def smart_merge(s1, s2, fields, key=None, left_key=None):
@@ -620,6 +619,17 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True, drop=True):
     if UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH in df:
         df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
+
+    if UCSF.ZERNIKE_COEFS_ODD in df:
+        df[Relion.ODDZERNIKE] = df[UCSF.ZERNIKE_COEFS_ODD].astype(str).agg(",".join, axis=1)
+        if drop:
+            df.drop(UCSF.ZERNIKE_COEFS_ODD, axis=1, inplace=True)
+
+    if UCSF.ZERNIKE_COEFS_EVEN in df:
+        df[Relion.EVENZERNIKE] = df[UCSF.ZERNIKE_COEFS_EVEN].astype(str).agg(",".join, axis=1)
+        if drop:
+            df.drop(UCSF.ZERNIKE_COEFS_EVEN, axis=1, inplace=True)
+
     if drop:
         df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
                 axis=1, inplace=True)
