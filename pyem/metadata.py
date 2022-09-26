@@ -326,14 +326,12 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df[star.Relion.Z_neg2_2] = (np.pi * wavelength) * np.cos(2 * astigmatism_angle) * defocus_deviation # defocus asigmatism in X (Z1)
         df[star.Relion.Z_pos2_2] = (np.pi * wavelength) * np.sin(2 * astigmatism_angle) * defocus_deviation # defocus astigmatism in Y (Z2)
     if 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
-        unit_conversion_odd = -np.pi/2 * (wavelength**3)
-        df[star.Relion.Z_0_4] = unit_conversion_odd * cs['ctf/cs_mm'] # spherical abberation
+        df[star.Relion.Z_0_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/cs_mm'] # spherical abberation
     if 'ctf/tetra_A' in cs.dtype.names and wavelength is not None:
-        unit_conversion_odd = -np.pi/2 * (wavelength**3)
-        df[star.Relion.Z_neg4_4] = unit_conversion_odd * cs['ctf/tetra'][:, 0]
-        df[star.Relion.Z_neg2_4] = unit_conversion_odd * cs['ctf/tetra'][:, 1]
-        df[star.Relion.Z_pos2_4] = unit_conversion_odd * cs['ctf/tetra'][:, 2]
-        df[star.Relion.Z_pos4_4] = unit_conversion_odd * cs['ctf/tetra'][:, 3]
+        df[star.Relion.Z_neg4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 0]
+        df[star.Relion.Z_neg2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 1]
+        df[star.Relion.Z_pos2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 2]
+        df[star.Relion.Z_pos4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 3]
     # Combine the odd Zernike coefficients into one column
     if pd.Series([star.Relion.Z_neg1_1,
                   star.Relion.Z_pos1_1,
