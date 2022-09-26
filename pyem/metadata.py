@@ -295,7 +295,7 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if 'ctf/accel_kv' in cs.dtype.names:
         # Calculate electron wavelentgh
         kv = cs['ctf/accel_kv']
-        wavelength = 12.2643247 / np.sqrt(kv * (1 + (kv * 0.978466e-6)))
+        wavelength = 12.2643247 / np.sqrt(kv * (1. + kv * 0.978466e-6))
     else:
         wavelength = None
     if 'ctf/anisomag' in cs.dtype.names:
