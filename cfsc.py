@@ -26,6 +26,7 @@ import time
 from healpy import pix2vec
 from pyem import mrc
 from pyem.algo import bincorr
+from pyem.algo import bincorr_nb
 from scipy.spatial import cKDTree
 
 
@@ -47,8 +48,9 @@ def main(args):
     x, y, z = pix2vec(nside, np.arange(12 * nside ** 2))
     xhalf = x >= 0
     hp = np.column_stack([x[xhalf], y[xhalf], z[xhalf]])
+    log.info("Sampling %d cones" % hp.shape[0])
     t0 = time.time()
-    fcor = calc_dfsc(f3d1, f3d2, hp, np.deg2rad(args.arc))
+    fcor = calc_dfsc(f3d1, f3d2, hp, np.deg2rad(args.arc), threads=args.threads)
     log.info("Computed CFSC in %0.2f s" % (time.time() - t0))
     fsc = calc_fsc(f3d1, f3d2)
     t0 = time.time()
@@ -58,34 +60,45 @@ def main(args):
     return 0
 
 
-def calc_dfsc(f3d1, f3d2, vecs, arc):
+def calc_dfsc(f3d1, f3d2, vecs, arc, threads=1):
     log = logging.getLogger('root')
     n = f3d1.shape[0]
     sz, sy, sx = np.meshgrid(np.fft.fftfreq(n),
                              np.fft.fftfreq(n),
                              np.fft.rfftfreq(n), indexing="ij")
+    maxdist = 2 * np.sin(arc / 2)
     s = np.sqrt(sx ** 2 + sy ** 2 + sz ** 2)
     r = s * n
     r[r > n // 2] = n // 2 + 1
     r = np.round(r).astype(np.int64)
-    nr = np.max(r) + 1
     grid = np.column_stack([sx.reshape(-1), sy.reshape(-1), sz.reshape(-1)])
     grid = grid / np.linalg.norm(grid, axis=1).reshape(-1, 1)
+    grid[0, :] = 1e6  # Set origin NaN outside the unit sphere that won't ever be matched.
     t0 = time.time()
-    kdtree = cKDTree(grid[1:], balanced_tree=False)
+    kdtree = cKDTree(grid, balanced_tree=False)
     log.info("Constructed kD-tree in %0.2f s" % (time.time() - t0))
-    maxdist = 2 * np.sin(arc / 2)
-    fcor = np.zeros((len(vecs), nr - 1))
     t0 = time.time()
-    for i, vec in enumerate(vecs):
-        idx = kdtree.query_ball_point(vec, maxdist)
-        idx = np.asarray(idx) + 1
-        fcor[i] = np.abs(bincorr(
-            f3d1.flat[idx], f3d2.flat[idx], r.flat[idx], minlength=nr)[:-1])
-        if i % 10 == 0:
-            log.debug("Evaluated %d cones in %0.2f s" % (i, time.time() - t0))
+    # idx = kdtree.query_ball_point(vecs, maxdist, workers=threads)
+    # log.info("Queried %d vectors in %0.2f s" % (len(vecs), time.time() - t0))
+    fcor = process_cones(f3d1, f3d2, r, kdtree, vecs, maxdist, threads)
     log.info("Evaluated %d cones in %0.2f s" % (len(vecs), time.time() - t0))
     return np.row_stack(fcor)
+
+
+def process_cones(f3d1, f3d2, r, kdtree, vecs, maxdist, threads):
+    log = logging.getLogger('root')
+    nr = np.max(r) + 1
+    fcor = np.zeros((len(vecs), nr - 1), dtype=np.float64)
+    f3d1_flat = f3d1.reshape(-1)
+    f3d2_flat = f3d2.reshape(-1)
+    r_flat = r.reshape(-1)
+    t0 = time.time()
+    for ia in range(0, len(vecs)):
+        idx = kdtree.query_ball_point(vecs[ia], maxdist, workers=threads)
+        fcor[ia] = np.abs(bincorr_nb(
+            f3d1_flat[idx], f3d2_flat[idx], r_flat[idx], n=nr)[:-1])
+        log.debug("Evaluated cones %d-%d in %0.2f s" % (ia, ia, time.time() - t0))
+    return fcor
 
 
 def calc_fsc(f3d1, f3d2):
