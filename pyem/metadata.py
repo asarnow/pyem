@@ -307,15 +307,15 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         log.debug("Recovering beam tilt and converting to mrad")
         df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
         df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
-        df[star.Relion.Z_neg1_3] = df[star.Relion.BEAMTILTX]  # does this also require a conversion factor of 2π * Cs * λ^2
-        df[star.Relion.Z_pos1_3] = df[star.Relion.BEAMTILTY]  # does this also require a conversion factor of 2π * Cs * λ^2
+    if 'ctf/tilt_A' in cs.dtype.names and wavelength is not None:
+        df[star.Relion.Z_neg1_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * df[star.Relion.BEAMTILTX]
+        df[star.Relion.Z_pos1_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * df[star.Relion.BEAMTILTY]
     if 'ctf/shift_A' in cs.dtype.names:
         df[star.Relion.Z_neg1_1] = (2 * np.pi) + cs['ctf/shift_A'][:, 0]
         df[star.Relion.Z_pos1_1]  = (2 * np.pi) + cs['ctf/shift_A'][:, 1]
     if 'ctf/trefoil_A' in cs.dtype.names and 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
-        unit_conversion_even = (2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)
-        df[star.Relion.Z_neg3_3] = unit_conversion_even * cs['ctf/trefoil_A'][:, 0]
-        df[star.Relion.Z_pos3_3] = unit_conversion_even * cs['ctf/trefoil_A'][:, 1]
+        df[star.Relion.Z_neg3_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * cs['ctf/trefoil_A'][:, 0]
+        df[star.Relion.Z_pos3_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * cs['ctf/trefoil_A'][:, 1]
     if 'ctf/amp_contrast' in cs.dtype.names:
         df[star.Relion.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(phi)  # what is phi? Could it be cs['ctf/phas_shift_rad'] ?
     if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names and wavelength is not None:
