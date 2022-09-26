@@ -328,10 +328,10 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
         df[star.Relion.Z_0_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/cs_mm'] # spherical abberation
     if 'ctf/tetra_A' in cs.dtype.names and wavelength is not None:
-        df[star.Relion.Z_neg4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 0]
-        df[star.Relion.Z_neg2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 1]
-        df[star.Relion.Z_pos2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 2]
-        df[star.Relion.Z_pos4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra'][:, 3]
+        df[star.Relion.Z_neg4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra_A'][:, 0]
+        df[star.Relion.Z_neg2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra_A'][:, 1]
+        df[star.Relion.Z_pos2_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra_A'][:, 2]
+        df[star.Relion.Z_pos4_4] = (-np.pi/2 * (wavelength**3)) * cs['ctf/tetra_A'][:, 3]
     # Combine the odd Zernike coefficients into one column
     if pd.Series([star.Relion.Z_neg1_1,
                   star.Relion.Z_pos1_1,
