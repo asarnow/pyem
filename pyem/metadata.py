@@ -292,12 +292,14 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
-    if 'ctf/accel_kv' in cs.dtype.names:
-        # Calculate electron wavelentgh
-        kv = cs['ctf/accel_kv']
-        wavelength = 12.2643247 / np.sqrt(kv * (1. + kv * 0.978466e-6))
-    else:
-        wavelength = None
+    assert 'ctf/accel_kv' in cs.dtype.names
+    # Calculate electron wavelentgh
+    kv = cs['ctf/accel_kv']
+    wl = 12.2643247 / np.sqrt(kv * (1. + kv * 0.978466e-6))
+    wl_2 = wl**2
+    wl_3 = wl**3
+    half_pi = 0.5 * np.pi
+    two_pi = 2 * np.pi
     if 'ctf/anisomag' in cs.dtype.names:
         df[star.Relion.MAGMAT00] = cs['ctf/anisomag'][:, 0]
         df[star.Relion.MAGMAT01] = cs['ctf/anisomag'][:, 1]
@@ -307,31 +309,31 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         log.debug("Recovering beam tilt and converting to mrad")
         df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
         df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
-    if 'ctf/tilt_A' in cs.dtype.names and wavelength is not None:
-        df[star.UCSF.Z_neg1_3] = 2 * np.pi * cs['ctf/cs_mm'] * wavelength**2 * df[star.Relion.BEAMTILTX]
-        df[star.UCSF.Z_1_3] = 2 * np.pi * cs['ctf/cs_mm'] * wavelength**2 * df[star.Relion.BEAMTILTY]
+    if 'ctf/tilt_A' in cs.dtype.names:
+        df[star.UCSF.Z_neg1_3] = two_pi * wl_2 * cs['ctf/tilt_A'][:, 0]
+        df[star.UCSF.Z_1_3] = two_pi * wl_2 * cs['ctf/tilt_A'][:, 1]
     if 'ctf/shift_A' in cs.dtype.names:
-        df[star.UCSF.Z_neg1_1] = 2 * np.pi + cs['ctf/shift_A'][:, 0]
-        df[star.UCSF.Z_1_1] = 2 * np.pi + cs['ctf/shift_A'][:, 1]
-    if 'ctf/trefoil_A' in cs.dtype.names and 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
-        df[star.UCSF.Z_neg3_3] = 2*np.pi * cs['ctf/cs_mm'] * wavelength**2 * cs['ctf/trefoil_A'][:, 0]
-        df[star.UCSF.Z_3_3] = 2*np.pi * cs['ctf/cs_mm'] * wavelength**2 * cs['ctf/trefoil_A'][:, 1]
+        df[star.UCSF.Z_neg1_1] = two_pi + cs['ctf/shift_A'][:, 0]
+        df[star.UCSF.Z_1_1] = two_pi + cs['ctf/shift_A'][:, 1]
+    if 'ctf/trefoil_A' in cs.dtype.names and 'ctf/cs_mm' in cs.dtype.names:
+        df[star.UCSF.Z_neg3_3] = two_pi * cs['ctf/cs_mm'] * wl_2 * cs['ctf/trefoil_A'][:, 0]
+        df[star.UCSF.Z_3_3] = two_pi * cs['ctf/cs_mm'] * wl_2 * cs['ctf/trefoil_A'][:, 1]
     if 'ctf/amp_contrast' in cs.dtype.names:
         df[star.UCSF.Z_0_0] = cs['ctf/phase_shift_rad'] - np.arccos(cs['ctf/amp_contrast'])
-    if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names and wavelength is not None:
+    if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names:
         df_avg = (cs['ctf/df1_A'] + cs['ctf/df2_A']) / 2
         df_dev = (cs['ctf/df1_A'] - cs['ctf/df2_A']) / 2
-        angast = cs['ctf/df_angle_rad']
-        df[star.UCSF.Z_0_2] = np.pi * wavelength * df_avg
-        df[star.UCSF.Z_neg2_2] = np.pi * wavelength * np.cos(2 * angast) * df_dev # defocus asigmatism in X (Z1)
-        df[star.UCSF.Z_2_2] = np.pi * wavelength * np.sin(2 * angast) * df_dev # defocus astigmatism in Y (Z2)
-    if 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
-        df[star.UCSF.Z_0_4] = -np.pi/2 * wavelength**3 * cs['ctf/cs_mm'] # spherical abberation
-    if 'ctf/tetra_A' in cs.dtype.names and wavelength is not None:
-        df[star.UCSF.Z_neg4_4] = -np.pi/2 * wavelength**3 * cs['ctf/tetra_A'][:, 0]
-        df[star.UCSF.Z_neg2_4] = -np.pi/2 * wavelength**3 * cs['ctf/tetra_A'][:, 1]
-        df[star.UCSF.Z_2_4] = -np.pi/2 * wavelength**3 * cs['ctf/tetra_A'][:, 2]
-        df[star.UCSF.Z_4_4] = -np.pi/2 * wavelength**3 * cs['ctf/tetra_A'][:, 3]
+        two_angast = 2 * cs['ctf/df_angle_rad']
+        df[star.UCSF.Z_0_2] = np.pi * wl * df_avg
+        df[star.UCSF.Z_neg2_2] = np.pi * wl * np.cos(two_angast) * df_dev # defocus asigmatism in X (Z1)
+        df[star.UCSF.Z_2_2] = np.pi * wl * np.sin(two_angast) * df_dev # defocus astigmatism in Y (Z2)
+    if 'ctf/cs_mm' in cs.dtype.names:
+        df[star.UCSF.Z_0_4] = -half_pi * wl_3 * cs['ctf/cs_mm'] * 1e7 # spherical abberation
+    if 'ctf/tetra_A' in cs.dtype.names:
+        df[star.UCSF.Z_neg4_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 0]
+        df[star.UCSF.Z_neg2_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 1]
+        df[star.UCSF.Z_2_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 2]
+        df[star.UCSF.Z_4_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 3]
     return df
 
 
