@@ -317,7 +317,7 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df[star.Relion.Z_neg3_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * cs['ctf/trefoil_A'][:, 0]
         df[star.Relion.Z_pos3_3] = ((2*np.pi) * cs['ctf/cs_mm'] * (wavelength**2)) * cs['ctf/trefoil_A'][:, 1]
     if 'ctf/amp_contrast' in cs.dtype.names:
-        df[star.Relion.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(phi)  # what is phi? Could it be cs['ctf/phas_shift_rad'] ?
+        df[star.Relion.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(cs['ctf/phase_shift_rad'])
     if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names and wavelength is not None:
         average_defocus = (cs['ctf/df1_A'] + cs['ctf/df2_A']) / 2
         defocus_deviation = (cs['ctf/df1_A'] - cs['ctf/df2_A']) / 2
