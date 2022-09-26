@@ -340,12 +340,12 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
                   star.Relion.Z_pos1_3,
                   star.Relion.Z_pos3_3]).isin(df.columns).all():
         df[star.Relion.ODDZERNIKE] = "[" + \
-            df[star.Relion.Z_neg1_1] + ", " + \
-            df[star.Relion.Z_pos1_1] + ", " + \
-            df[star.Relion.Z_neg3_3] + ", " + \
-            df[star.Relion.Z_neg1_3] + ", " + \
-            df[star.Relion.Z_pos1_3] + ", " + \
-            df[star.Relion.Z_pos3_3] + "]"
+            df[star.Relion.Z_neg1_1].astype(str) + ", " + \
+            df[star.Relion.Z_pos1_1].astype(str) + ", " + \
+            df[star.Relion.Z_neg3_3].astype(str) + ", " + \
+            df[star.Relion.Z_neg1_3].astype(str) + ", " + \
+            df[star.Relion.Z_pos1_3].astype(str) + ", " + \
+            df[star.Relion.Z_pos3_3].astype(str) + "]"
     # Combine the even Zernike coefficients into one column
     if pd.Series([star.Relion.Z_0_0,
                   star.Relion.Z_neg2_2,
@@ -353,19 +353,19 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
                   star.Relion.Z_neg4_4,
                   star.Relion.Z_neg2_4,
                   star.Relion.Z_0_4,
-                  star.Relion.Z_2_4,
-                  star.Relion.Z_4_4,
+                  star.Relion.Z_pos2_4,
+                  star.Relion.Z_pos4_4,
                   star.Relion.Z_pos3_3]).isin(df.columns).all():
         df[star.Relion.EVENZERNIKE] = "[" + \
-            df[star.Relion.Z_0_0] + ", " + \
-            df[star.Relion.Z_neg2_2] + ", " + \
-            df[star.Relion.Z_0_2] + ", " + \
-            df[star.Relion.Z_pos2_2] + ", " + \
-            df[star.Relion.Z_neg4_4] + ", " + \
-            df[star.Relion.Z_neg2_4] + ", " + \
-            df[star.Relion.Z_0_4] + ", " + \
-            df[star.Relion.Z_2_4] + ", " + \
-            df[star.Relion.Z_4_4] + "]"
+            df[star.Relion.Z_0_0].astype(str) + ", " + \
+            df[star.Relion.Z_neg2_2].astype(str) + ", " + \
+            df[star.Relion.Z_0_2].astype(str) + ", " + \
+            df[star.Relion.Z_pos2_2].astype(str) + ", " + \
+            df[star.Relion.Z_neg4_4].astype(str) + ", " + \
+            df[star.Relion.Z_neg2_4].astype(str) + ", " + \
+            df[star.Relion.Z_0_4].astype(str) + ", " + \
+            df[star.Relion.Z_pos2_4].astype(str) + ", " + \
+            df[star.Relion.Z_pos4_4].astype(str) + "]"
     return df
 
 
