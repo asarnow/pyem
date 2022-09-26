@@ -317,7 +317,7 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df[star.UCSF.Z_neg3_3] = 2*np.pi * cs['ctf/cs_mm'] * wavelength**2 * cs['ctf/trefoil_A'][:, 0]
         df[star.UCSF.Z_3_3] = 2*np.pi * cs['ctf/cs_mm'] * wavelength**2 * cs['ctf/trefoil_A'][:, 1]
     if 'ctf/amp_contrast' in cs.dtype.names:
-        df[star.UCSF.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(cs['ctf/phase_shift_rad'])
+        df[star.UCSF.Z_0_0] = cs['ctf/phase_shift_rad'] - np.arccos(cs['ctf/amp_contrast'])
     if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names and wavelength is not None:
         df_avg = (cs['ctf/df1_A'] + cs['ctf/df2_A']) / 2
         df_dev = (cs['ctf/df1_A'] - cs['ctf/df2_A']) / 2
