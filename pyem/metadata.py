@@ -318,10 +318,13 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df[star.Relion.Z_pos3_3] = unit_conversion_even * cs['ctf/trefoil_A'][:, 1]
     if 'ctf/amp_contrast' in cs.dtype.names:
         df[star.Relion.Z_0_0] = cs['ctf/amp_contrast'] - np.arccos(phi)  # what is phi? Could it be cs['ctf/phas_shift_rad'] ?
-    if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and wavelength is not None:
-        df[star.Relion.Z_neg2_2] = np.pi * wavelength * cs['ctf/df1_A'] # defocus asigmatism (X) Z1
-        # df[star.Relion.Z_0_2] = np.pi * wavelength * # average defocus  # how to find this? I have ctf/df_angle_rad ctf/bfactor ctf/scale & ctf/scale_const
-        df[star.Relion.Z_pos2_2] = np.pi * wavelength * cs['ctf/df2_A'] # defocus astigmatism (Y) Z2
+    if 'ctf/df1_A' in cs.dtype.names and 'ctf/df2_A' in cs.dtype.names and 'ctf/df_angle_rad' in cs.dtype.names and wavelength is not None:
+        average_defocus = (cs['ctf/df1_A'] + cs['ctf/df2_A']) / 2
+        defocus_deviation = (cs['ctf/df1_A'] - cs['ctf/df2_A']) / 2
+        astigmatism_angle = cs['ctf/df_angle_rad']
+        df[star.Relion.Z_0_2] = (np.pi * wavelength) * average_defocus
+        df[star.Relion.Z_neg2_2] = (np.pi * wavelength) * np.cos(2 * astigmatism_angle) * defocus_deviation # defocus asigmatism in X (Z1)
+        df[star.Relion.Z_pos2_2] = (np.pi * wavelength) * np.sin(2 * astigmatism_angle) * defocus_deviation # defocus astigmatism in Y (Z2)
     if 'ctf/cs_mm' in cs.dtype.names and wavelength is not None:
         unit_conversion_odd = -np.pi/2 * (wavelength**3)
         df[star.Relion.Z_0_4] = unit_conversion_odd * cs['ctf/cs_mm'] # spherical abberation
