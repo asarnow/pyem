@@ -313,8 +313,8 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df[star.UCSF.Z_neg1_3] = two_pi * wl_2 * cs['ctf/tilt_A'][:, 0]
         df[star.UCSF.Z_1_3] = two_pi * wl_2 * cs['ctf/tilt_A'][:, 1]
     if 'ctf/shift_A' in cs.dtype.names:
-        df[star.UCSF.Z_neg1_1] = two_pi + cs['ctf/shift_A'][:, 0]
-        df[star.UCSF.Z_1_1] = two_pi + cs['ctf/shift_A'][:, 1]
+        df[star.UCSF.Z_neg1_1] = -two_pi + cs['ctf/shift_A'][:, 0]
+        df[star.UCSF.Z_1_1] = -two_pi + cs['ctf/shift_A'][:, 1]
     if 'ctf/trefoil_A' in cs.dtype.names and 'ctf/cs_mm' in cs.dtype.names:
         df[star.UCSF.Z_neg3_3] = two_pi * cs['ctf/cs_mm'] * wl_2 * cs['ctf/trefoil_A'][:, 0]
         df[star.UCSF.Z_3_3] = two_pi * cs['ctf/cs_mm'] * wl_2 * cs['ctf/trefoil_A'][:, 1]
