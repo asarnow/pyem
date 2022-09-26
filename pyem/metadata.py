@@ -325,10 +325,10 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
         df_dev = (cs['ctf/df1_A'] - cs['ctf/df2_A']) / 2
         two_angast = 2 * cs['ctf/df_angle_rad']
         df[star.UCSF.Z_0_2] = np.pi * wl * df_avg
-        df[star.UCSF.Z_neg2_2] = np.pi * wl * np.cos(two_angast) * df_dev # defocus asigmatism in X (Z1)
-        df[star.UCSF.Z_2_2] = np.pi * wl * np.sin(two_angast) * df_dev # defocus astigmatism in Y (Z2)
+        df[star.UCSF.Z_neg2_2] = np.pi * wl * np.cos(two_angast) * df_dev  # Defocus asigmatism major (Z1)
+        df[star.UCSF.Z_2_2] = np.pi * wl * np.sin(two_angast) * df_dev  # Defocus astigmatism minor (Z2)
     if 'ctf/cs_mm' in cs.dtype.names:
-        df[star.UCSF.Z_0_4] = -half_pi * wl_3 * cs['ctf/cs_mm'] * 1e7 # spherical abberation
+        df[star.UCSF.Z_0_4] = -half_pi * wl_3 * cs['ctf/cs_mm'] * 1e7  # Spherical aberration in Å.
     if 'ctf/tetra_A' in cs.dtype.names:
         df[star.UCSF.Z_neg4_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 0]
         df[star.UCSF.Z_neg2_4] = -half_pi * np.pi * wl_3 * cs['ctf/tetra_A'][:, 1]
