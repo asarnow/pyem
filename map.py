@@ -127,7 +127,7 @@ def main(args):
 
     if not (args.target is None and args.euler is None and args.transform is None and args.boxsize is None) \
             and vop.ismask(data) and args.spline_order != 0:
-        log.warn("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
+        log.warning("Input looks like a mask, --spline-order 0 (nearest neighbor) is recommended")
 
     if args.transform is not None:
         try:
