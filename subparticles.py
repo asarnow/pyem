@@ -45,7 +45,7 @@ def main(args):
         df = star.parse_star(args.input, nrows=1)
         args.apix = star.calculate_apix(df)
         if args.apix is None:
-            log.warn("Could not compute pixel size, default is 1.0 Angstroms per pixel")
+            log.warning("Could not compute pixel size, default is 1.0 Angstroms per pixel")
             args.apix = 1.0
             df[star.Relion.MAGNIFICATION] = 10000
             df[star.Relion.DETECTORPIXELSIZE] = 1.0
@@ -70,7 +70,7 @@ def main(args):
 
     if args.transform is not None and not hasattr(args.transform, "dtype"):
         if args.target is not None:
-            log.warn("--target supersedes --transform")
+            log.warning("--target supersedes --transform")
         try:
             args.transform = np.array(json.loads(args.transform))
         except:
@@ -79,7 +79,7 @@ def main(args):
 
     if args.origin is not None:
         if args.boxsize is not None:
-            log.warn("--origin supersedes --boxsize")
+            log.warning("--origin supersedes --boxsize")
         try:
             args.origin = np.array([np.double(tok) for tok in args.origin.split(",")])
             args.origin /= args.apix
@@ -95,7 +95,7 @@ def main(args):
     df = star.parse_star(args.input)
 
     if star.calculate_apix(df) != args.apix:
-        log.warn("Using specified pixel size of %f instead of calculated size %f" %
+        log.warning("Using specified pixel size of %f instead of calculated size %f" %
                  (args.apix, star.calculate_apix(df)))
 
     if args.cls is not None:

@@ -467,9 +467,9 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.debug("Converting DEFOCUSANGLE from degrees to radians")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
-        log.warn("Defocus angles not found")
+        log.warning("Defocus angles not found")
     else:
-        log.warn("Defocus values not found")
+        log.warning("Defocus values not found")
 
     if star.Relion.PHASESHIFT in df:
         log.debug("Converting PHASESHIFT from degrees to radians")
@@ -501,6 +501,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.debug("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
     elif star.is_particle_star(df):
-        log.warn("Angular alignment parameters not found")
+        log.warning("Angular alignment parameters not found")
     return df
 

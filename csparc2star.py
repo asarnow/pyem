@@ -83,7 +83,7 @@ def main(args):
         df = star.smart_merge(df, coord_star, fields=fields, key=key)
         star.simplify_star_ucsf(df)
         if df.shape[0] != n:
-            log.warn("%d / %d particles remain after coordinate merge" % (df.shape[0], n))
+            log.warning("%d / %d particles remain after coordinate merge" % (df.shape[0], n))
 
     if args.micrograph_path is not None:
         df = star.replace_micrograph_path(df, args.micrograph_path, inplace=True)
