@@ -699,6 +699,8 @@ def check_defaults(df, inplace=False):
 
     if Relion.OPTICSGROUPNAME in df and Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = df[Relion.OPTICSGROUPNAME].astype('category').cat.codes
+    elif Relion.OPTICSGROUP in df and Relion.OPTICSGROUPNAME not in df:
+        df[Relion.OPTICSGROUPNAME] = "opticsGroup" + df[Relion.OPTICSGROUP].astype(str)
 
     if Relion.BEAMTILTCLASS in df and Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = df[Relion.BEAMTILTCLASS]
