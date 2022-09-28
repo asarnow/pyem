@@ -622,12 +622,12 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True, drop=True):
         df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
 
-    if UCSF.ZERNIKE_COEFS_ODD in df:
+    if pd.Series(UCSF.ZERNIKE_COEFS_ODD).isin(df.columns).all():
         df[Relion.ODDZERNIKE] = df[UCSF.ZERNIKE_COEFS_ODD].astype(str).agg(",".join, axis=1)
         if drop:
             df.drop(UCSF.ZERNIKE_COEFS_ODD, axis=1, inplace=True)
 
-    if UCSF.ZERNIKE_COEFS_EVEN in df:
+    if pd.Series(UCSF.ZERNIKE_COEFS_EVEN).isin(df.columns).all():
         df[Relion.EVENZERNIKE] = df[UCSF.ZERNIKE_COEFS_EVEN].astype(str).agg(",".join, axis=1)
         if drop:
             df.drop(UCSF.ZERNIKE_COEFS_EVEN, axis=1, inplace=True)
