@@ -134,7 +134,7 @@ if __name__ == "__main__":
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
-    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, const=-1,
+    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=None, const=-1,
                         type=int)
     parser.add_argument("--10k", help="Only read first 10,000 particles for rapid testing.", action="store_true",
                         dest="first10k")
