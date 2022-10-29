@@ -361,7 +361,7 @@ if __name__ == "__main__":
     parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
                         action="store_true")
     parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
-    parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int, default=0)
+    parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int, default=None)
     parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
     parser.add_argument("--offset-optics", help="Offset the optics groups by N", type=int, metavar="N")
     parser.add_argument("--transform",
