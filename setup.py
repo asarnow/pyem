@@ -6,7 +6,7 @@ from setuptools import find_packages
 entrypoint_prefix= "pyem_"
 setup(
     name='pyem',
-    version='0.4',
+    version='0.6b1',
     packages=find_packages(),
     url='https://github.com/asarnow/pyem',
     license='GNU Public License Version 3',
