@@ -76,7 +76,9 @@ def parse_f9_par(fn):
 
 
 def parse_fx_par(fn):
-    df = pd.read_csv(fn, delimiter="\s+", skipfooter=2, engine="python")
+    with open(fn, 'r') as f:
+        columns = f.readline().split()
+        df = pd.read_csv(f, delimiter="\s+", header=None, names=columns, comment="C")
     return df
 
 
@@ -256,7 +258,7 @@ def cryosparc_065_csv2star(meta, minphic=0):
     return df
 
 
-def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False, invertx=False, inverty=True):
+def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, inverty=True):
     log = logging.getLogger('root')
     if df is None:
         df = pd.DataFrame()
@@ -266,10 +268,18 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=False, invertx=False, 
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
         if invertx:
+            # Might rarely be needed, if your K3 images are "tall" in SerialEM.
             df[star.Relion.COORDX] = 1 - df[star.Relion.COORDX]
         if inverty:
+            # cryoSPARC coordinates have origin in "bottom left" so inverting Y is default for Relion correctness
+            # (and therefore also for Import Particles). However, cryoSPARC Patch Motion flips images physically
+            # vs. SerialEM, Motioncor2 doesn't, so "inverting twice" (not inverting) is required if switching.
             df[star.Relion.COORDY] = 1 - df[star.Relion.COORDY]
         if swapxy:
+            # In cryoSPARC, fast axis is long axis of K3, 'location/micrograph_shape' is [y, x].
+            # In Relion and numpy (e.g. pyem.mrc), the fast axis is the short axis of K3, shape is (x, y).
+            # cryoSPARC import particles correctly imports *Relion convention* coordinates, which we also want.
+            # Default behavior is now to always swap.
             df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
                                               cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
         else:
@@ -283,9 +293,9 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if df is None:
         df = pd.DataFrame()
     if 'ctf/tilt_A' in cs.dtype.names:
-        log.debug("Recovering beam tilt")
-        df[star.Relion.BEAMTILTX] = cs['ctf/tilt_A'][:, 0]
-        df[star.Relion.BEAMTILTY] = cs['ctf/tilt_A'][:, 1]
+        log.debug("Recovering beam tilt and converting to mrad")
+        df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
+        df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
     if 'ctf/shift_A' in cs.dtype.names:
         pass
     if 'ctf/trefoil_A' in cs.dtype.names:
@@ -333,7 +343,7 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
         log.info("Assigning pose from most likely 3D classes")
         phic = np.array([cs[p] for p in phic_names if u'alignments2D' not in p])
         cls = np.argmax(phic, axis=0)
-        cls_prob = np.choose(cls, phic)
+        cls_prob = phic[cls, range(cls.shape[0])]
         for k in model:
             if model[k] is not None:
                 names = [n for n in cs.dtype.names if n.endswith(k)]
@@ -457,9 +467,9 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.debug("Converting DEFOCUSANGLE from degrees to radians")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
-        log.warn("Defocus angles not found")
+        log.warning("Defocus angles not found")
     else:
-        log.warn("Defocus values not found")
+        log.warning("Defocus values not found")
 
     if star.Relion.PHASESHIFT in df:
         log.debug("Converting PHASESHIFT from degrees to radians")
@@ -491,6 +501,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.debug("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
     elif star.is_particle_star(df):
-        log.warn("Angular alignment parameters not found")
+        log.warning("Angular alignment parameters not found")
     return df
 

@@ -21,8 +21,10 @@ import numpy as np
 import os
 
 
-MODE = {0: np.dtype(np.int8), 1: np.dtype(np.int16), 2: np.dtype(np.float32), 6: np.dtype(np.uint16),
-        np.dtype(np.int8): 0, np.dtype(np.int16): 1, np.dtype(np.float32): 2, np.dtype(np.uint16): 6}
+MODE = {0: np.dtype(np.int8), 1: np.dtype(np.int16), 2: np.dtype(np.float32),
+        6: np.dtype(np.uint16), 12: np.dtype(np.float16),
+        np.dtype(np.int8): 0, np.dtype(np.int16): 1, np.dtype(np.float32): 2,
+        np.dtype(np.uint16): 6, np.dtype(np.float16): 12}
 HEADER_LEN = int(1024)  # Bytes.
 
 
@@ -103,7 +105,7 @@ def read(fname, inc_header=False, compat="mrc2014"):
         if datatype in MODE:
             dtype = MODE[datatype]
         else:
-            raise IOError("Unknown MRC data type")
+            raise IOError("Unknown MRC data type %d" % datatype)
         data = np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * nz), shape, order=order)
     if inc_header:
         return data, hdr
@@ -186,7 +188,7 @@ def read_imgs(fname, idx, num=1, compat="mrc2014"):
         if datatype in MODE:
             dtype = MODE[datatype]
         else:
-            raise IOError("Unknown MRC data type")
+            raise IOError("Unknown MRC data type %d" % datatype)
         f.seek(HEADER_LEN + idx * dtype.itemsize * nx * ny)
         return np.reshape(np.fromfile(f, dtype=dtype, count=nx * ny * num),
                           shape, order=order)
@@ -208,7 +210,7 @@ class ZSliceReader:
         if datatype in MODE:
             self.dtype = MODE[datatype]
         else:
-            raise IOError("Unknown MRC data type")
+            raise IOError("Unknown MRC data type %d" % datatype)
         self.i = 0
 
     def read(self, i):
@@ -263,7 +265,7 @@ class ZSliceWriter:
             if hdr["datatype"] in MODE:
                 self.set_dtype(hdr["datatype"])
             else:
-                raise IOError("Unknown MRC data type")
+                raise IOError("Unknown MRC data type %d" % hdr['datatype'])
             self.f.seek(0, os.SEEK_END)
         else:
             self.f = open(self.path, 'wb')
@@ -271,14 +273,8 @@ class ZSliceWriter:
             self.f.write(b'\x00' * HEADER_LEN)
 
     def set_dtype(self, dtype):
-        if np.dtype(dtype).kind == 'f':
-            dtype = np.float32
-        if np.dtype(dtype).kind == 'i':
-            dtype = np.int16
-        if np.dtype(dtype).kind == 'u':
-            dtype = np.uint16
         if np.dtype(dtype) not in MODE:
-            raise ValueError("Invalid dtype for MRC")
+            raise ValueError("Unknown MRC data type %d" % dtype)
         self.dtype = np.dtype(dtype)
 
     def set_shape(self, shape):

@@ -38,6 +38,7 @@ class Relion:
     RECONSTRUCT_IMAGE_NAME = "rlnReconstructImageName"
     COORDX = "rlnCoordinateX"
     COORDY = "rlnCoordinateY"
+    COORDZ = "rlnCoordinateZ"
     ORIGINX = "rlnOriginX"
     ORIGINY = "rlnOriginY"
     ORIGINZ = "rlnOriginZ"
@@ -66,28 +67,46 @@ class Relion:
     RANDOMSUBSET = "rlnRandomSubset"
     AUTOPICKFIGUREOFMERIT = "rlnAutopickFigureOfMerit"
 
-    # Relion 3 fields.
+    # Relion 3+ fields.
     OPTICSGROUP = "rlnOpticsGroup"
     OPTICSGROUPNAME = "rlnOpticsGroupName"
-    ODDZERNIKE = "rlnOddZernike"
-    EVENZERNIKE = "rlnEvenZernike"
-    MAGMAT00 = "rlnMagMat00"
-    MAGMAT01 = "rlnMagMat01"
-    MAGMAT10 = "rlnMagMat10"
-    MAGMAT11 = "rlnMagMat11"
     IMAGEPIXELSIZE = "rlnImagePixelSize"
     IMAGESIZE = "rlnImageSize"
+    IMAGESIZEX = "rlnImageSizeX"
+    IMAGESIZEY = "rlnImageSizeY"
+    IMAGESIZEZ = "rlnImageSizeZ"
     IMAGEDIMENSION = "rlnImageDimensionality"
     ORIGINXANGST = "rlnOriginXAngst"
     ORIGINYANGST = "rlnOriginYAngst"
     ORIGINZANGST = "rlnOriginZAngst"
     MICROGRAPHPIXELSIZE = "rlnMicrographPixelSize"
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
+    MICROGRAPHMETADATA = "rlnMicrographMetadata"
+    MICROGRAPHMOVIE_NAME = "rlnMicrographMovieName"
+    MICROGRAPHGAIN_NAME = "rlnMicrographMovieName"
+    MICROGRAPHID = "rlnMicrographId"
+    MICROGRAPHBINNING = "rlnMicrographBinning"
+    MICROGRAPHDOSERATE = "rlnMicrographDoseRate"  # Frame dose in e-/Å^2
+    MICROGRAPHFRAMENUMBER = "rlnMicrographFrameNumber"
+    MICROGRAPHSTARTFRAME = "rlnMicrographStartFrame"
+    MICROGRAPHENDFRAME = "rlnMicrographEndFrame"
+    MICROGRAPHSHIFTX = "rlnMicrographShiftX"
+    MICROGRAPHSHIFTY = "rlnMicrographShiftY"
+    MOTIONMODELCOEFFSIDX = "rlnMotionModelCoeffsIdx"
+    MOTIONMODELCOEFF = "rlnMotionModelCoeff"
+    MOTIONMODELVERSION = "rlnMotionModelVersion"
     MTFFILENAME = "rlnMtfFileName"
     HELICALTUBEID = "rlnHelicalTubeID"
+    MAGMAT00 = "rlnMagMat00"
+    MAGMAT01 = "rlnMagMat01"
+    MAGMAT10 = "rlnMagMat10"
+    MAGMAT11 = "rlnMagMat11"
+    ODDZERNIKE = "rlnOddZernike"
+    EVENZERNIKE = "rlnEvenZernike"
 
     # Field lists.
     COORDS = [COORDX, COORDY]
+    COORDS3D = [COORDX, COORDY, COORDZ]
     ORIGINS = [ORIGINX, ORIGINY]
     ORIGINS3D = [ORIGINX, ORIGINY, ORIGINZ]
     ORIGINSANGST = [ORIGINXANGST, ORIGINYANGST]
@@ -138,6 +157,24 @@ class UCSF:
     UID = "ucsfUid"
     PARTICLE_UID = "ucsfParticleUid"
     MICROGRAPH_UID = "ucsfMicrographUid"
+    Z_0_0 = "Z(0,0)"  # Piston.
+    Z_neg1_1 = "Z(-1,1)"  # Shift ("tilt") X.
+    Z_1_1 = "Z(1,1)"  # Shift ("tilt") Y.
+    Z_neg2_2 = "Z(-2,2)"  # Oblique astigmatism.
+    Z_0_2 = "Z(0,2)"  # Longitudinal defocus.
+    Z_2_2 = "Z(2,2)"  # Vertical astigmatism.
+    Z_neg3_3 = "Z(-3,3)"  # Vertical trefoil.
+    Z_neg1_3 = "Z(-1,3)"  # Vertical coma.
+    Z_1_3 = "Z(1,3)"  # Horizontal coma.
+    Z_3_3 = "Z(3,3)"  # Oblique trefoil.
+    Z_neg4_4 = "Z(-4,4)"  # Oblique quadrafoil.
+    Z_neg2_4 = "Z(-2,4)"  # Oblique 2ary astigmatism.
+    Z_0_4 = "Z(0,4)"  # Primary spherical aberration.
+    Z_2_4 = "Z(2,4)"  # Vertical 2ary astigmatism.
+    Z_4_4 = "Z(4,4)"  # Vertical quadrafoil.
+    # Zernike coefficients in order for Relion.
+    ZERNIKE_COEFS_ODD = [Z_neg1_1, Z_1_1, Z_neg3_3, Z_neg1_3, Z_1_3, Z_3_3]
+    ZERNIKE_COEFS_EVEN = [Z_0_0, Z_neg2_2, Z_0_2, Z_2_2, Z_neg4_4, Z_neg2_4, Z_0_4, Z_2_4, Z_4_4]
 
 
 def smart_merge(s1, s2, fields, key=None, left_key=None):
@@ -335,7 +372,7 @@ def set_optics_groups(df, sep="_", idx=4, inplace=False):
     return df
 
 
-def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
+def parse_star_table_header(starfile, offset=0, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
@@ -355,6 +392,12 @@ def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
             if foundheader and not lastheader:
                 break
             ln += 1
+    return headers, ln
+
+
+def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
+    headers, ln = parse_star_table_header(starfile, offset=offset, keep_index=keep_index)
+    with open(starfile, 'r') as f:
         f.seek(offset)
         df = pd.read_csv(f, delimiter='\s+', header=None, skiprows=ln, nrows=nrows)
     df.columns = headers
@@ -368,11 +411,15 @@ def star_table_offsets(starfile):
         ln = 0  # Current line number.
         offset = 0  # Char offset of current table.
         cnt = 0  # Number of tables.
+        data_line = 0  # First line of a table's data.
         in_table = False  # True if file cursor is inside a table.
-        in_loop = False
-        blank_terminates = False
+        in_loop = False  # True if file cursor is inside a loop header.
+        blank_terminates = False  # True if a blank line should terminate a table.
+        table_name = None
         while l:
             if l.lstrip().startswith("data"):
+                if table_name is not None and table_name not in tables:  # Unterminated table without a loop.
+                    tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
                 table_name = l.strip()
                 if in_table:
                     tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
@@ -398,6 +445,19 @@ def star_table_offsets(starfile):
         return tables
 
 
+def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
+    tables = star_table_offsets(starfile)
+    dfs = {}
+    for t in tables:
+        if tables[t][2] == tables[t][3]:
+            headers, _ = parse_star_table_header(starfile, offset=tables[t][0], keep_index=keep_index)
+            dfs[t] = pd.Series({t.split()[0]: t.split()[1] for t in headers})
+        else:
+            dfs[t] = parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows),
+                                      keep_index=keep_index)
+    return dfs
+
+
 def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     tables = star_table_offsets(starfile)
     dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
@@ -421,13 +481,6 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     if augment:
         augment_star_ucsf(df, inplace=True)
     return df
-
-
-def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
-    tables = star_table_offsets(starfile)
-    dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
-           for t in tables}
-    return dfs
 
 
 def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
@@ -536,16 +589,16 @@ def augment_star_ucsf(df, inplace=True):
     df = df if inplace else df.copy()
     df.reset_index(inplace=True)
     if Relion.IMAGE_NAME in df:
-        df[UCSF.IMAGE_INDEX], df[UCSF.IMAGE_PATH] = \
-            df[Relion.IMAGE_NAME].str.split("@").str
+        df[[UCSF.IMAGE_INDEX, UCSF.IMAGE_PATH]] = \
+                df[Relion.IMAGE_NAME].str.split("@", n=2, expand=True)
         df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
 
         if Relion.IMAGE_ORIGINAL_NAME not in df:
             df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
 
     if Relion.IMAGE_ORIGINAL_NAME in df:
-        df[UCSF.IMAGE_ORIGINAL_INDEX], df[UCSF.IMAGE_ORIGINAL_PATH] = \
-            df[Relion.IMAGE_ORIGINAL_NAME].str.split("@").str
+        df[[UCSF.IMAGE_ORIGINAL_INDEX, UCSF.IMAGE_ORIGINAL_PATH]] = \
+                df[Relion.IMAGE_ORIGINAL_NAME].str.split("@", n=2, expand=True)
         df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
 
     if UCSF.IMAGE_PATH in df:
@@ -568,6 +621,17 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True, drop=True):
     if UCSF.IMAGE_INDEX in df and UCSF.IMAGE_PATH in df:
         df[Relion.IMAGE_NAME] = df[UCSF.IMAGE_INDEX].map(
             lambda x: "%.6d" % (x + 1)).str.cat(df[UCSF.IMAGE_PATH], sep="@")
+
+    if pd.Series(UCSF.ZERNIKE_COEFS_ODD).isin(df.columns).all():
+        df[Relion.ODDZERNIKE] = df[UCSF.ZERNIKE_COEFS_ODD].astype(str).agg(",".join, axis=1)
+        if drop:
+            df.drop(UCSF.ZERNIKE_COEFS_ODD, axis=1, inplace=True)
+
+    if pd.Series(UCSF.ZERNIKE_COEFS_EVEN).isin(df.columns).all():
+        df[Relion.EVENZERNIKE] = df[UCSF.ZERNIKE_COEFS_EVEN].astype(str).agg(",".join, axis=1)
+        if drop:
+            df.drop(UCSF.ZERNIKE_COEFS_EVEN, axis=1, inplace=True)
+
     if drop:
         df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
                 axis=1, inplace=True)
@@ -635,6 +699,8 @@ def check_defaults(df, inplace=False):
 
     if Relion.OPTICSGROUPNAME in df and Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = df[Relion.OPTICSGROUPNAME].astype('category').cat.codes
+    elif Relion.OPTICSGROUP in df and Relion.OPTICSGROUPNAME not in df:
+        df[Relion.OPTICSGROUPNAME] = "opticsGroup" + df[Relion.OPTICSGROUP].astype(str)
 
     if Relion.BEAMTILTCLASS in df and Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = df[Relion.BEAMTILTCLASS]
@@ -696,8 +762,8 @@ def revert_original(df, inplace=False):
 def strip_path_uids(df, inplace=False, count=-1):
     df = df if inplace else df.copy()
     pat = re.compile("[0-9]{21}_")
-    if UCSF.IMAGE_BASENAME in df:
-        df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_BASENAME].str.replace(pat, "", regex=True, n=count)
+    if UCSF.IMAGE_PATH in df:
+        df[UCSF.IMAGE_PATH] = df[UCSF.IMAGE_PATH].str.replace(pat, "", regex=True, n=count)
     elif Relion.IMAGE_NAME in df:
         df[Relion.IMAGE_NAME] = df[Relion.IMAGE_NAME].str.replace(pat, "", regex=True, n=count)
     if Relion.MICROGRAPH_NAME in df:

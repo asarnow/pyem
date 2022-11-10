@@ -35,12 +35,18 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
+    if args.swapxy:
+        log.warning("Axis swapping is now the default and --swapxy has no effect. "
+                    "Use --noswapxy if unswapping is needed (unlikely).")
+
     if args.input[0].endswith(".cs"):
         log.debug("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
+        if args.first10k:
+            cs = cs[:10000]
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
-                                               boxsize=args.boxsize, swapxy=args.swapxy,
+                                               boxsize=args.boxsize, swapxy=args.noswapxy,
                                                invertx=args.invertx, inverty=args.inverty)
         except (KeyError, ValueError) as e:
             log.error(e, exc_info=True)
@@ -79,7 +85,7 @@ def main(args):
         df = star.smart_merge(df, coord_star, fields=fields, key=key)
         star.simplify_star_ucsf(df)
         if df.shape[0] != n:
-            log.warn("%d / %d particles remain after coordinate merge" % (df.shape[0], n))
+            log.warning("%d / %d particles remain after coordinate merge" % (df.shape[0], n))
 
     if args.micrograph_path is not None:
         df = star.replace_micrograph_path(df, args.micrograph_path, inplace=True)
@@ -117,15 +123,20 @@ def _main_():
     parser.add_argument("--swapxy",
                         help="Swap X and Y axes when converting particle coordinates from normalized to absolute",
                         action="store_true")
+    parser.add_argument("--noswapxy", help="Do not swap X and Y axes when converting particle coordinates",
+                        action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
-    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_true")
+    parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
-    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=0, type=int)
+    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=None, const=-1,
+                        type=int)
+    parser.add_argument("--10k", help="Only read first 10,000 particles for rapid testing.", action="store_true",
+                        dest="first10k")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
 

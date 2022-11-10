@@ -40,9 +40,14 @@ def main(args):
             log.error("Only .star, .mrc, .mrcs, and .par files supported")
             return 1
 
+    if args.float16:
+        dtype = np.float16
+    else:
+        dtype = np.float32
+
     first_ptcl = 0
     dfs = []
-    with mrc.ZSliceWriter(args.output) as writer:
+    with mrc.ZSliceWriter(args.output, dtype=dtype) as writer:
         for fn in args.input:
             if fn.endswith(".star"):
                 df = star.parse_star(fn, augment=True)
@@ -124,6 +129,8 @@ def _main_():
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING",
                         help="Logging level and debug output")
     parser.add_argument("--resort", help="Natural sort the particle image names", action="store_true")
+    parser.add_argument("--float16", "-f16", help="Output Mode 12 MRC (float16) instead of Mode 2 (float32)",
+                        action="store_true")
     sys.exit(main(parser.parse_args()))
 
 

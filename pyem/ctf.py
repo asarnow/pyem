@@ -21,17 +21,17 @@ import numba
 import numpy as np
 
 
-def ctf_freqs(shape, d=1.0, full=True):
+def ctf_freq(shape, d=1.0, full=True):
     """
     :param shape: Shape tuple.
     :param d: Frequency spacing in inverse Å (1 / pixel size).
     :param full: When false, return only unique Fourier half-space for real data. 
     """
     if full:
-        xfrq = np.fft.fftfreqs(shape[1])
+        xfrq = np.fft.fftfreq(shape[1])
     else:
-        xfrq = np.fft.rfftfreqs(shape[1])
-    x, y = np.meshgrid(xfrq, np.fft.fftfreqs(shape[0]))
+        xfrq = np.fft.rfftfreq(shape[1])
+    x, y = np.meshgrid(xfrq, np.fft.fftfreq(shape[0]))
     rho = np.sqrt(x**2 + y**2)
     a = np.arctan2(y, x)
     s = rho * d
