@@ -503,10 +503,27 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
     df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
 
 
+def write_star_series(starfile, series, table="data_general", resort_fields=True, mode='w'):
+    series = series.copy()
+    if resort_fields:
+        series = series.sort_index(inplace=True)
+    series.index = [i if i.startswith("_") else "_" + i for i in series.index]
+    with open(starfile, mode) as f:
+        f.write("\n")
+        f.write(table + '\n')
+        series.to_csv(f, sep=' ', header=False, float_format='%.6f')
+        f.write("\n")
+
+
 def write_star_tables(starfile, dfs, resort_fields=True):
     for i, t in enumerate(dfs):
         mode = 'w' if i == 0 else 'a+'
-        write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        if isinstance(dfs[t], pd.DataFrame):
+            write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        elif isinstance(dfs[t], pd.Series):
+            write_star_series(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        else:
+            raise TypeError("STAR table must have type DataFrame or Series")
 
 
 def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
