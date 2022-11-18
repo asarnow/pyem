@@ -87,6 +87,7 @@ class Relion:
     MICROGRAPHID = "rlnMicrographId"
     MICROGRAPHBINNING = "rlnMicrographBinning"
     MICROGRAPHDOSERATE = "rlnMicrographDoseRate"  # Frame dose in e-/Å^2
+    MICROGRAPHPREEXPOSURE = "rlnMicrographPreExposure"
     MICROGRAPHFRAMENUMBER = "rlnMicrographFrameNumber"
     MICROGRAPHSTARTFRAME = "rlnMicrographStartFrame"
     MICROGRAPHENDFRAME = "rlnMicrographEndFrame"
@@ -137,10 +138,12 @@ class Relion:
                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
 
     # Data tables.
+    GENERALDATA = "data_general"
     OPTICDATA = "data_optics"
     MICROGRAPHDATA = "data_micrographs"
     PARTICLEDATA = "data_particles"
     IMAGEDATA = "data_images"
+    GLOBALSHIFTDATA = "data_global_shift"
 
     # Data type specification.
     DATATYPES = {OPTICSGROUP: np.int}
