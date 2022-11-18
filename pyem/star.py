@@ -506,7 +506,7 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
 def write_star_series(starfile, series, table="data_general", resort_fields=True, mode='w'):
     series = series.copy()
     if resort_fields:
-        series = series.sort_index(inplace=True)
+        series = series.sort_index()
     series.index = [i if i.startswith("_") else "_" + i for i in series.index]
     with open(starfile, mode) as f:
         f.write("\n")
