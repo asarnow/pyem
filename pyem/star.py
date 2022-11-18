@@ -509,10 +509,11 @@ def write_star_series(starfile, series, table="data_general", resort_fields=True
         series = series.sort_index()
     series.index = [i if i.startswith("_") else "_" + i for i in series.index]
     with open(starfile, mode) as f:
-        f.write("\n")
+        f.write('\n')
         f.write(table + '\n')
+        f.write('\n')
         series.to_csv(f, sep=' ', header=False, float_format='%.6f')
-        f.write("\n")
+        f.write('\n')
 
 
 def write_star_tables(starfile, dfs, resort_fields=True):
