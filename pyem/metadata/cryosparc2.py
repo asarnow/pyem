@@ -206,7 +206,7 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
 
 def cryosparc_2_cs_motion_parameters(cs):
     log = logging.getLogger('root')
-    data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph})
+    data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
     data_general[star.Relion.MOTIONMODELVERSION] = 0
     data_general[star.Relion.MICROGRAPHBINNING] = \
         data_general[star.Relion.MICROGRAPHPIXELSIZE] / data_general[star.Relion.MICROGRAPHORIGINALPIXELSIZE]
@@ -214,16 +214,15 @@ def cryosparc_2_cs_motion_parameters(cs):
     data_general[star.Relion.MICROGRAPHPREEXPOSURE] = \
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
-    if 'rigid_motion/path' in cs.dtype.names:
-        for i in range(cs.shape[0]):
-            traj = np.load(cs['rigid_motion/path'][i])
-            d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
-                                                              cs['rigid_motion/frame_end'][i] + 1),
-                 star.Relion.MICROGRAPHSHIFTX: traj[:, 1],
-                 star.Relion.MICROGRAPHSHIFTY: traj[:, 0]}
-            data_shift = pd.DataFrame(d)
-            mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
-    return df
+    for i in range(cs.shape[0]):
+        traj = np.load(cs['rigid_motion/path'][i])
+        d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
+                                                          cs['rigid_motion/frame_end'][i] + 1),
+             star.Relion.MICROGRAPHSHIFTX: traj[:, 1],
+             star.Relion.MICROGRAPHSHIFTY: traj[:, 0]}
+        data_shift = pd.DataFrame(d)
+        mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
+        yield mic
 
 
 def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
