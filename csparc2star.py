@@ -21,6 +21,7 @@ from __future__ import print_function
 import argparse
 import json
 import logging
+import os.path
 import sys
 import numpy as np
 import pandas as pd
@@ -44,6 +45,18 @@ def main(args):
         cs = np.load(args.input[0])
         if args.first10k:
             cs = cs[:10000]
+
+        if args.movies:
+            if not os.path.isdir(args.output):
+                log.error("%s is not a directory" % args.output)
+                return 1
+            log.info("Writing per-movie star files into %s" % args.output)
+            for mic in metadata.cryosparc_2_cs_motion_parameters(cs):
+                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".mrc")
+                log.debug("Writing %s" % fn)
+                star.write_star_tables(os.path.join(args.output, fn + ".star"), mic)
+            return 0
+
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
                                                boxsize=args.boxsize, swapxy=args.noswapxy,
@@ -111,6 +124,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Cryosparc metadata .csv (v0.6.5) or .cs (v2+) files", nargs="*")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--movies", help="Write per-movie star files into output directory", action="store_true")
     parser.add_argument("--boxsize", help="Cryosparc refinement box size (if different from particles)", type=float)
     # parser.add_argument("--passthrough", "-p", help="List file required for some Cryosparc 2+ job types")
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
