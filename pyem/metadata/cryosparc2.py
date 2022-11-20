@@ -222,8 +222,8 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
         traj = np.load(trajfile)
         d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
                                                           cs['rigid_motion/frame_end'][i] + 1),
-             star.Relion.MICROGRAPHSHIFTX: traj[:, 1],
-             star.Relion.MICROGRAPHSHIFTY: traj[:, 0]}
+             star.Relion.MICROGRAPHSHIFTX: traj[:, 1].reshape(-1),
+             star.Relion.MICROGRAPHSHIFTY: traj[:, 0].reshape(-1)}
         data_shift = pd.DataFrame(d)
         mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
         yield mic
