@@ -217,7 +217,7 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
     for i in range(cs.shape[0]):
-        trajfile = cs['rigid_motion/path'][i]
+        trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
         trajfile = os.path.join(trajdir, trajfile)
         traj = np.load(trajfile)
         d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
