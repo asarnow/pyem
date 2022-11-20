@@ -19,6 +19,7 @@
 import logging
 import sys
 import numpy as np
+import os.path
 import pandas as pd
 from pyem import geom
 from pyem import star
@@ -204,7 +205,7 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
     return df
 
 
-def cryosparc_2_cs_motion_parameters(cs):
+def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     log = logging.getLogger('root')
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
     data_general = cryosparc_2_cs_array_parameters(cs, data_general)
@@ -216,7 +217,9 @@ def cryosparc_2_cs_motion_parameters(cs):
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
     for i in range(cs.shape[0]):
-        traj = np.load(cs['rigid_motion/path'][i])
+        trajfile = cs['rigid_motion/path'][i]
+        trajfile = os.path.join(trajdir, trajfile)
+        traj = np.load(trajfile)
         d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
                                                           cs['rigid_motion/frame_end'][i] + 1),
              star.Relion.MICROGRAPHSHIFTX: traj[:, 1],

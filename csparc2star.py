@@ -51,7 +51,8 @@ def main(args):
                 log.error("%s is not a directory" % args.output)
                 return 1
             log.info("Writing per-movie star files into %s" % args.output)
-            for mic in metadata.cryosparc_2_cs_motion_parameters(cs):
+            trajdir = os.path.dirname(args.input)
+            for mic in metadata.cryosparc_2_cs_motion_parameters(cs, trajdir=trajdir):
                 fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".mrc")
                 log.debug("Writing %s" % fn)
                 star.write_star_tables(os.path.join(args.output, fn + ".star"), mic)
