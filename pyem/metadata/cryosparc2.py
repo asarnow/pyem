@@ -207,6 +207,7 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
 def cryosparc_2_cs_motion_parameters(cs):
     log = logging.getLogger('root')
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
+    data_general = cryosparc_2_cs_array_parameters(cs, data_general)
     data_general[star.Relion.MOTIONMODELVERSION] = 0
     data_general[star.Relion.MICROGRAPHBINNING] = \
         data_general[star.Relion.MICROGRAPHPIXELSIZE] / data_general[star.Relion.MICROGRAPHORIGINALPIXELSIZE]
