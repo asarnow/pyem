@@ -52,6 +52,10 @@ def main(args):
                 return 1
             log.info("Writing per-movie star files into %s" % args.output)
             trajdir = os.path.dirname(os.path.dirname(args.input[0]))
+            if args.micrograph_path is None:
+                args.micrograph_path = trajdir  # Sensible default.
+            if args.micrograph_path == "":
+                args.micrograph_path = None  # Do nothing.
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs,
                                                                  trajdir=trajdir,
                                                                  path=args.micrograph_path):
