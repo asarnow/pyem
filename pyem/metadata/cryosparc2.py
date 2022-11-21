@@ -185,8 +185,8 @@ def cryosparc_2_cs_array_parameters(cs, df=None):
         df[star.Relion.IMAGESIZE] = cs["blob/shape"][:, 0]
     elif "movie_blob/shape" in cs.dtype.names:
         log.info("Copying movie size")
-        df[star.Relion.IMAGESIZEX] = cs["movie_blob/shape"][:, 1]
-        df[star.Relion.IMAGESIZEY] = cs["movie_blob/shape"][:, 2]
+        df[star.Relion.IMAGESIZEX] = cs["movie_blob/shape"][:, 2]
+        df[star.Relion.IMAGESIZEY] = cs["movie_blob/shape"][:, 1]
         df[star.Relion.IMAGESIZEZ] = cs["movie_blob/shape"][:, 0]
     elif "micrograph_blob/shape" in cs.dtype.names:
         log.info("Copying micrograph size")
