@@ -227,8 +227,12 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
                                                           cs['rigid_motion/frame_end'][i] + 1),
              star.Relion.MICROGRAPHSHIFTX: traj[:, 1].reshape(-1),
              star.Relion.MICROGRAPHSHIFTY: traj[:, 0].reshape(-1)}
-        data_shift = pd.DataFrame(d)
-        mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
+        try:
+            data_shift = pd.DataFrame(d)
+            mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
+        except ValueError:
+            log.debug("Couldn't convert %s, skipping")
+            continue
         yield mic
 
 
