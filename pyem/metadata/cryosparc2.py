@@ -205,7 +205,7 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
     return df
 
 
-def cryosparc_2_cs_motion_parameters(cs, trajdir=".", path=None):
+def cryosparc_2_cs_movie_parameters(cs, trajdir=".", path=None):
     log = logging.getLogger('root')
     log.info("Creating movie data_general tables")
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
@@ -232,6 +232,11 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir=".", path=None):
             lambda x: os.path.join(path, os.path.basename(x)))
         data_general[star.Relion.MICROGRAPH_NAME] = data_general[star.Relion.MICROGRAPH_NAME].apply(
             lambda x: os.path.join(path, os.path.basename(x)))
+    return data_general
+
+
+def cryosparc_2_cs_motion_parameters(cs, data, trajdir="."):
+    log = logging.getLogger('root')
     log.info("Reading movie trajectory files")
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
@@ -250,7 +255,7 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir=".", path=None):
              star.Relion.MICROGRAPHSHIFTY: traj[:, 1]}
         try:
             data_shift = pd.DataFrame(d)
-            mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
+            mic = {star.Relion.GENERALDATA: data.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
         except ValueError:
             log.debug("Couldn't convert %s, skipping" % trajfile)
             continue

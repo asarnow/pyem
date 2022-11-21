@@ -52,11 +52,21 @@ def main(args):
                 return 1
             log.info("Writing per-movie star files into %s" % args.output)
             trajdir = os.path.dirname(os.path.dirname(args.input[0]))
-            for mic in metadata.cryosparc_2_cs_motion_parameters(cs, trajdir=trajdir, path=args.micrograph_path):
-                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPH_NAME].rstrip(".mrc")
-                fn = os.path.basename(fn)
+            data_general = metadata.cryosparc_2_cs_movie_parameters(cs, trajdir=trajdir, path=args.micrograph_path)
+            data_general[star.Relion.MICROGRAPHMETADATA] = data_general[star.Relion.MICROGRAPH_NAME].apply(
+                lambda x: os.path.join(args.output, os.path.basename(x.rstrip(".mrc")) + ".star"))
+            for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
+                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMETADATA]
                 log.debug("Writing %s" % fn)
                 star.write_star_tables(os.path.join(args.output, fn + ".star"), mic)
+            fields = [star.Relion.VOLTAGE, star.Relion.CS, star.Relion.AC, star.Relion.MICROGRAPHORIGINALPIXELSIZE,
+                      star.Relion.OPTICSGROUP, star.Relion.MICROGRAPH_NAME, star.Relion.MICROGRAPHMETADATA,
+                      star.Relion.MICROGRAPHBINNING, star.Relion.OPTICSGROUP]
+            if len(args.input) > 1 and args.input[-1].endswith(".star"):
+                mic_star = args.input[-1]
+            else:
+                mic_star = os.path.join(os.path.dirname(args.output), "corrected_micrographs.star")
+            star.write_star(mic_star, data_general[[f for f in fields if f in data_general]])
             return 0
 
         try:
