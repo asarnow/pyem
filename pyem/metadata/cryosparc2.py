@@ -219,14 +219,14 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
         trajfile = os.path.join(trajdir, trajfile)
-        traj = np.load(trajfile)
+        traj = np.load(trajfile).reshape((-1, 2))
         log.debug("%s: %d-%d, (%d x %d)" %
                   (trajfile, cs['rigid_motion/frame_start'][i], cs['rigid_motion/frame_end'][i],
-                  traj.shape[0], traj.shape[0]))
+                  traj.shape[1], traj.shape[2]))
         d = {star.Relion.MICROGRAPHFRAMENUMBER: np.arange(cs['rigid_motion/frame_start'][i] + 1,
                                                           cs['rigid_motion/frame_end'][i] + 1),
-             star.Relion.MICROGRAPHSHIFTX: traj[:, 1].reshape(-1),
-             star.Relion.MICROGRAPHSHIFTY: traj[:, 0].reshape(-1)}
+             star.Relion.MICROGRAPHSHIFTX: traj[:, 1],
+             star.Relion.MICROGRAPHSHIFTY: traj[:, 0]}
         try:
             data_shift = pd.DataFrame(d)
             mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
