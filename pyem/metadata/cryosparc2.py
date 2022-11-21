@@ -207,6 +207,7 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
 
 def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     log = logging.getLogger('root')
+    log.info("Creating movie data_general tables")
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
     data_general = cryosparc_2_cs_array_parameters(cs, data_general)
     data_general[star.Relion.MOTIONMODELVERSION] = 0
@@ -218,6 +219,7 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
     data_general[star.Relion.MICROGRAPHMOVIE_NAME] = data_general[star.Relion.MICROGRAPHMOVIE_NAME].apply(
         lambda x: x.decode('UTF-8'))
+    log.info("Reading movie trajectory files")
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
         trajfile = os.path.join(trajdir, trajfile)
