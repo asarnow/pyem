@@ -68,9 +68,7 @@ def main(args):
                       star.Relion.MICROGRAPHBINNING, star.Relion.OPTICSGROUP]
             if len(args.input) > 1 and args.input[-1].endswith(".star"):
                 mic_star = args.input[-1]
-            else:
-                mic_star = os.path.join(os.path.dirname(args.output), "corrected_micrographs.star")
-            star.write_star(mic_star, data_general[[f for f in fields if f in data_general]])
+                star.write_star(mic_star, data_general[[f for f in fields if f in data_general]])
             return 0
 
         try:
