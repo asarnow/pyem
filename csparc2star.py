@@ -52,7 +52,9 @@ def main(args):
                 return 1
             log.info("Writing per-movie star files into %s" % args.output)
             trajdir = os.path.dirname(os.path.dirname(args.input[0]))
-            for mic in metadata.cryosparc_2_cs_motion_parameters(cs, trajdir=trajdir):
+            for mic in metadata.cryosparc_2_cs_motion_parameters(cs,
+                                                                 trajdir=trajdir,
+                                                                 path=args.micrograph_path):
                 fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".tif")
                 fn = os.path.basename(fn)
                 log.debug("Writing %s" % fn)
@@ -133,7 +135,7 @@ if __name__ == "__main__":
                         action="append", type=int, dest="cls")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float, default=0)
     parser.add_argument("--stack-path", help="Path to single particle stack", type=str)
-    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
+    parser.add_argument("--micrograph-path", help="Replacement path for micrographs or movies")
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
