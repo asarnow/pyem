@@ -791,3 +791,12 @@ def strip_path_uids(df, inplace=False, count=-1):
         df[Relion.MICROGRAPH_NAME] = df[Relion.MICROGRAPH_NAME].str.replace(pat, "", regex=True, n=count)
     return df
 
+
+def decode_byte_strings(df, fmt='UTF-8', inplace=False):
+    df = df if inplace else df.copy()
+    byte_fields = [Relion.MICROGRAPH_NAME, Relion.MICROGRAPHMOVIE_NAME, Relion.MICROGRAPHGAIN_NAME,
+                   UCSF.IMAGE_PATH]
+    for f in byte_fields:
+        if f in df:
+            df[f] = df[f].apply(lambda x: x.decode(fmt))
+    return df

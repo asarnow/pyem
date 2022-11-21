@@ -186,8 +186,8 @@ def cryosparc_2_cs_array_parameters(cs, df=None):
     elif "movie_blob/shape" in cs.dtype.names:
         log.info("Copying movie size")
         df[star.Relion.IMAGESIZEX] = cs["movie_blob/shape"][:, 1]
-        df[star.Relion.IMAGESIZEY] = cs["movie_blob/shape"][:, 0]
-        df[star.Relion.IMAGESIZEZ] = cs["movie_blob/shape"][:, 2]
+        df[star.Relion.IMAGESIZEY] = cs["movie_blob/shape"][:, 2]
+        df[star.Relion.IMAGESIZEZ] = cs["movie_blob/shape"][:, 0]
     elif "micrograph_blob/shape" in cs.dtype.names:
         log.info("Copying micrograph size")
         df[star.Relion.IMAGESIZEX] = cs["micrograph_blob/shape"][:, 1]
@@ -217,8 +217,7 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     data_general[star.Relion.MICROGRAPHPREEXPOSURE] = \
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
-    data_general[star.Relion.MICROGRAPHMOVIE_NAME] = data_general[star.Relion.MICROGRAPHMOVIE_NAME].apply(
-        lambda x: x.decode('UTF-8'))
+    data_general = star.decode_byte_strings(data_general, fmt='UTF-8', inplace=True)
     log.info("Reading movie trajectory files")
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
@@ -275,10 +274,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                 log.info("This file contains no new information and will be ignored")
 
     if sys.version_info >= (3, 0):
-        if star.Relion.MICROGRAPH_NAME in df:
-            df[star.Relion.MICROGRAPH_NAME] = df[star.Relion.MICROGRAPH_NAME].apply(lambda x: x.decode('UTF-8'))
-        if star.UCSF.IMAGE_PATH in df:
-            df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_PATH].apply(lambda x: x.decode('UTF-8'))
+        df = star.decode_byte_strings(df, fmt='UTF-8', inplace=True)
 
     # df[star.Relion.MAGNIFICATION] = 10000.0
 
