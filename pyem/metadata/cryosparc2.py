@@ -205,11 +205,17 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
     return df
 
 
-def cryosparc_2_cs_movie_parameters(cs, trajdir=".", path=None):
+def cryosparc_2_cs_movie_parameters(cs, passthrough=None, trajdir=".", path=None):
     log = logging.getLogger('root')
     log.info("Creating movie data_general tables")
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
     data_general = cryosparc_2_cs_array_parameters(cs, data_general)
+    if passthrough is not None:
+        pt = np.load(passthrough)
+        ptdf = util.dataframe_from_records_mapped(pt, {**movie, **micrograph, **general})
+        key = star.UCSF.UID
+        fields = [c for c in ptdf.columns if c not in data_general.columns]
+        data_general = star.smart_merge(data_general, ptdf, fields=fields, key=key)
     data_general[star.Relion.MOTIONMODELVERSION] = 0
     data_general[star.Relion.MICROGRAPHBINNING] = \
         data_general[star.Relion.MICROGRAPHPIXELSIZE] / data_general[star.Relion.MICROGRAPHORIGINALPIXELSIZE]
