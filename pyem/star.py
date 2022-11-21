@@ -83,7 +83,7 @@ class Relion:
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
     MICROGRAPHMETADATA = "rlnMicrographMetadata"
     MICROGRAPHMOVIE_NAME = "rlnMicrographMovieName"
-    MICROGRAPHGAIN_NAME = "rlnMicrographMovieName"
+    MICROGRAPHGAIN_NAME = "rlnMicrographGainName"
     MICROGRAPHID = "rlnMicrographId"
     MICROGRAPHBINNING = "rlnMicrographBinning"
     MICROGRAPHDOSERATE = "rlnMicrographDoseRate"  # Frame dose in e-/Å^2

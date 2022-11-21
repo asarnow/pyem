@@ -53,7 +53,7 @@ def main(args):
             log.info("Writing per-movie star files into %s" % args.output)
             trajdir = os.path.dirname(os.path.dirname(args.input[0]))
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs, trajdir=trajdir):
-                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".mrc")
+                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".tif")
                 log.debug("Writing %s" % fn)
                 star.write_star_tables(os.path.join(args.output, fn + ".star"), mic)
             return 0
