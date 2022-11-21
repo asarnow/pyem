@@ -216,6 +216,8 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
     data_general[star.Relion.MICROGRAPHPREEXPOSURE] = \
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
+    data_general[star.Relion.MICROGRAPHMOVIE_NAME] = data_general[star.Relion.MICROGRAPHMOVIE_NAME].apply(
+        lambda x: x.decode('UTF-8'))
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
         trajfile = os.path.join(trajdir, trajfile)
@@ -229,8 +231,6 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
              star.Relion.MICROGRAPHSHIFTY: traj[:, 0]}
         try:
             data_shift = pd.DataFrame(d)
-            data_shift[star.Relion.MICROGRAPHMOVIE_NAME] = data_shift[star.Relion.MICROGRAPHMOVIE_NAME].apply(
-                lambda x: x.decode('UTF-8'))
             mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
         except ValueError:
             log.debug("Couldn't convert %s, skipping" % trajfile)
