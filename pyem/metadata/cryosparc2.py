@@ -223,6 +223,8 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir=".", path=None):
             lambda x: os.path.join(path, os.path.basename(x)))
         data_general[star.Relion.MICROGRAPHGAIN_NAME] = data_general[star.Relion.MICROGRAPHGAIN_NAME].apply(
             lambda x: os.path.join(path, os.path.basename(x)))
+        data_general[star.Relion.MICROGRAPH_NAME] = data_general[star.Relion.MICROGRAPH_NAME].apply(
+            lambda x: os.path.join(path, os.path.basename(x)))
     log.info("Reading movie trajectory files")
     for i in range(cs.shape[0]):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')

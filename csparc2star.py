@@ -59,7 +59,7 @@ def main(args):
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs,
                                                                  trajdir=trajdir,
                                                                  path=args.micrograph_path):
-                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMOVIE_NAME].rstrip(".tif")
+                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPH_NAME].rstrip(".mrc")
                 fn = os.path.basename(fn)
                 log.debug("Writing %s" % fn)
                 star.write_star_tables(os.path.join(args.output, fn + ".star"), mic)
