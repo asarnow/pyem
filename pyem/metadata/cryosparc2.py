@@ -223,9 +223,9 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
         trajfile = cs['rigid_motion/path'][i].decode('UTF-8')
         trajfile = os.path.join(trajdir, trajfile)
         traj = np.load(trajfile).reshape((-1, 2))
-        zsf = cs['rigid_motion/zero_shift_frame'][0]  # Or i?
-        traj[:, 0] = -traj[:, 0] + zsf[0]  # Invert vectors and re-center to frame 0.
-        traj[:, 1] = traj[:, 1] - zsf[1]  # Invert Y here.
+        zsf = 0  # Or cs['rigid_motion/zero_shift_frame'][i] ?
+        traj[:, 0] = -traj[:, 0] + traj[zsf, 0]  # Invert vectors and re-center to frame 0.
+        traj[:, 1] = traj[:, 1] - traj[zsf, 1]  # Invert Y here.
         traj /= cs['rigid_motion/psize_A'][i]  # Looks right.
         log.debug("%s: %d-%d, (%d x %d)" %
                   (trajfile, cs['rigid_motion/frame_start'][i], cs['rigid_motion/frame_end'][i],
