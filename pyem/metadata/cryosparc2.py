@@ -218,7 +218,14 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir=".", path=None):
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
     data_general = star.decode_byte_strings(data_general, fmt='UTF-8', inplace=True)
-    if path is not None:
+    if path is None:
+        data_general[star.Relion.MICROGRAPHMOVIE_NAME] = data_general[star.Relion.MICROGRAPHMOVIE_NAME].apply(
+            lambda x: os.path.join(trajdir, x))
+        data_general[star.Relion.MICROGRAPHGAIN_NAME] = data_general[star.Relion.MICROGRAPHGAIN_NAME].apply(
+            lambda x: os.path.join(trajdir, x))
+        data_general[star.Relion.MICROGRAPH_NAME] = data_general[star.Relion.MICROGRAPH_NAME].apply(
+            lambda x: os.path.join(trajdir, x))
+    else:
         data_general[star.Relion.MICROGRAPHMOVIE_NAME] = data_general[star.Relion.MICROGRAPHMOVIE_NAME].apply(
             lambda x: os.path.join(path, os.path.basename(x)))
         data_general[star.Relion.MICROGRAPHGAIN_NAME] = data_general[star.Relion.MICROGRAPHGAIN_NAME].apply(
