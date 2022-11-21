@@ -231,7 +231,7 @@ def cryosparc_2_cs_motion_parameters(cs, trajdir="."):
             data_shift = pd.DataFrame(d)
             mic = {star.Relion.GENERALDATA: data_general.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
         except ValueError:
-            log.debug("Couldn't convert %s, skipping")
+            log.debug("Couldn't convert %s, skipping" % trajfile)
             continue
         yield mic
 
