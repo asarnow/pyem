@@ -422,6 +422,7 @@ def star_table_offsets(starfile):
         while l:
             if l.lstrip().startswith("data"):
                 if table_name is not None and table_name not in tables:  # Unterminated table without a loop.
+                    in_table = False
                     tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
                 table_name = l.strip()
                 if in_table:
