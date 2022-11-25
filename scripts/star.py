@@ -29,6 +29,98 @@ from pyem import algo
 from pyem import geom
 from pyem import star
 
+def _main_():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles", type=str)
+    parser.add_argument("--noaugment", help="Always augment inputs", dest="augment", action="store_false")
+    parser.add_argument("--augment-output", help="Write augmented .star files with non-standard fields",
+                        action="store_false")
+    parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
+                        type=int, default=None)
+    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
+                        action="append", type=int, dest="cls")
+    parser.add_argument("--copy-angles",
+                        help="Source for particle Euler angles (must align exactly with input .star file)",
+                        type=str)
+    parser.add_argument("--copy-alignments", help="Source for alignment parameters (angles and shifts)")
+    parser.add_argument("--copy-ctf", help="Source for CTF parameters (file or quoted glob)")
+    parser.add_argument("--copy-optics", help="Source for optics groups")
+    parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates (file or quoted glob)",
+                        type=str)
+    parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
+                        type=str)
+    parser.add_argument("--copy-reconstruct-images", help="Source for rlnReconstructImage (must align exactly with input .star file)")
+    parser.add_argument("--merge-source", help="Source .star for merge")
+    parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
+    parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
+                        metavar="f1,f2...fN", type=str)
+    parser.add_argument("--by-original", help="Merge using \"original\" field name in input .star", action="store_true")
+    parser.add_argument("--revert-original", help="Swap ImageName and ImageOriginalName before writing", action="store_true")
+    parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
+                        action="store_true")
+    parser.add_argument("--drop-containing",
+                        help="Drop fields containing string from output, may be passed multiple times",
+                        action="append")
+    parser.add_argument("--drop-optics-group", help="Drop this optics group, may be passed multiple times", action="append")
+    parser.add_argument("--info", help="Print information about initial file",
+                        action="store_true")
+    parser.add_argument("--invert", help="Invert field match conditions",
+                        action="store_true")
+    parser.add_argument("--offset-group", help="Add fixed offset to group number",
+                        type=int)
+    parser.add_argument("--restack", help="Stack path for new contiguous particle")
+    parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
+                        action="store_true")
+    parser.add_argument("--recenter", help="Subtract origin from coordinates, leaving subpixel information in origin",
+                        action="store_true")
+    parser.add_argument("--zero-origins", help="Subtract origin from coordinates and set origin to zero",
+                        action="store_true")
+    #    parser.add_argument("--seed", help="Seed for random number generators",
+    #                        type=int)
+    parser.add_argument("--min-separation", help="Minimum distance in Angstroms between particle coordinates", type=float)
+    parser.add_argument("--scale", help="Factor to rescale particle coordinates, origins, and magnification",
+                        type=float)
+    parser.add_argument("--scale-particles",
+                        help="Factor to rescale particle origins and magnification (rebin refined particles)",
+                        type=float)
+    parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
+                        type=float)
+    parser.add_argument("--scale-origins", help="Factor to rescale particle origins",
+                        type=float)
+    parser.add_argument("--scale-magnification", help="Factor to rescale magnification (pixel size)",
+                        type=float)
+    parser.add_argument("--scale-apix", help="Factor to rescale image pixel size directly (Relion 3.1+)",
+                        type=float)
+    parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
+                        action="store_true")
+    parser.add_argument("--micrograph-range", help="Write micrographs with alphanumeric sort index [m, n) to output file",
+                        metavar="m,n")
+    parser.add_argument("--subset", help="Select one half-set", type=int)
+    parser.add_argument("--subsample", help="Randomly subsample remaining particles",
+                        type=float, metavar="N")
+    parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
+                        type=float)
+    parser.add_argument("--suffix", help="Suffix for multiple output files",
+                        type=str, default="")
+    parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
+                        action="store_true")
+    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
+    parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int, default=0)
+    parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
+    parser.add_argument("--offset-optics", help="Offset the optics groups by N", type=int, metavar="N")
+    parser.add_argument("--transform",
+                        help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
+                        type=str)
+    parser.add_argument("--invert-hand", help="Alter Euler angles to invert handedness of reconstruction",
+                        action="store_true")
+    parser.add_argument("--sort", help="Natsort the output file", action="store_true")
+    parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
+    parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
+    parser.add_argument("output", help="Output .star file")
+    sys.exit(main(parser.parse_args()))
+
 
 def main(args):
     if args.info:
@@ -284,93 +376,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles", type=str)
-    parser.add_argument("--noaugment", help="Always augment inputs", dest="augment", action="store_false")
-    parser.add_argument("--augment-output", help="Write augmented .star files with non-standard fields",
-                        action="store_false")
-    parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
-                        type=int, default=None)
-    parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
-                        action="append", type=int, dest="cls")
-    parser.add_argument("--copy-angles",
-                        help="Source for particle Euler angles (must align exactly with input .star file)",
-                        type=str)
-    parser.add_argument("--copy-alignments", help="Source for alignment parameters (angles and shifts)")
-    parser.add_argument("--copy-ctf", help="Source for CTF parameters (file or quoted glob)")
-    parser.add_argument("--copy-optics", help="Source for optics groups")
-    parser.add_argument("--copy-micrograph-coordinates", help="Source for micrograph paths and particle coordinates (file or quoted glob)",
-                        type=str)
-    parser.add_argument("--copy-paths", help="Source for particle paths (must align exactly with input .star file)",
-                        type=str)
-    parser.add_argument("--copy-reconstruct-images", help="Source for rlnReconstructImage (must align exactly with input .star file)")
-    parser.add_argument("--merge-source", help="Source .star for merge")
-    parser.add_argument("--merge-fields", help="Field(s) to merge", metavar="f1,f2...fN", type=str)
-    parser.add_argument("--merge-key", help="Override merge key detection with explicit key field(s)",
-                        metavar="f1,f2...fN", type=str)
-    parser.add_argument("--by-original", help="Merge using \"original\" field name in input .star", action="store_true")
-    parser.add_argument("--revert-original", help="Swap ImageName and ImageOriginalName before writing", action="store_true")
-    parser.add_argument("--drop-angles", help="Drop tilt, psi and rot angles from output",
-                        action="store_true")
-    parser.add_argument("--drop-containing",
-                        help="Drop fields containing string from output, may be passed multiple times",
-                        action="append")
-    parser.add_argument("--drop-optics-group", help="Drop this optics group, may be passed multiple times", action="append")
-    parser.add_argument("--info", help="Print information about initial file",
-                        action="store_true")
-    parser.add_argument("--invert", help="Invert field match conditions",
-                        action="store_true")
-    parser.add_argument("--offset-group", help="Add fixed offset to group number",
-                        type=int)
-    parser.add_argument("--restack", help="Stack path for new contiguous particle")
-    parser.add_argument("--pick", help="Only keep fields output by Gautomatch",
-                        action="store_true")
-    parser.add_argument("--recenter", help="Subtract origin from coordinates, leaving subpixel information in origin",
-                        action="store_true")
-    parser.add_argument("--zero-origins", help="Subtract origin from coordinates and set origin to zero",
-                        action="store_true")
-    #    parser.add_argument("--seed", help="Seed for random number generators",
-    #                        type=int)
-    parser.add_argument("--min-separation", help="Minimum distance in Angstroms between particle coordinates", type=float)
-    parser.add_argument("--scale", help="Factor to rescale particle coordinates, origins, and magnification",
-                        type=float)
-    parser.add_argument("--scale-particles",
-                        help="Factor to rescale particle origins and magnification (rebin refined particles)",
-                        type=float)
-    parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
-                        type=float)
-    parser.add_argument("--scale-origins", help="Factor to rescale particle origins",
-                        type=float)
-    parser.add_argument("--scale-magnification", help="Factor to rescale magnification (pixel size)",
-                        type=float)
-    parser.add_argument("--scale-apix", help="Factor to rescale image pixel size directly (Relion 3.1+)",
-                        type=float)
-    parser.add_argument("--split-micrographs", help="Write separate output file for each micrograph",
-                        action="store_true")
-    parser.add_argument("--micrograph-range", help="Write micrographs with alphanumeric sort index [m, n) to output file",
-                        metavar="m,n")
-    parser.add_argument("--subset", help="Select one half-set", type=int)
-    parser.add_argument("--subsample", help="Randomly subsample remaining particles",
-                        type=float, metavar="N")
-    parser.add_argument("--subsample-micrographs", help="Randomly subsample micrographs",
-                        type=float)
-    parser.add_argument("--suffix", help="Suffix for multiple output files",
-                        type=str, default="")
-    parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
-                        action="store_true")
-    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
-    parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int, default=0)
-    parser.add_argument("--set-optics", help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)", type=str)
-    parser.add_argument("--offset-optics", help="Offset the optics groups by N", type=int, metavar="N")
-    parser.add_argument("--transform",
-                        help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
-                        type=str)
-    parser.add_argument("--invert-hand", help="Alter Euler angles to invert handedness of reconstruction",
-                        action="store_true")
-    parser.add_argument("--sort", help="Natsort the output file", action="store_true")
-    parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
-    parser.add_argument("input", help="Input .star file(s) or unquoted glob", nargs="*")
-    parser.add_argument("output", help="Output .star file")
-    sys.exit(main(parser.parse_args()))
+    _main_()
