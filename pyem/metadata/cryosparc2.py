@@ -213,6 +213,7 @@ def cryosparc_2_cs_movie_parameters(cs, passthrough=None, trajdir=".", path=None
     if passthrough is not None:
         pt = np.load(passthrough)
         ptdf = util.dataframe_from_records_mapped(pt, {**movie, **micrograph, **general})
+        ptdf = cryosparc_2_cs_array_parameters(cs, ptdf)
         key = star.UCSF.UID
         fields = [c for c in ptdf.columns if c not in data_general.columns]
         data_general = star.smart_merge(data_general, ptdf, fields=fields, key=key)
