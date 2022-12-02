@@ -311,7 +311,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
     if star.Relion.DEFOCUSANGLE in df:
-        log.debug("Converting DEFOCUSANGLE from degrees to radians")
+        log.debug("Converting DEFOCUSANGLE from radians to degrees")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
         log.warning("Defocus angles not found")
