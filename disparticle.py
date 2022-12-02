@@ -17,6 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
@@ -31,6 +32,10 @@ from pyem import star
 
 
 def main(args):
+    log = logging.getLogger('root')
+    hdlr = logging.StreamHandler(sys.stdout)
+    log.addHandler(hdlr)
+    log.setLevel(logging.getLevelName(args.loglevel.upper()))
     sns.set()
     if args.fast:
         df = star.parse_star(args.input, nrows=10000)
@@ -38,10 +43,13 @@ def main(args):
         df = star.parse_star(args.input)
     gb = df.groupby(star.UCSF.MICROGRAPH_BASENAME)
     if args.mic is None:
+        log.info("Searching for median micrograph")
         args.mic = gb.size().argsort().index[gb.ngroups // 2 + args.offset_mics]  # Micrograph w/ median particle count.
         group = gb.get_group(args.mic)
+        log.info("Median micrograph has %d particles" % group.shape[0])
         mic_path = group.iloc[0][star.Relion.MICROGRAPH_NAME]
     elif np.char.isnumeric(args.mic):
+        log.info("Using micrograph %d" % int(args.mic))
         group = gb.nth[int(args.mic)]
         args.mic = group.index[0]
         mic_path = group.iloc[0][star.Relion.MICROGRAPH_NAME]
@@ -51,11 +59,13 @@ def main(args):
         group = gb.get_group(args.mic)
     x = group[star.Relion.COORDX]
     y = group[star.Relion.COORDY]
+    log.info("Selected %s for display" % mic_path)
     im, hdr = mrc.read(mic_path, compat="mrc2014", inc_header=True)
     im_min = np.min(im)
     im = (im - im_min) / np.max(np.abs(im - im_min))
     I = fft.rfft2(im)
     if args.phase_flip:
+        log.info("Phase flipping micrograph")
         group_avg = group.mean(numeric_only=True)
         apix = hdr['xlen'] / hdr['nx']
         sx, sy = np.meshgrid(np.fft.rfftfreq(im.shape[1]), np.fft.fftfreq(im.shape[0]))
@@ -78,8 +88,10 @@ def main(args):
     g = ski.exposure.rescale_intensity(g, in_range=(p2, p98))
     g = g[:, ::-1].T
     if args.invertx:
+        log.info("Inverting X coordinates")
         x = im.shape[0] - x
     if args.inverty:
+        log.info("Inverting Y coordinates")
         y = im.shape[1] - y
     if args.swapxy:
         x, y = y, x
@@ -92,6 +104,7 @@ def main(args):
     if args.output is None:
         plt.show()
     else:
+        log.info("Saving figure to %s" % args.output)
         f.savefig(args.output, dpi=300, bbox_inches="tight")
     return 0
 
@@ -112,4 +125,5 @@ if __name__ == "__main__":
     parser.add_argument("--swapxy", "-s", action="store_true",
                         help="Swap X & Y (NOT THE SAME as --swapxy in csparc2star.py)")
     parser.add_argument("--phase-flip", "-p", action="store_true", help="Flip CTF phases in micrograph before display")
+    parser.add_argument("--loglevel", "-l", help="Set log verbosity", default="warning")
     sys.exit(main(parser.parse_args()))
