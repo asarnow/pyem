@@ -90,6 +90,12 @@ def main(args):
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
+    if args.flipy and not args.inverty:
+        log.warning("--flipy requires --inverty and is being ignored")
+    elif args.flipy:
+        log.info("Flipping refined shifts in Y")
+        df[star.Relion.ORIGINY] = -df[star.Relion.ORIGINY]
+
     if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
 
@@ -156,6 +162,7 @@ if __name__ == "__main__":
                         action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
     parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
+    parser.add_argument("--flip-y", help="Invert refined particle Y shifts", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
