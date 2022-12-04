@@ -79,13 +79,16 @@ def main(args):
              lp=2 * apix)
         c = np.sign(c)
         I *= c
-    GH = ndi.fourier_gaussian(I, sigma=1000, n=im.shape[0])
-    gH = np.real(fft.irfft2(GH))
-    GL = ndi.fourier_gaussian(I, sigma=10, n=im.shape[0])
-    gL = np.real(fft.irfft2(GL))
-    g = gL / gH
-    p2, p98 = np.percentile(g, [4, 98])
-    g = ski.exposure.rescale_intensity(g, in_range=(p2, p98))
+    if filt:
+        GH = ndi.fourier_gaussian(I, sigma=1000, n=im.shape[0])
+        gH = np.real(fft.irfft2(GH))
+        GL = ndi.fourier_gaussian(I, sigma=10, n=im.shape[0])
+        gL = np.real(fft.irfft2(GL))
+        g = gL / gH
+        p2, p98 = np.percentile(g, [4, 98])
+        g = ski.exposure.rescale_intensity(g, in_range=(p2, p98))
+    else:
+        g = np.real(fft.irfft2(I))
     g = g[:, ::-1].T
     if args.invertx:
         log.info("Inverting X coordinates")
@@ -98,9 +101,10 @@ def main(args):
     f, ax = plt.subplots(figsize=(5, 5))
     ax.imshow(g, cmap="gray")
     ax.grid(None)
-    circles = [plt.Circle(coord, 100, color=[0, 1, 0], fill=False, linewidth=0.5, alpha=1) for coord in zip(x, y)]
-    for c in circles:
-        ax.add_patch(c)
+    if disp:
+        circles = [plt.Circle(coord, 100, color=[0, 1, 0], fill=False, linewidth=0.5, alpha=1) for coord in zip(x, y)]
+        for c in circles:
+            ax.add_patch(c)
     if args.output is None:
         plt.show()
     else:
@@ -125,5 +129,7 @@ if __name__ == "__main__":
     parser.add_argument("--swapxy", "-s", action="store_true",
                         help="Swap X & Y (NOT THE SAME as --swapxy in csparc2star.py)")
     parser.add_argument("--phase-flip", "-p", action="store_true", help="Flip CTF phases in micrograph before display")
+    parser.add_argument("--nodisp", "-nd", dest="disp", help="Don't display particles, micrograph only", action="store_false")
+    parser.add_argument("--nofilt", "-nf", dest="filt", help="Skip flat-fielding, etc", action="store_false")
     parser.add_argument("--loglevel", "-l", help="Set log verbosity", default="warning")
     sys.exit(main(parser.parse_args()))
