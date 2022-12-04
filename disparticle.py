@@ -133,3 +133,4 @@ if __name__ == "__main__":
     parser.add_argument("--nofilt", "-nf", dest="filt", help="Skip flat-fielding, etc", action="store_false")
     parser.add_argument("--loglevel", "-l", help="Set log verbosity", default="warning")
     sys.exit(main(parser.parse_args()))
+
