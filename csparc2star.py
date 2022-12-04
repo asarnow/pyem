@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
     parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
-    parser.add_argument("--flip-y", help="Invert refined particle Y shifts", action="store_true")
+    parser.add_argument("--flipy", help="Invert refined particle Y shifts", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
