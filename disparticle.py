@@ -79,7 +79,7 @@ def main(args):
              lp=2 * apix)
         c = np.sign(c)
         I *= c
-    if filt:
+    if args.filt:
         GH = ndi.fourier_gaussian(I, sigma=1000, n=im.shape[0])
         gH = np.real(fft.irfft2(GH))
         GL = ndi.fourier_gaussian(I, sigma=10, n=im.shape[0])
@@ -101,7 +101,7 @@ def main(args):
     f, ax = plt.subplots(figsize=(5, 5))
     ax.imshow(g, cmap="gray")
     ax.grid(None)
-    if disp:
+    if args.disp:
         circles = [plt.Circle(coord, 100, color=[0, 1, 0], fill=False, linewidth=0.5, alpha=1) for coord in zip(x, y)]
         for c in circles:
             ax.add_patch(c)
