@@ -21,6 +21,7 @@ from __future__ import print_function
 import argparse
 import json
 import logging
+import os.path
 import sys
 import numpy as np
 import pandas as pd
@@ -44,6 +45,32 @@ def main(args):
         cs = np.load(args.input[0])
         if args.first10k:
             cs = cs[:10000]
+
+        if args.movies:
+            if not os.path.isdir(args.output):
+                log.error("%s is not a directory" % args.output)
+                return 1
+            log.info("Writing per-movie star files into %s" % args.output)
+            trajdir = os.path.dirname(os.path.dirname(args.input[0]))
+            if len(args.input) > 1 and args.input[1].endswith(".cs"):
+                pt = args.input[1]
+            else:
+                pt = None
+            data_general = metadata.cryosparc_2_cs_movie_parameters(cs, passthrough=pt, trajdir=trajdir, path=args.micrograph_path)
+            data_general[star.Relion.MICROGRAPHMETADATA] = data_general[star.Relion.MICROGRAPH_NAME].apply(
+                lambda x: os.path.join(args.output, os.path.basename(x.rstrip(".mrc")) + ".star"))
+            for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
+                fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMETADATA]
+                log.debug("Writing %s" % fn)
+                star.write_star_tables(fn, mic)
+            fields = [star.Relion.VOLTAGE, star.Relion.CS, star.Relion.AC, star.Relion.MICROGRAPHORIGINALPIXELSIZE,
+                      star.Relion.MICROGRAPHPIXELSIZE, star.Relion.MICROGRAPH_NAME, star.Relion.MICROGRAPHMETADATA,
+                      star.Relion.MICROGRAPHBINNING, star.Relion.OPTICSGROUP]
+            if len(args.input) > 1 and args.input[-1].endswith(".star"):
+                mic_star = args.input[-1]
+                star.write_star(mic_star, data_general[[f for f in fields if f in data_general]])
+            return 0
+
         try:
             df = metadata.parse_cryosparc_2_cs(cs, passthroughs=args.input[1:], minphic=args.minphic,
                                                boxsize=args.boxsize, swapxy=args.noswapxy,
@@ -62,6 +89,12 @@ def main(args):
 
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
+
+    if args.flipy and not args.inverty:
+        log.warning("--flipy requires --inverty and is being ignored")
+    elif args.flipy:
+        log.info("Flipping refined shifts in Y")
+        df[star.Relion.ORIGINY] = -df[star.Relion.ORIGINY]
 
     if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
@@ -110,13 +143,14 @@ def _main_():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Cryosparc metadata .csv (v0.6.5) or .cs (v2+) files", nargs="*")
     parser.add_argument("output", help="Output .star file")
+    parser.add_argument("--movies", help="Write per-movie star files into output directory", action="store_true")
     parser.add_argument("--boxsize", help="Cryosparc refinement box size (if different from particles)", type=float)
     # parser.add_argument("--passthrough", "-p", help="List file required for some Cryosparc 2+ job types")
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
     parser.add_argument("--minphic", help="Minimum posterior probability for class assignment", type=float, default=0)
     parser.add_argument("--stack-path", help="Path to single particle stack", type=str)
-    parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
+    parser.add_argument("--micrograph-path", help="Replacement path for micrographs or movies")
     parser.add_argument("--copy-micrograph-coordinates",
                         help="Source for micrograph paths and particle coordinates (file or quoted glob)",
                         type=str)
@@ -127,6 +161,7 @@ def _main_():
                         action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
     parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
+    parser.add_argument("--flipy", help="Invert refined particle Y shifts", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
