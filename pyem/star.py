@@ -83,10 +83,11 @@ class Relion:
     MICROGRAPHORIGINALPIXELSIZE = "rlnMicrographOriginalPixelSize"
     MICROGRAPHMETADATA = "rlnMicrographMetadata"
     MICROGRAPHMOVIE_NAME = "rlnMicrographMovieName"
-    MICROGRAPHGAIN_NAME = "rlnMicrographMovieName"
+    MICROGRAPHGAIN_NAME = "rlnMicrographGainName"
     MICROGRAPHID = "rlnMicrographId"
     MICROGRAPHBINNING = "rlnMicrographBinning"
     MICROGRAPHDOSERATE = "rlnMicrographDoseRate"  # Frame dose in e-/Å^2
+    MICROGRAPHPREEXPOSURE = "rlnMicrographPreExposure"
     MICROGRAPHFRAMENUMBER = "rlnMicrographFrameNumber"
     MICROGRAPHSTARTFRAME = "rlnMicrographStartFrame"
     MICROGRAPHENDFRAME = "rlnMicrographEndFrame"
@@ -137,10 +138,12 @@ class Relion:
                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
 
     # Data tables.
+    GENERALDATA = "data_general"
     OPTICDATA = "data_optics"
     MICROGRAPHDATA = "data_micrographs"
     PARTICLEDATA = "data_particles"
     IMAGEDATA = "data_images"
+    GLOBALSHIFTDATA = "data_global_shift"
 
     # Data type specification.
     DATATYPES = {OPTICSGROUP: np.int}
@@ -419,6 +422,7 @@ def star_table_offsets(starfile):
         while l:
             if l.lstrip().startswith("data"):
                 if table_name is not None and table_name not in tables:  # Unterminated table without a loop.
+                    in_table = False
                     tables[table_name] = (offset, lineno, ln - 1, ln - data_line - 1)
                 table_name = l.strip()
                 if in_table:
@@ -503,10 +507,28 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
     df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
 
 
+def write_star_series(starfile, series, table="data_general", resort_fields=True, mode='w'):
+    series = series.copy()
+    if resort_fields:
+        series = series.sort_index()
+    series.index = [i if i.startswith("_") else "_" + i for i in series.index]
+    with open(starfile, mode) as f:
+        f.write('\n')
+        f.write(table + '\n')
+        f.write('\n')
+        series.to_csv(f, sep=' ', header=False, float_format='%.6f')
+        f.write('\n')
+
+
 def write_star_tables(starfile, dfs, resort_fields=True):
     for i, t in enumerate(dfs):
         mode = 'w' if i == 0 else 'a+'
-        write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        if isinstance(dfs[t], pd.DataFrame):
+            write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        elif isinstance(dfs[t], pd.Series):
+            write_star_series(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        else:
+            raise TypeError("STAR table must have type DataFrame or Series")
 
 
 def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
@@ -770,3 +792,12 @@ def strip_path_uids(df, inplace=False, count=-1):
         df[Relion.MICROGRAPH_NAME] = df[Relion.MICROGRAPH_NAME].str.replace(pat, "", regex=True, n=count)
     return df
 
+
+def decode_byte_strings(df, fmt='UTF-8', inplace=False):
+    df = df if inplace else df.copy()
+    byte_fields = [Relion.MICROGRAPH_NAME, Relion.MICROGRAPHMOVIE_NAME, Relion.MICROGRAPHGAIN_NAME,
+                   UCSF.IMAGE_PATH]
+    for f in byte_fields:
+        if f in df:
+            df[f] = df[f].apply(lambda x: x.decode(fmt))
+    return df
