@@ -285,9 +285,8 @@ def consumer(queue, stack, apix=1.0, iothreads=None):
         iothreads.release()
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str,
                         help="STAR file with original particles")
@@ -311,5 +310,8 @@ if __name__ == "__main__":
     parser.add_argument("--crop", help="Size to crop recentered output images", type=int)
     parser.add_argument("--prefix", type=str, help="Additional prefix for particle stacks", default="")
     parser.add_argument("--suffix", type=str, help="Additional suffix for particle stacks", default="")
-
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

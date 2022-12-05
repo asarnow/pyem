@@ -82,7 +82,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
@@ -106,3 +106,7 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

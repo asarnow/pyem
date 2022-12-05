@@ -52,8 +52,7 @@ def main(args):
     write(args.output, final.astype(np.single), psz=args.apix)
     return 0
 
-
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser(description="Use equals sign when passing arguments with negative numbers.")
     parser.add_argument("input", help="Input volume (MRC file)", nargs="*")
@@ -63,4 +62,7 @@ if __name__ == "__main__":
     parser.add_argument("--eval", "-e", help="Use eval builtin instead of numexpr.evaluate", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
+
+if __name__ == "__main__":
+    _main_()
 

@@ -18,10 +18,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import glob
-import logging
 import sys
 import numpy as np
-from star import parse_star, write_star
+
+from pyem.star import parse_star, write_star
 from EMAN2 import EMData, Vec3f, Transform
 
 
@@ -89,8 +89,7 @@ def find_cm(im):
     mu_y = np.average(y, axis=None, weights=im)
     return mu_x, mu_y
 
-
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--class-2d", help="2D class images for recentering (pass glob in quotes for multiple files)")
@@ -99,3 +98,6 @@ if __name__ == "__main__":
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output .star file")
     sys.exit(main(parser.parse_args()))
+
+if __name__ == "__main__":
+    _main_()
