@@ -52,11 +52,11 @@ def main(args):
                 return 1
             log.info("Writing per-movie star files into %s" % args.output)
             trajdir = os.path.dirname(os.path.dirname(args.input[0]))
-            if len(args.input) > 1 and args.input[1].endswith(".cs"):
-                pt = args.input[1]
+            if len(args.input) > 1:
+                pts = [a for a in args.input[1:] if a.endswith(".cs")]
             else:
-                pt = None
-            data_general = metadata.cryosparc_2_cs_movie_parameters(cs, passthrough=pt, trajdir=trajdir, path=args.micrograph_path)
+                pts = None
+            data_general = metadata.cryosparc_2_cs_movie_parameters(cs, passthroughs=pts, trajdir=trajdir, path=args.micrograph_path)
             data_general[star.Relion.MICROGRAPHMETADATA] = data_general[star.Relion.MICROGRAPH_NAME].apply(
                 lambda x: os.path.join(args.output, os.path.basename(x.rstrip(".mrc")) + ".star"))
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
@@ -90,11 +90,11 @@ def main(args):
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
-    if args.flipy and not args.inverty:
-        log.warning("--flipy requires --inverty and is being ignored")
-    elif args.flipy:
+    if args.flipy:
         log.info("Flipping refined shifts in Y")
         df[star.Relion.ORIGINY] = -df[star.Relion.ORIGINY]
+        log.info("Flipping particle orientation through XZ plane")
+        df = star.transform_star(df, np.array([[1, 0, 0], [0, -1, 0], [0, 0, 1]]))
 
     if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
