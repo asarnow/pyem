@@ -69,11 +69,12 @@ def main(args):
             return 1
 
     if args.flip is not None:
-        if args.flip.isnumeric():
-            args.flip = int(args.flip)
-        else:
-            args.flip = vop.label_to_axis(args.flip)
-        data = np.flip(data, axis=args.flip)
+        for ax in args.flip:
+            if ax.isnumeric():
+                ax = int(ax)
+            else:
+                ax = vop.label_to_axis(ax)
+            data = np.flip(data, axis=ax)
 
     if args.apix is None:
         args.apix = hdr["xlen"] / hdr["nx"]
@@ -98,6 +99,8 @@ def main(args):
             args.apix_out = args.apix / args.scale
     elif args.boxsize is not None:  # Only --boxsize
         args.scale = np.double(args.boxsize) / box[0]
+    else:
+        args.scale = 1.
 
     if args.boxsize is None:
         args.boxsize = int(box[0] * args.scale)
