@@ -201,7 +201,8 @@ def cryosparc_2_cs_filament_parameters(cs, df=None):
         df = pd.DataFrame()
     if 'filament/filament_pose' in cs.dtype.names:
         log.info('Copying filament pose')
-        df[star.Relion.ANGLEPSI] = -cs['filament/filament_pose'] + np.pi/2
+        df[star.Relion.ANGLEPSIPRIOR] = np.rad2deg(-cs['filament/filament_pose'] + np.pi/2)
+        df[star.Relion.ANGLETILTPRIOR] = 90
     return df
 
 
