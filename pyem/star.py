@@ -552,7 +552,8 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         write_star_table(starfile, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
 
 
-def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate=True, adjust_defocus=False):
+def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
+                   rotate=True, adjust_defocus=False, rightmult=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -577,7 +578,10 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False, rotate
     if invert:
         r = r.T
 
-    newrots = np.dot(rots, r)  # Works with 3D array and list of 2D arrays.
+    if rightmult:  # Multiply from the right, to act on the particles instead of the map.
+        newrots = np.transpose(np.dot(np.transpose(rots, (0, 2, 1)), r), (0, 2, 1))
+    else:
+        newrots = np.dot(rots, r)  # Works with 3D array and list of 2D arrays.
     if rotate:
         angles = np.rad2deg(rot2euler(newrots))
         newstar[Relion.ANGLES] = angles
