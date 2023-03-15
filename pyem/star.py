@@ -553,7 +553,7 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
 
 
 def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
-                   rotate=True, adjust_defocus=False, rightmult=False):
+                   rotate=True, adjust_defocus=False, leftmult=False):
     """
     Transform particle angles and origins according to a rotation
     matrix (in radians) and an optional translation vector.
@@ -578,7 +578,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
     if invert:
         r = r.T
 
-    if rightmult:  # Multiply from the right, to act on the particles instead of the map.
+    if leftmult:  # Act on the particles instead of the map (same result as r.dot(q) vs q.dot(r)).
         newrots = np.transpose(np.dot(np.transpose(rots, (0, 2, 1)), r), (0, 2, 1))
     else:
         newrots = np.dot(rots, r)  # Works with 3D array and list of 2D arrays.
