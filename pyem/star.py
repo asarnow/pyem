@@ -579,7 +579,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
         r = r.T
 
     if leftmult:  # Act on the particles instead of the map (same result as r.dot(q) vs q.dot(r)).
-        newrots = np.transpose(np.dot(np.transpose(rots, (0, 2, 1)), r), (0, 2, 1))
+        newrots = np.transpose(np.dot(np.transpose(rots, (0, 2, 1)), r), (0, 2, 1)).copy()  # Must be contiguous.
     else:
         newrots = np.dot(rots, r)  # Works with 3D array and list of 2D arrays.
     if rotate:
