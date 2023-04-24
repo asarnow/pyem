@@ -69,6 +69,14 @@ movie = {u'movie_blob/path': star.Relion.MICROGRAPHMOVIE_NAME,
          u'rigid_motion/frame_end': star.Relion.MICROGRAPHENDFRAME,
          u'mscope_params/total_dose_e_per_A2': star.Relion.MICROGRAPHDOSERATE}
 
+path_fields = [
+    u'micrograph_blob/path',
+    u'movie_blob/path',
+    u'gain_ref_blob/path',
+    u'blob/path',
+    u'location/micrograph_path'
+]
+
 
 def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, inverty=True):
     log = logging.getLogger('root')
@@ -357,4 +365,13 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
     elif star.is_particle_star(df):
         log.warning("Angular alignment parameters not found")
+
+    # for cases where the incoming .cs file was exported by CryoSPARC
+    star_path_fields = [star_field for star_field in
+                        [micrograph.get(key) or general.get(key) or movie.get(key) for key in path_fields]
+                        if star_field is not None]
+    for path_field in star_path_fields:
+        if path_field in df:
+            df[path_field] = df[path_field].apply(lambda x: x.replace('>', '', 1))
+
     return df
