@@ -357,4 +357,12 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
     elif star.is_particle_star(df):
         log.warning("Angular alignment parameters not found")
+
+    # for cases where the incoming .cs file was exported by CryoSPARC
+    for path_field in [*star.Relion.PATH_FIELDS, *star.UCSF.PATH_FIELDS]:
+        if path_field in df:
+            if '>' in df[path_field].iloc[0]:
+                df[path_field] = df[path_field].apply(lambda x: x.replace('>', '', 1))
+                log.debug(f"Removed '>' from paths in field {path_field}")
+
     return df
