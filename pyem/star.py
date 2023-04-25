@@ -144,6 +144,8 @@ class Relion:
                         MAGMAT00, MAGMAT01, MAGMAT10, MAGMAT11, IMAGEPIXELSIZE, IMAGESIZE, IMAGEDIMENSION,
                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
 
+    PATH_FIELDS = [MICROGRAPH_NAME, MICROGRAPHMOVIE_NAME, MICROGRAPHGAIN_NAME]
+
     # Data tables.
     GENERALDATA = "data_general"
     OPTICDATA = "data_optics"
@@ -186,6 +188,7 @@ class UCSF:
     ZERNIKE_COEFS_ODD = [Z_neg1_1, Z_1_1, Z_neg3_3, Z_neg1_3, Z_1_3, Z_3_3]
     ZERNIKE_COEFS_EVEN = [Z_0_0, Z_neg2_2, Z_0_2, Z_2_2, Z_neg4_4, Z_neg2_4, Z_0_4, Z_2_4, Z_4_4]
 
+    PATH_FIELDS = [IMAGE_PATH]
 
 def smart_merge(s1, s2, fields, key=None, left_key=None):
     if key is None:
