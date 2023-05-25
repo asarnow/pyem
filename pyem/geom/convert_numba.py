@@ -228,6 +228,10 @@ def expmap(e, out=None):
         theta = np.linalg.norm(e[i, ...])
         if theta < 1e-16:
             out[i, 0, 0] = out[i, 1, 1] = out[i, 2, 2] = 1
+            out[i, 0, 1:] = 0
+            out[i, 1, 0] = out[i, 1, 2] = 0
+            out[i, 2, :2] = 0
+            continue
         w = e[i, ...] / theta
         s = np.sin(theta)
         c = 1 - np.cos(theta)
