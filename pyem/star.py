@@ -631,18 +631,19 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
 def augment_star_ucsf(df, inplace=True):
     df = df if inplace else df.copy()
     df.reset_index(inplace=True)
-    if Relion.IMAGE_NAME in df:
-        df[[UCSF.IMAGE_INDEX, UCSF.IMAGE_PATH]] = \
-                df[Relion.IMAGE_NAME].str.split("@", n=2, expand=True)
-        df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
+    if "@" in df.iloc[0][Relion.IMAGE_NAME]:
+        if Relion.IMAGE_NAME in df:
+            df[[UCSF.IMAGE_INDEX, UCSF.IMAGE_PATH]] = \
+                    df[Relion.IMAGE_NAME].str.split("@", n=2, expand=True)
+            df[UCSF.IMAGE_INDEX] = pd.to_numeric(df[UCSF.IMAGE_INDEX]) - 1
 
-        if Relion.IMAGE_ORIGINAL_NAME not in df:
-            df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
+            if Relion.IMAGE_ORIGINAL_NAME not in df:
+                df[Relion.IMAGE_ORIGINAL_NAME] = df[Relion.IMAGE_NAME]
 
-    if Relion.IMAGE_ORIGINAL_NAME in df:
-        df[[UCSF.IMAGE_ORIGINAL_INDEX, UCSF.IMAGE_ORIGINAL_PATH]] = \
-                df[Relion.IMAGE_ORIGINAL_NAME].str.split("@", n=2, expand=True)
-        df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
+        if Relion.IMAGE_ORIGINAL_NAME in df:
+            df[[UCSF.IMAGE_ORIGINAL_INDEX, UCSF.IMAGE_ORIGINAL_PATH]] = \
+                    df[Relion.IMAGE_ORIGINAL_NAME].str.split("@", n=2, expand=True)
+            df[UCSF.IMAGE_ORIGINAL_INDEX] = pd.to_numeric(df[UCSF.IMAGE_ORIGINAL_INDEX]) - 1
 
     if UCSF.IMAGE_PATH in df:
         df[UCSF.IMAGE_BASENAME] = df[UCSF.IMAGE_PATH].apply(os.path.basename)
