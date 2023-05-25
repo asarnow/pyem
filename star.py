@@ -92,9 +92,9 @@ def main(args):
             return 1
         mgraphs = df[star.Relion.MICROGRAPH_NAME].unique()
         if args.subsample_micrographs < 1:
-            args.subsample_micrographs = np.int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
+            args.subsample_micrographs = int(max(np.round(args.subsample_micrographs * len(mgraphs)), 1))
         else:
-            args.subsample_micrographs = np.int(args.subsample_micrographs)
+            args.subsample_micrographs = int(args.subsample_micrographs)
         ind = np.random.choice(len(mgraphs), size=args.subsample_micrographs, replace=False)
         mask = df[star.Relion.MICROGRAPH_NAME].isin(mgraphs[ind])
         if args.auxout is not None:
@@ -103,9 +103,9 @@ def main(args):
 
     if args.subsample is not None and args.suffix == "":
         if args.subsample < 1:
-            args.subsample = np.int(max(np.round(args.subsample * df.shape[0]), 1))
+            args.subsample = int(max(np.round(args.subsample * df.shape[0]), 1))
         else:
-            args.subsample = np.int(args.subsample)
+            args.subsample = int(args.subsample)
         ind = np.random.choice(df.shape[0], size=args.subsample, replace=False)
         mask = df.index.isin(ind)
         if args.auxout is not None:
@@ -189,8 +189,8 @@ def main(args):
         if args.subsample < 1:
             print("Specific integer sample size")
             return 1
-        nsamplings = args.bootstrap if args.bootstrap is not None else df.shape[0] / np.int(args.subsample)
-        inds = np.random.choice(df.shape[0], size=(nsamplings, np.int(args.subsample)),
+        nsamplings = args.bootstrap if args.bootstrap is not None else df.shape[0] / int(args.subsample)
+        inds = np.random.choice(df.shape[0], size=(nsamplings, int(args.subsample)),
                                 replace=args.bootstrap is not None)
         for i, ind in enumerate(inds):
             star.write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),

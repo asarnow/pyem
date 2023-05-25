@@ -101,8 +101,8 @@ def main(args):
             if args.crop is not None:
                 orihalf = args.size // 2
                 newhalf = args.crop // 2
-                x = orihalf - np.int(np.round(p[star.Relion.ORIGINX]))
-                y = orihalf - np.int(np.round(p[star.Relion.ORIGINY]))
+                x = orihalf - int(np.round(p[star.Relion.ORIGINX]))
+                y = orihalf - int(np.round(p[star.Relion.ORIGINY]))
                 proj = proj[y-newhalf:y+newhalf, x-newhalf:x+newhalf]
             zsw.write(proj)
             log.debug("%d@%s: %d/%d" % (p["ucsfImageIndex"], p["ucsfImagePath"], i + 1, df.shape[0]))

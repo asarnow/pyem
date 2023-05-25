@@ -77,9 +77,9 @@ def interpolate_slice_numba(f3d, rot, pfac=2, size=None):
             else:
                 negx = False
 
-            x0 = np.int(np.floor(x))
-            y0 = np.int(np.floor(y))
-            z0 = np.int(np.floor(z))
+            x0 = int(np.floor(x))
+            y0 = int(np.floor(y))
+            z0 = int(np.floor(z))
 
             ax = x - x0
             ay = y - y0

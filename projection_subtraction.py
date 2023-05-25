@@ -215,8 +215,8 @@ def subtract_outer(p1r, ptcl, submap_ft, refmap_ft, sx, sy, s, a, apix, coefs_me
     if kwargs["crop"] is not None:
         orihalf = new_image.shape[0] // 2
         newhalf = kwargs["crop"] // 2
-        x = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINX]))
-        y = orihalf - np.int(np.round(ptcl[star.Relion.ORIGINY]))
+        x = orihalf - int(np.round(ptcl[star.Relion.ORIGINX]))
+        y = orihalf - int(np.round(ptcl[star.Relion.ORIGINY]))
         new_image = new_image[y - newhalf:y + newhalf, x - newhalf:x + newhalf]
     return new_image
 

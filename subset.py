@@ -72,11 +72,11 @@ def main(args):
             print("Not implemented yet")
             return 1
             inds = np.random.choice(df.shape[0],
-                                    size=(np.int(args.subsample),
-                                    df.shape[0]/np.int(args.subsample)),
+                                    size=(int(args.subsample),
+                                    df.shape[0]/int(args.subsample)),
                                     replace=True)
         else:
-            df = df.sample(np.int(args.subsample), random_state=args.seed)
+            df = df.sample(int(args.subsample), random_state=args.seed)
 
     write_star(args.output, df)
     return 0
