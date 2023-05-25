@@ -290,7 +290,7 @@ if __name__ == "__main__":
     parser.add_argument("--auxout", help="Auxilliary output .star file with deselected particles", type=str)
     parser.add_argument("--noaugment", help="Do not augment inputs", dest="augment", action="store_false")
     parser.add_argument("--augment-output", help="Write augmented .star files with non-standard fields",
-                        action="store_false")
+                        action="store_true")
     parser.add_argument("--bootstrap", help="Sample with replacement when creating multiple outputs",
                         type=int, default=None)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
