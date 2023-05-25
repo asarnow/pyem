@@ -5,7 +5,7 @@ from setuptools import find_packages
 
 setup(
     name='pyem',
-    version='0.4',
+    version='0.5',
     packages=find_packages(),
     url='https://github.com/asarnow/pyem',
     license='GNU Public License Version 3',
