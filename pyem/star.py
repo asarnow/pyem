@@ -553,7 +553,7 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         starfile += ".star"
     if resort_records:
         df = sort_records(df, inplace=True)
-    if simplify and len([c for c in df.columns if "ucsf" in c or "eman" in c]) > 0:
+    if simplify:
         df = simplify_star_ucsf(df)
 
     if optics:
