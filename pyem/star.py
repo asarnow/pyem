@@ -679,6 +679,7 @@ def simplify_star_ucsf(df, resort_index=False, inplace=True, drop=True):
     if drop:
         df.drop([c for c in df.columns if "ucsf" in c or "eman" in c],
                 axis=1, inplace=True)
+        df.drop(df.columns[df.columns.duplicated()], axis=1, inplace=True)
     if resort_index and "index" in df.columns:
         df.set_index("index", inplace=True)
         df.sort_index(inplace=True, kind="mergesort")
