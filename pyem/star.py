@@ -104,6 +104,9 @@ class Relion:
     MAGMAT11 = "rlnMagMat11"
     ODDZERNIKE = "rlnOddZernike"
     EVENZERNIKE = "rlnEvenZernike"
+    ANGLEROTPRIOR = "rlnAngleRotPrior"
+    ANGLETILTPRIOR = "rlnAngleTiltPrior"
+    ANGLEPSIPRIOR = "rlnAnglePsiPrior"
 
     # Relion Tomo fields.
     TOMONAME = "rlnTomoName"
