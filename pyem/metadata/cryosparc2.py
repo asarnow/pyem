@@ -93,9 +93,9 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, i
             # cryoSPARC import particles correctly imports *Relion convention* coordinates, which we also want.
             # Default behavior is now to always swap.
             df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
-                                              cs['location/micrograph_shape'][:, ::-1]).astype(np.int)
+                                              cs['location/micrograph_shape'][:, ::-1]).astype(int)
         else:
-            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] * cs['location/micrograph_shape']).astype(np.int)
+            df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] * cs['location/micrograph_shape']).astype(int)
         log.info("Converted particle coordinates from normalized to absolute")
     return df
 

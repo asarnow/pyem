@@ -62,7 +62,7 @@ def main(args):
 
     si_mult = np.random.choice(resqu.shape[0]/args.multimer, args.sample/args.multimer, replace=False)
     si = np.array([si_mult[i] * args.multimer + k for i in range(si_mult.shape[0]) for k in range(args.multimer)])
-    not_si = np.setdiff1d(np.arange(resqu.shape[0], dtype=np.int), si)
+    not_si = np.setdiff1d(np.arange(resqu.shape[0], dtype=int), si)
 
     samp = resqu[si, :].copy()
 
