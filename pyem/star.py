@@ -158,7 +158,7 @@ class Relion:
     GLOBALSHIFTDATA = "data_global_shift"
 
     # Data type specification.
-    DATATYPES = {OPTICSGROUP: np.int}
+    DATATYPES = {OPTICSGROUP: int}
 
 
 class UCSF:
