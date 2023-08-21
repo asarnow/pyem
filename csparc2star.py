@@ -95,6 +95,8 @@ def main(args):
         df[star.Relion.ORIGINY] = -df[star.Relion.ORIGINY]
         log.info("Flipping particle orientation through XZ plane")
         df = star.transform_star(df, np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]), leftmult=True)
+        log.info("Flipping defocus angles")
+        df[star.Relion.DEFOCUSANGLE] = -df[star.Relion.DEFOCUSANGLE]
 
     if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
