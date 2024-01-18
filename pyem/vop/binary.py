@@ -44,7 +44,7 @@ def binary_volume_opening(vol, minvol):
         ix = np.isin(lb_vol, lbs[np.argsort(v)[minvol:]])
     else:
         ix = np.isin(lb_vol, lbs[v >= minvol])
-    newvol = np.zeros(vol.shape, dtype=np.bool)
+    newvol = np.zeros(vol.shape, dtype=bool)
     newvol[ix] = vol[ix]
     return newvol
 
