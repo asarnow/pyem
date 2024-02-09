@@ -59,6 +59,8 @@ def main(args):
             data_general = metadata.cryosparc_2_cs_movie_parameters(cs, passthroughs=pts, trajdir=trajdir, path=args.micrograph_path)
             data_general[star.Relion.MICROGRAPHMETADATA] = data_general[star.Relion.MICROGRAPH_NAME].apply(
                 lambda x: os.path.join(args.output, os.path.basename(x.rstrip(".mrc")) + ".star"))
+            data_general[star.Relion.MICROGRAPH_NAME] = data_general[star.Relion.MICROGRAPH_NAME].apply(
+                lambda x: os.path.join(args.output, os.path.basename(x)))
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
                 fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMETADATA]
                 log.debug("Writing %s" % fn)
