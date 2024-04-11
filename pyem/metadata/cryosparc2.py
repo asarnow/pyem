@@ -270,7 +270,7 @@ def cryosparc_2_cs_motion_parameters(cs, data, trajdir="."):
              star.Relion.MICROGRAPHSHIFTY: traj[:, 1]}
         try:
             data_shift = pd.DataFrame(d)
-            mic = {star.Relion.GENERALDATA: data.iloc[i], star.Relion.GLOBALSHIFTDATA: data_shift}
+            mic = {star.Relion.GENERALDATA: data.iloc[i].drop("ucsfUid"), star.Relion.GLOBALSHIFTDATA: data_shift}
         except ValueError:
             log.debug("Couldn't convert %s, skipping" % trajfile)
             continue
