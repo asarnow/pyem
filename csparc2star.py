@@ -61,7 +61,6 @@ def main(args):
                 lambda x: os.path.join(args.output, os.path.basename(x.rstrip(".mrc")) + ".star"))
             data_general[star.Relion.MICROGRAPH_NAME] = data_general[star.Relion.MICROGRAPH_NAME].apply(
                 lambda x: os.path.join(args.output, os.path.basename(x)))
-            data_general.drop("ucsfUid", inplace=True)
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
                 fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMETADATA]
                 log.debug("Writing %s" % fn)
