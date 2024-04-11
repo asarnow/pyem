@@ -209,6 +209,7 @@ def cryosparc_2_cs_movie_parameters(cs, passthroughs=None, trajdir=".", path=Non
     log = logging.getLogger('root')
     log.info("Creating movie data_general tables")
     data_general = util.dataframe_from_records_mapped(cs, {**movie, **micrograph, **general})
+    data_general = data_general.loc[:, ~data_general.columns.duplicated()]
     data_general = cryosparc_2_cs_array_parameters(cs, data_general)
     if passthroughs is not None:
         for passthrough in passthroughs:
