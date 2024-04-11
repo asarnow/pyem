@@ -63,6 +63,7 @@ def main(args):
                 lambda x: os.path.join(args.output, os.path.basename(x)))
             for mic in metadata.cryosparc_2_cs_motion_parameters(cs, data_general, trajdir=trajdir):
                 fn = mic[star.Relion.GENERALDATA][star.Relion.MICROGRAPHMETADATA]
+                star.simplify_star_ucsf(mic[star.Relion.GENERALDATA], inplace=True)
                 log.debug("Writing %s" % fn)
                 star.write_star_tables(fn, mic)
             fields = [star.Relion.VOLTAGE, star.Relion.CS, star.Relion.AC, star.Relion.MICROGRAPHORIGINALPIXELSIZE,
