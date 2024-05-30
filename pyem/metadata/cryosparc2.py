@@ -151,6 +151,21 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
             if model[k] is not None:
                 name = u'alignments3D/' + k
                 df[model[k]] = pd.DataFrame(cs[name])
+    # CryoSPARC v4.5+
+    elif u'alignments3D_multi/class_posterior' in cs.dtype.names:
+        log.info("Assigning pose from most likely 3D classes using alignments3D_multi columns")
+        cls = np.argmax(cs['alignments3D_multi/class_posterior'], axis=1)
+        cls_prob = cs['alignments3D_multi/class_posterior'][range(cls.shape[0]), cls]
+        for k in model:
+            if model[k] is not None:
+                if k == u'split':  # singleton column
+                    df[model[k]] = pd.DataFrame(cs['alignments3D_multi/split'])
+                else:
+                    df[model[k]] = pd.DataFrame(cs['alignments3D_multi/' + k][range(cls.shape[0]), cls, ...])
+
+        if minphic > 0:
+            df.drop(df.loc[cls_prob < minphic].index, inplace=True)
+    # CryoSPARC <= v4.4
     elif len(phic_names) > 1:
         log.info("Assigning pose from most likely 3D classes")
         phic = np.array([cs[p] for p in phic_names if u'alignments2D' not in p])
