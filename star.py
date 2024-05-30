@@ -112,6 +112,17 @@ def main(args):
             dfaux = df.loc[~mask]
         df = df.loc[mask]
 
+    if args.subsample is not None and args.suffix != "":
+        if args.subsample < 1:
+            print("Specific integer sample size")
+            return 1
+        nsamplings = args.bootstrap if args.bootstrap is not None else df.shape[0] / int(args.subsample)
+        inds = np.random.choice(df.shape[0], size=(nsamplings, int(args.subsample)),
+                                replace=args.bootstrap is not None)
+        for i, ind in enumerate(inds):
+            star.write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),
+                       df.iloc[ind])
+
     if args.strip_uid is not None:
         df = star.strip_path_uids(df, inplace=True, count=args.strip_uid)
 
@@ -184,17 +195,6 @@ def main(args):
 
     if args.pick:
         df.drop(df.columns.difference(star.Relion.PICK_PARAMS), axis=1, inplace=True, errors="ignore")
-
-    if args.subsample is not None and args.suffix != "":
-        if args.subsample < 1:
-            print("Specific integer sample size")
-            return 1
-        nsamplings = args.bootstrap if args.bootstrap is not None else df.shape[0] / int(args.subsample)
-        inds = np.random.choice(df.shape[0], size=(nsamplings, int(args.subsample)),
-                                replace=args.bootstrap is not None)
-        for i, ind in enumerate(inds):
-            star.write_star(os.path.join(args.output, os.path.basename(args.input[0])[:-5] + args.suffix + "_%d" % (i + 1)),
-                       df.iloc[ind])
 
     if args.to_micrographs:
         df = star.to_micrographs(df)
