@@ -1,7 +1,11 @@
 from __future__ import print_function
+
+import re
+
 import pandas as pd
 import sys
-from pyem.star.star import Relion, augment_star_ucsf, check_defaults
+from pyem.star.star import Relion, augment_star_ucsf, check_defaults, sort_fields, sort_records, simplify_star_ucsf, \
+    is_particle_star
 
 
 def star_table_offsets(starfile):
@@ -115,3 +119,67 @@ def parse_star_table_header(starfile, offset=0, keep_index=False):
             ln += 1
     return headers, ln
 
+
+def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
+    indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
+    if not indexed:
+        if resort_fields:
+            df = sort_fields(df, inplace=True)
+        names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
+    else:
+        names = df.columns
+    with open(starfile, mode) as f:
+        f.write('\n')
+        f.write(table + '\n')
+        f.write('\n')
+        f.write("loop_" + '\n')
+        for name in names:
+            line = name + " \n"
+            line = line if line.startswith('_') else '_' + line
+            f.write(line)
+    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
+
+
+def write_star_series(starfile, series, table="data_general", resort_fields=True, mode='w'):
+    series = series.copy()
+    if resort_fields:
+        series = series.sort_index()
+    series.index = [i if i.startswith("_") else "_" + i for i in series.index]
+    with open(starfile, mode) as f:
+        f.write('\n')
+        f.write(table + '\n')
+        f.write('\n')
+        series.to_csv(f, sep=' ', header=False, float_format='%.6f')
+        f.write('\n')
+
+
+def write_star_tables(starfile, dfs, resort_fields=True):
+    for i, t in enumerate(dfs):
+        mode = 'w' if i == 0 else 'a+'
+        if isinstance(dfs[t], pd.DataFrame):
+            write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        elif isinstance(dfs[t], pd.Series):
+            write_star_series(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+        else:
+            raise TypeError("STAR table must have type DataFrame or Series")
+
+
+def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
+    if not starfile.endswith(".star"):
+        starfile += ".star"
+    if resort_records:
+        df = sort_records(df, inplace=True)
+    if simplify:
+        df = simplify_star_ucsf(df)
+
+    if optics:
+        if Relion.OPTICSGROUP not in df:
+            df[Relion.OPTICSGROUP] = 1
+        gb = df.groupby(Relion.OPTICSGROUP)
+        df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].first().reset_index(drop=False)
+        df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
+        data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.MICROGRAPHDATA
+        dfs = {Relion.OPTICDATA: df_optics, data_table: df}
+        write_star_tables(starfile, dfs, resort_fields=resort_fields)
+    else:
+        write_star_table(starfile, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
