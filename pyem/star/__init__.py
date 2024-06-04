@@ -1,2 +1,2 @@
-from io import *
-from star import *
+from .io import *
+from .star import *
