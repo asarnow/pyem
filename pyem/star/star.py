@@ -23,7 +23,8 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 from math import modf
-from pyem.geom import e2r_vec, rot2euler
+from pyem.geom import e2r_vec
+from pyem.geom import rot2euler
 from pyem.util import natsort_values
 
 
@@ -125,7 +126,8 @@ class Relion:
     CTF_PARAMS = [DEFOCUSU, DEFOCUSV, DEFOCUSANGLE, CS, PHASESHIFT, AC,
                   BEAMTILTX, BEAMTILTY, BEAMTILTCLASS, CTFSCALEFACTOR, CTFBFACTOR,
                   CTFMAXRESOLUTION, CTFFIGUREOFMERIT]
-    MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE, IMAGEPIXELSIZE, MICROGRAPHPIXELSIZE]
+    MICROSCOPE_PARAMS = [VOLTAGE, MAGNIFICATION, DETECTORPIXELSIZE, IMAGEPIXELSIZE,
+                         MICROGRAPHPIXELSIZE, MICROGRAPHORIGINALPIXELSIZE]
     MICROGRAPH_COORDS = [MICROGRAPH_NAME] + COORDS
     PICK_PARAMS = MICROGRAPH_COORDS + [ANGLEPSI, CLASS, AUTOPICKFIGUREOFMERIT]
 
@@ -281,6 +283,12 @@ def to_micrographs(df):
     mu = gb.mean()
     df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
              [Relion.MICROGRAPH_NAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
+    # if Relion.IMAGEPIXELSIZE in df:
+    #     if Relion.MICROGRAPHPIXELSIZE not in df and Relion.MICROGRAPHORIGINALPIXELSIZE not in df:
+    #         if Relion.MICROGRAPHBINNING in df:
+    #             df[Relion.MICROGRAPHORIGINALPIXELSIZE] = df[Relion.IMAGEPIXELSIZE] / df[Relion.MICROGRAPHBINNING]
+    #         df[Relion.MICROGRAPHPIXELSIZE] = df[Relion.IMAGEPIXELSIZE]
+    #     df.drop(columns=[Relion.IMAGEPIXELSIZE], inplace=True)
     if Relion.OPTICSGROUP in df:
         df = df.astype(Relion.DATATYPES)
     return df
