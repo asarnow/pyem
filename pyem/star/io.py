@@ -1,16 +1,14 @@
 from __future__ import print_function
-
 import re
-
 import pandas as pd
 import sys
 from pyem.star.star import Relion, augment_star_ucsf, check_defaults, sort_fields, sort_records, simplify_star_ucsf, \
     is_particle_star
 
 
-def star_table_offsets(starfile):
+def star_table_offsets(star_path):
     tables = {}
-    with open(starfile) as f:
+    with open(star_path) as f:
         l = f.readline()  # Current line
         ln = 0  # Current line number.
         offset = 0  # Char offset of current table.
@@ -50,9 +48,9 @@ def star_table_offsets(starfile):
         return tables
 
 
-def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
-    tables = star_table_offsets(starfile)
-    dfs = {t: parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
+def parse_star(star_path, keep_index=False, augment=True, nrows=sys.maxsize):
+    tables = star_table_offsets(star_path)
+    dfs = {t: parse_star_table(star_path, offset=tables[t][0], nrows=min(tables[t][3], nrows), keep_index=keep_index)
            for t in tables}
     if Relion.OPTICDATA in dfs:
         if Relion.PARTICLEDATA in dfs:
@@ -75,33 +73,33 @@ def parse_star(starfile, keep_index=False, augment=True, nrows=sys.maxsize):
     return df
 
 
-def parse_star_tables(starfile, keep_index=False, nrows=sys.maxsize):
-    tables = star_table_offsets(starfile)
+def parse_star_tables(star_path, keep_index=False, nrows=sys.maxsize):
+    tables = star_table_offsets(star_path)
     dfs = {}
     for t in tables:
         if tables[t][2] == tables[t][3]:
-            headers, _ = parse_star_table_header(starfile, offset=tables[t][0], keep_index=keep_index)
+            headers, _ = parse_star_table_header(star_path, offset=tables[t][0], keep_index=keep_index)
             dfs[t] = pd.Series({t.split()[0]: t.split()[1] for t in headers})
         else:
-            dfs[t] = parse_star_table(starfile, offset=tables[t][0], nrows=min(tables[t][3], nrows),
+            dfs[t] = parse_star_table(star_path, offset=tables[t][0], nrows=min(tables[t][3], nrows),
                                       keep_index=keep_index)
     return dfs
 
 
-def parse_star_table(starfile, offset=0, nrows=None, keep_index=False):
-    headers, ln = parse_star_table_header(starfile, offset=offset, keep_index=keep_index)
-    with open(starfile, 'r') as f:
+def parse_star_table(star_path, offset=0, nrows=None, keep_index=False):
+    headers, ln = parse_star_table_header(star_path, offset=offset, keep_index=keep_index)
+    with open(star_path, 'r') as f:
         f.seek(offset)
         df = pd.read_csv(f, delimiter='\s+', header=None, skiprows=ln, nrows=nrows)
     df.columns = headers
     return df
 
 
-def parse_star_table_header(starfile, offset=0, keep_index=False):
+def parse_star_table_header(star_path, offset=0, keep_index=False):
     headers = []
     foundheader = False
     ln = 0
-    with open(starfile, 'r') as f:
+    with open(star_path, 'r') as f:
         f.seek(offset)
         for l in f:
             if l.lstrip().startswith("_"):
@@ -120,7 +118,7 @@ def parse_star_table_header(starfile, offset=0, keep_index=False):
     return headers, ln
 
 
-def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
+def write_star_table(star_path, df, table="data_", resort_fields=True, mode='w'):
     indexed = re.search("#\d+$", df.columns[0]) is not None  # Check first column for '#N' index.
     if not indexed:
         if resort_fields:
@@ -128,7 +126,7 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
         names = [idx + " #%d" % (i + 1) for i, idx in enumerate(df.columns)]
     else:
         names = df.columns
-    with open(starfile, mode) as f:
+    with open(star_path, mode) as f:
         f.write('\n')
         f.write(table + '\n')
         f.write('\n')
@@ -137,15 +135,15 @@ def write_star_table(starfile, df, table="data_", resort_fields=True, mode='w'):
             line = name + " \n"
             line = line if line.startswith('_') else '_' + line
             f.write(line)
-    df.to_csv(starfile, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
+    df.to_csv(star_path, mode='a', sep=' ', header=False, index=False, float_format='%.6f')
 
 
-def write_star_series(starfile, series, table="data_general", resort_fields=True, mode='w'):
+def write_star_series(star_path, series, table="data_general", resort_fields=True, mode='w'):
     series = series.copy()
     if resort_fields:
         series = series.sort_index()
     series.index = [i if i.startswith("_") else "_" + i for i in series.index]
-    with open(starfile, mode) as f:
+    with open(star_path, mode) as f:
         f.write('\n')
         f.write(table + '\n')
         f.write('\n')
@@ -153,20 +151,20 @@ def write_star_series(starfile, series, table="data_general", resort_fields=True
         f.write('\n')
 
 
-def write_star_tables(starfile, dfs, resort_fields=True):
+def write_star_tables(star_path, dfs, resort_fields=True):
     for i, t in enumerate(dfs):
         mode = 'w' if i == 0 else 'a+'
         if isinstance(dfs[t], pd.DataFrame):
-            write_star_table(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+            write_star_table(star_path, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
         elif isinstance(dfs[t], pd.Series):
-            write_star_series(starfile, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
+            write_star_series(star_path, dfs[t], table=t, resort_fields=resort_fields, mode=mode)
         else:
             raise TypeError("STAR table must have type DataFrame or Series")
 
 
-def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
-    if not starfile.endswith(".star"):
-        starfile += ".star"
+def write_star(star_path, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
+    if not star_path.endswith(".star"):
+        star_path += ".star"
     if resort_records:
         df = sort_records(df, inplace=True)
     if simplify:
@@ -180,6 +178,14 @@ def write_star(starfile, df, resort_fields=True, resort_records=False, simplify=
         df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
         data_table = Relion.PARTICLEDATA if is_particle_star(df) else Relion.MICROGRAPHDATA
         dfs = {Relion.OPTICDATA: df_optics, data_table: df}
-        write_star_tables(starfile, dfs, resort_fields=resort_fields)
+        write_star_tables(star_path, dfs, resort_fields=resort_fields)
     else:
-        write_star_table(starfile, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
+        write_star_table(star_path, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
+
+
+def parse_starfile(star_path):
+    pass
+
+
+def write_starfile(star_path):
+    pass
