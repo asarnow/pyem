@@ -34,7 +34,7 @@ def main(args):
     if args.info:
         args.input.append(args.output)
 
-    df = pd.concat((star.parse_star(inp, augment=args.augment) for inp in args.input), join="inner")
+    df = pd.concat((star.parse_starfile(inp, augment=args.augment) for inp in args.input), join="inner")
 
     dfaux = None
 

@@ -1,6 +1,7 @@
 from __future__ import print_function
 import re
 import pandas as pd
+import starfile
 import sys
 from pyem.star.star import Relion, augment_star_ucsf, check_defaults, sort_fields, sort_records, simplify_star_ucsf, \
     is_particle_star
@@ -183,9 +184,33 @@ def write_star(star_path, df, resort_fields=True, resort_records=False, simplify
         write_star_table(star_path, df, table=Relion.IMAGEDATA, resort_fields=resort_fields)
 
 
-def parse_starfile(star_path):
-    pass
+def denormalize_star_tables(dfs, augment=True):
+    if 'optics' in dfs:
+        if 'particles' in dfs:
+            data_table = 'particles'
+        elif 'micrographs' in dfs:
+            data_table = 'micrographs'
+        elif 'images' in dfs:
+            data_table = 'images'
+        else:
+            data_table = None
+        if data_table is not None:
+            df = pd.merge(dfs['optics'], dfs[data_table], on=Relion.OPTICSGROUP)
+        else:
+            df = dfs['optics']
+    else:
+        df = dfs[next(iter(dfs))]
+    df = check_defaults(df, inplace=True)
+    if augment:
+        augment_star_ucsf(df, inplace=True)
+    return df
 
 
-def write_starfile(star_path):
+def parse_starfile(star_path, augment=True):
+    dfs = starfile.read(star_path, always_dict=True)
+    df = denormalize_star_tables(dfs, augment=augment)
+    return df
+
+
+def write_starfile(star_path, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
     pass
