@@ -113,6 +113,7 @@ class Relion:
     TOMOIMPORTCTFFINDFILD = "rlnTomoImportCtfFindFile"
     TOMOIMPORTIMODDIR = "rlnTomoImportImodDir"
     TOMOIMPORTFRACTIONALDOSE = "rlnTomoImportFractionalDose"
+    TOMOSUBTOMOSARE2DSTACKS = "rlnTomoSubTomosAre2DStacks"
 
     # Field lists.
     COORDS = [COORDX, COORDY]

@@ -196,6 +196,10 @@ def denormalize_star_tables(dfs, augment=True):
             data_table = None
         if data_table is not None:
             df = pd.merge(dfs['optics'], dfs[data_table], on=Relion.OPTICSGROUP)
+            if 'general' in dfs:
+                if type(dfs['general']) is dict:
+                    for k, v in dfs['general'].items():
+                        df[k] = v
         else:
             df = dfs['optics']
     else:
