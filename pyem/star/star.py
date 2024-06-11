@@ -117,6 +117,8 @@ class Relion:
     TOMOTILTSERIESPIXELSIZE = "rlnTomoTiltSeriesPixelSize"
     CTFDATACTFPREMULTIPLIED = "rlnCtfDataAreCtfPremultiplied"
     SUBTOMOGRAMBINNING = "rlnTomoSubtomogramBinning"
+    TOMOPARTICLENAME = "rlnTomoParticleName"
+    TOMOPARTICLEID = "rlnTomoParticleId"
 
     # Field lists.
     COORDS = [COORDX, COORDY]
@@ -251,7 +253,7 @@ def merge_key(s1, s2, threshold=0.5):
 
 
 def is_particle_star(df):
-    return df.columns.intersection([Relion.IMAGE_NAME] + Relion.COORDS).size
+    return df.columns.intersection([Relion.IMAGE_NAME, Relion.TOMOPARTICLENAME] + Relion.COORDS).size
 
 
 def calculate_apix(df):
@@ -662,3 +664,11 @@ def decode_byte_strings(df, fmt='UTF-8', inplace=False):
         if f in df:
             df[f] = df[f].apply(lambda x: x.decode(fmt))
     return df
+
+
+def pixel2angst(df):
+    pass
+
+
+def angst2pixel(df):
+    pass
