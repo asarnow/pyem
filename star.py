@@ -211,10 +211,22 @@ def main(args):
         df = star.replace_micrograph_path(df, args.micrograph_path, inplace=True)
 
     if args.min_separation is not None:
-        gb = df.groupby(star.Relion.MICROGRAPH_NAME)
+        if star.Relion.MICROGRAPH_NAME in df:
+            gb_field = star.Relion.MICROGRAPH_NAME
+        elif star.Relion.TOMONAME in df:
+            gb_field = star.Relion.TOMONAME
+        else:
+            raise ValueError("%s or %s must be in df" % (star.Relion.MICROGRAPH_NAME, star.Relion.TOMONAME))
+        gb = df.groupby(gb_field)
         dupes = []
+        if star.Relion.ORIGINZ in df:
+            origin_fields = star.Relion.ORIGINS3D
+            coord_fields = star.Relion.COORDS3D
+        else:
+            origin_fields = star.Relion.ORIGINS
+            coord_fields = star.Relion.COORDS
         for n, g in gb:
-            nb = algo.query_connected(g[star.Relion.COORDS].values - g[star.Relion.ORIGINS],
+            nb = algo.query_connected(g[coord_fields].values - g[origin_fields],
                                       args.min_separation / star.calculate_apix(df))
             dupes.extend(g.index[~np.isnan(nb)])
         dfaux = df.loc[dupes]
