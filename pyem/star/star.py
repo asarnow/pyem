@@ -194,6 +194,7 @@ class UCSF:
 
     PATH_FIELDS = [IMAGE_PATH]
 
+
 def smart_merge(s1, s2, fields, key=None, left_key=None):
     if key is None:
         key = merge_key(s1, s2)
