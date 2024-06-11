@@ -216,7 +216,7 @@ def parse_starfile(star_path, augment=True):
     return df
 
 
-def normalize_star_tabes(df):
+def normalize_star_tables(df):
     dfs = {}
     if Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = 1
