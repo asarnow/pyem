@@ -216,5 +216,31 @@ def parse_starfile(star_path, augment=True):
     return df
 
 
+def normalize_star_tabes(df):
+    dfs = {}
+    if Relion.OPTICSGROUP not in df:
+        df[Relion.OPTICSGROUP] = 1
+    gb = df.groupby(Relion.OPTICSGROUP)
+    df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].first().reset_index(drop=False)
+    df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
+    dfs['optics'] = df_optics
+    if Relion.TOMOSUBTOMOSARE2DSTACKS in df:
+        dfs['general'] = {'general': df[Relion.TOMOSUBTOMOSARE2DSTACKS][0]}
+        df = df.drop(columns=Relion.TOMOSUBTOMOSARE2DSTACKS, errors="ignore")
+    data_table = 'particles' if is_particle_star(df) else 'micrographs'
+    df[data_table] = df
+    return dfs
+
+
 def write_starfile(star_path, df, resort_fields=True, resort_records=False, simplify=True, optics=True):
-    pass
+    if not star_path.endswith(".star"):
+        star_path += ".star"
+    if resort_records:
+        df = sort_records(df, inplace=True)
+    if simplify:
+        df = simplify_star_ucsf(df)
+    if optics:
+        dfs = normalize_star_tabes(df)
+        starfile.write(dfs, star_path)
+    else:
+        starfile.write(df, star_path)
