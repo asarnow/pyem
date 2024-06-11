@@ -218,15 +218,15 @@ def parse_starfile(star_path, augment=True):
 
 def normalize_star_tables(df):
     dfs = {}
+    if Relion.TOMOSUBTOMOSARE2DSTACKS in df:
+        dfs['general'] = {Relion.TOMOSUBTOMOSARE2DSTACKS: df[Relion.TOMOSUBTOMOSARE2DSTACKS][0]}
+        df = df.drop(columns=Relion.TOMOSUBTOMOSARE2DSTACKS, errors="ignore")
     if Relion.OPTICSGROUP not in df:
         df[Relion.OPTICSGROUP] = 1
     gb = df.groupby(Relion.OPTICSGROUP)
     df_optics = gb[df.columns.intersection(Relion.OPTICSGROUPTABLE)].first().reset_index(drop=False)
     df = df.drop(columns=Relion.OPTICSGROUPTABLE, errors="ignore")
     dfs['optics'] = df_optics
-    if Relion.TOMOSUBTOMOSARE2DSTACKS in df:
-        dfs['general'] = {'general': df[Relion.TOMOSUBTOMOSARE2DSTACKS][0]}
-        df = df.drop(columns=Relion.TOMOSUBTOMOSARE2DSTACKS, errors="ignore")
     data_table = 'particles' if is_particle_star(df) else 'micrographs'
     dfs[data_table] = df
     return dfs
