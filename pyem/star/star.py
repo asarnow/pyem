@@ -344,6 +344,11 @@ def recenter(df, inplace=False):
     diffxy = df[Relion.ORIGINS] - intoff
     df[Relion.COORDS] = df[Relion.COORDS] - intoff
     df[Relion.ORIGINS] = diffxy
+    if Relion.ORIGINZ in df:
+        intoffz = np.round(df[Relion.ORIGINZ]).values
+        diffz = df[Relion.ORIGINZ] - intoffz
+        df[Relion.COORDZ] = df[Relion.COORDZ] - intoffz
+        df[Relion.ORIGINZ] = diffz
     sync_coords_from_pixel(df)
     return df
 
@@ -353,6 +358,10 @@ def recenter_modf(df, inplace=False):
     remxy, offsetxy = np.vectorize(modf)(df[Relion.ORIGINS])
     df[Relion.ORIGINS] = remxy
     df[Relion.COORDS] = df[Relion.COORDS] - offsetxy
+    if Relion.ORIGINZ in df:
+        remz, offsetz = np.vectorize(modf)(df[Relion.ORIGINZ])
+        df[Relion.ORIGINZ] = remz
+        df[Relion.COORDZ] = df[Relion.COORDZ] - offsetz
     sync_coords_from_pixel(df)
     return df
 
