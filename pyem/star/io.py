@@ -228,7 +228,7 @@ def normalize_star_tables(df):
         dfs['general'] = {'general': df[Relion.TOMOSUBTOMOSARE2DSTACKS][0]}
         df = df.drop(columns=Relion.TOMOSUBTOMOSARE2DSTACKS, errors="ignore")
     data_table = 'particles' if is_particle_star(df) else 'micrographs'
-    df[data_table] = df
+    dfs[data_table] = df
     return dfs
 
 
