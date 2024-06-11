@@ -243,4 +243,4 @@ def write_starfile(star_path, df, resort_fields=True, resort_records=False, simp
         dfs = normalize_star_tables(df)
         starfile.write(dfs, star_path)
     else:
-        starfile.write(df, star_path)
+        starfile.write({'images': df}, star_path)
