@@ -240,7 +240,7 @@ def write_starfile(star_path, df, resort_fields=True, resort_records=False, simp
     if simplify:
         df = simplify_star_ucsf(df)
     if optics:
-        dfs = normalize_star_tabes(df)
+        dfs = normalize_star_tables(df)
         starfile.write(dfs, star_path)
     else:
         starfile.write(df, star_path)
