@@ -238,7 +238,7 @@ def cryosparc_2_cs_movie_parameters(cs, passthroughs=None, trajdir=".", path=Non
     data_general[star.Relion.MOTIONMODELVERSION] = 0
     data_general[star.Relion.MICROGRAPHBINNING] = \
         data_general[star.Relion.MICROGRAPHPIXELSIZE] / data_general[star.Relion.MICROGRAPHORIGINALPIXELSIZE]
-    data_general[star.Relion.MICROGRAPHDOSERATE] /= data_general[star.Relion.IMAGESIZEZ]
+    data_general[star.Relion.MICROGRAPHDOSERATE] /= data_general.get(star.Relion.IMAGESIZEZ, 1)
     data_general[star.Relion.MICROGRAPHPREEXPOSURE] = \
         data_general[star.Relion.MICROGRAPHDOSERATE] * data_general[star.Relion.MICROGRAPHSTARTFRAME]
     data_general[star.Relion.MICROGRAPHSTARTFRAME] += 1
