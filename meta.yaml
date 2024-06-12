@@ -30,20 +30,25 @@ requirements:
     - python
     - setuptools
   run:
-    - python
-    - numba
-    - numpy
-    - scipy
-    - matplotlib
-    - seaborn
-    - pandas
-    - pathos
-    - pyfftw
-    - healpy
-    - natsort
-    - starfile
+    - python >=3.7
+    - numba> =0.41
+    - numpy >=1.14
+    - scipy >=1.2
+    - matplotlib >=2.2
+    - seaborn >=0.9
+    - pandas >=0.23.4
+    - pathos >=0.2.1
+    - pyfftw >=0.10
+    - healpy >=1.11
+    - natsort >=6.0
+    - starfile >=0.5.2
 
 about:
   home: https://github.com/asarnow/pyem
   license: GNU General Public License v3.0
   summary: A collection of Python modules and command-line utilities for electron microscopy of biological samples.
+
+conda:
+  channels:
+    - conda-forge
+    - defaults
