@@ -113,7 +113,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="STAR file with particle coordinates and valid relative micrograph paths")
@@ -129,8 +129,13 @@ if __name__ == "__main__":
     parser.add_argument("--swapxy", "-s", action="store_true",
                         help="Swap X & Y (NOT THE SAME as --swapxy in csparc2star.py)")
     parser.add_argument("--phase-flip", "-p", action="store_true", help="Flip CTF phases in micrograph before display")
-    parser.add_argument("--nodisp", "-nd", dest="disp", help="Don't display particles, micrograph only", action="store_false")
+    parser.add_argument("--nodisp", "-nd", dest="disp", help="Don't display particles, micrograph only",
+                        action="store_false")
     parser.add_argument("--nofilt", "-nf", dest="filt", help="Skip flat-fielding, etc", action="store_false")
     parser.add_argument("--loglevel", "-l", help="Set log verbosity", default="warning")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
 

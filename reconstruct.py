@@ -103,26 +103,27 @@ def delete_unmasked(mrc, masked_mrc):
     os.rename(masked_mrc, mrc)
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="STAR file(s) to reconstruct (e.g. a glob)", 
-            nargs="*")
+    parser.add_argument("input", help="STAR file(s) to reconstruct (e.g. a glob)",
+                        nargs="*")
     parser.add_argument("output", help="Output directory for reconstructions")
-    
     parser.add_argument("--apix", "--angpix", help="Angstroms per pixel (passed to relion_reconstruct)",
-            type=float)
+                        type=float)
     parser.add_argument("--sym", help="Symmetry group (passed to relion_reconstruct)",
-            type=str, default="C1")
+                        type=str, default="C1")
     parser.add_argument("--ctf", help="Perform CTF correction (passed to relion_reconstruct)",
-            action="store_true", default=False)
-
+                        action="store_true", default=False)
     parser.add_argument("--delete-unmasked", help="Overwrite reconstructions after masking",
-            action="store_true")
+                        action="store_true")
     parser.add_argument("--mask", help="Mask reconstructions and append _masked to filename of masked maps",
-            type=str)
+                        type=str)
     parser.add_argument("--nproc", help="Number of concurrent processes",
-            type=int, default=1)
-
+                        type=int, default=1)
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
 

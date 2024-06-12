@@ -89,7 +89,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", default=".", help="Motion correction output directory with individual .star files")
@@ -105,3 +105,7 @@ if __name__ == "__main__":
                         help="Determine optics groups from micrograph basename using a separator and index (e.g. _,4)")
     parser.add_argument("--loglevel", default="WARNING")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

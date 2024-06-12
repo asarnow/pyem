@@ -1,0 +1,49 @@
+package:
+  name: pyem
+  version: 0.5
+
+source:
+  path: .
+
+build:
+  number: 0
+  entry_points:
+    - cfsc.py = cfsc:main
+    - csparc2star.py = csparc2star:main
+    - ctf2star.py = ctf2star:main
+    - disparticle.py = disparticle:main
+    - emcalc.py = emcalc:main
+    - map.py = map:main
+    - mask.py = map:main
+    - mcstar.py = mcstar:main
+    - par2star.py = par2star:main
+    - project.py = project:main
+    - projection_subtraction.py = projection_subtraction:main
+    - stack.py = stack:main
+    - star.py = star:main
+    - star2bild.py = star2bild:main
+    - subparticles.py = subparticles:main
+    - varmap.py = varmap:main
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - numba
+    - numpy
+    - scipy
+    - matplotlib
+    - seaborn
+    - pandas
+    - pathos
+    - pyfftw
+    - healpy
+    - natsort
+    - starfile
+
+about:
+  home: https://github.com/asarnow/pyem
+  license: GNU General Public License v3.0
+  summary: A collection of Python modules and command-line utilities for electron microscopy of biological samples.

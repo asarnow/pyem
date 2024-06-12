@@ -81,7 +81,7 @@ def main(args):
     return 0
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Input Frealign .par file", nargs="*")
@@ -101,4 +101,8 @@ if __name__ == "__main__":
     parser.add_argument("--invert-eulers", help="Invert Euler angles (generally unnecessary)", action="store_true")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
 

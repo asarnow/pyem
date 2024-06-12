@@ -175,9 +175,8 @@ def setup_axes(fig, rect, rmax):
     return ax1, aux_ax
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--alpha", help="Scatter plot alpha value",
                         type=float, default=0.75)
@@ -205,7 +204,9 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("input", help="Input .star file")
     parser.add_argument("output", help="Output image file")
-
     sns.set()
-
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()

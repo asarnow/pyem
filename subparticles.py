@@ -162,7 +162,7 @@ def subparticle_expansion(s, ops=None, dists=0, rots=None, rotate=True, invert=F
         yield star.transform_star(s, ops[i], dists[i], rots=rots, rotate=rotate, invert=invert, adjust_defocus=adjust_defocus)
 
 
-if __name__ == "__main__":
+def _main_():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="STAR file with source particles")
@@ -183,7 +183,8 @@ if __name__ == "__main__":
     parser.add_argument("--recenter", help="Recenter subparticle coordinates by subtracting X and Y shifts (e.g. for "
                                            "extracting outside Relion)", action="store_true")
     parser.add_argument("--adjust-defocus", help="Add Z component of shifts to defocus", action="store_true")
-    parser.add_argument("--shift-only", help="Keep original view axis after target transformation", action="store_false")
+    parser.add_argument("--shift-only", help="Keep original view axis after target transformation",
+                        action="store_false")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
     parser.add_argument("--skip-join", help="Force multiple output files even if no suffix provided",
                         action="store_true", default=False)
@@ -192,4 +193,8 @@ if __name__ == "__main__":
                                       "Relion conventions)")
     parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
     sys.exit(main(parser.parse_args()))
+
+
+if __name__ == "__main__":
+    _main_()
 
