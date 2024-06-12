@@ -8,22 +8,22 @@ source:
 build:
   number: 0
   entry_points:
-    - cfsc.py = cfsc:main
-    - csparc2star.py = csparc2star:main
-    - ctf2star.py = ctf2star:main
-    - disparticle.py = disparticle:main
-    - emcalc.py = emcalc:main
-    - map.py = map:main
-    - mask.py = map:main
-    - mcstar.py = mcstar:main
-    - par2star.py = par2star:main
-    - project.py = project:main
-    - projection_subtraction.py = projection_subtraction:main
-    - stack.py = stack:main
-    - star.py = star:main
-    - star2bild.py = star2bild:main
-    - subparticles.py = subparticles:main
-    - varmap.py = varmap:main
+    - cfsc.py = cfsc:_main_
+    - csparc2star.py = csparc2star:_main_
+    - ctf2star.py = ctf2star:_main_
+    - disparticle.py = disparticle:_main_
+    - emcalc.py = emcalc:_main_
+    - map.py = map:_main_
+    - mask.py = map:_main_
+    - mcstar.py = mcstar:_main_
+    - par2star.py = par2star:_main_
+    - project.py = project:_main_
+    - projection_subtraction.py = projection_subtraction:_main_
+    - stack.py = stack:_main_
+    - star.py = star:_main_
+    - star2bild.py = star2bild:_main_
+    - subparticles.py = subparticles:_main_
+    - varmap.py = varmap:_main_
 
 requirements:
   build:
