@@ -6,24 +6,26 @@ source:
   path: .
 
 build:
+  noarch: python
   number: 0
+  script: python -m pip install --no-deps --ignore-installed .
   entry_points:
-    - cfsc.py = cfsc:_main_
-    - csparc2star.py = csparc2star:_main_
-    - ctf2star.py = ctf2star:_main_
-    - disparticle.py = disparticle:_main_
-    - emcalc.py = emcalc:_main_
-    - map.py = map:_main_
-    - mask.py = map:_main_
-    - mcstar.py = mcstar:_main_
-    - par2star.py = par2star:_main_
-    - project.py = project:_main_
-    - projection_subtraction.py = projection_subtraction:_main_
-    - stack.py = stack:_main_
-    - star.py = star:_main_
-    - star2bild.py = star2bild:_main_
-    - subparticles.py = subparticles:_main_
-    - varmap.py = varmap:_main_
+    - cfsc.py = pyem.cli.cfsc:_main_
+    - csparc2star.py = pyem.cli.csparc2star:_main_
+    - ctf2star.py = pyem.cli.ctf2star:_main_
+    - disparticle.py = pyem.cli.disparticle:_main_
+    - emcalc.py = pyem.cli.emcalc:_main_
+    - map.py = pyem.cli.map:_main_
+    - mask.py = pyem.cli.map:_main_
+    - mcstar.py = pyem.cli.mcstar:_main_
+    - par2star.py = pyem.cli.par2star:_main_
+    - project.py = pyem.cli.project:_main_
+    - projection_subtraction.py = pyem.cli.projection_subtraction:_main_
+    - stack.py = pyem.cli.stack:_main_
+    - star.py = pyem.cli.star:_main_
+    - star2bild.py = pyem.cli.star2bild:_main_
+    - subparticles.py = pyem.cli.subparticles:_main_
+    - varmap.py = pyem.cli.varmap:_main_
 
 requirements:
   build:
