@@ -45,8 +45,14 @@ requirements:
 
 about:
   home: https://github.com/asarnow/pyem
-  license: GNU General Public License v3.0
-  summary: A collection of Python modules and command-line utilities for electron microscopy of biological samples.
+  license: GPL-3.0
+  license_family: GPL
+  license_file: LICENSE
+  summary: Python modules and command-line utilities for electron microscopy of biological samples.
+  description: |
+    A collection of Python modules and command-line utilities for electron microscopy of biological samples.
+    Cite as: Asarnow, D., Palovcak, E., Cheng, Y. UCSF pyem v0.5. Zenodo https://doi.org/10.5281/zenodo.3576630 (2019)
+  dev_url: https://github.com/asarnow/pyem
 
 conda:
   channels:
