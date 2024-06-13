@@ -1,6 +1,6 @@
 package:
   name: pyem
-  version: 0.5
+  version: 0.6
 
 source:
   path: .
@@ -29,14 +29,15 @@ build:
 
 requirements:
   build:
+  host:
     - python
-    - setuptools
+    - pip
   run:
     - python >=3.7
     - numba >=0.41
     - numpy >=1.14
     - scipy >=1.2
-    - matplotlib >=2.2
+    - matplotlib-base >=2.2
     - seaborn >=0.9
     - pandas >=0.23.4
     - pathos >=0.2.1
@@ -47,7 +48,7 @@ requirements:
 
 about:
   home: https://github.com/asarnow/pyem
-  license: GPL-3.0
+  license: GPL-3.0-or-later
   license_family: GPL
   license_file: LICENSE
   summary: Python modules and command-line utilities for electron microscopy of biological samples.
