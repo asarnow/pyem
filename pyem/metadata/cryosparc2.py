@@ -75,7 +75,7 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, i
     if df is None:
         df = pd.DataFrame()
     if u'location/center_x_frac' in cs.dtype.names:
-        log.debug("Converting normalized particle coordinates to absolute")
+        log.info("Converting normalized particle coordinates to absolute")
         df[star.Relion.COORDX] = cs[u'location/center_x_frac']
         df[star.Relion.COORDY] = cs[u'location/center_y_frac']
         # df[star.Relion.MICROGRAPH_NAME] = cs[u'location/micrograph_path']
@@ -105,7 +105,7 @@ def cryosparc_2_cs_ctf_parameters(cs, df=None):
     if df is None:
         df = pd.DataFrame()
     if 'ctf/tilt_A' in cs.dtype.names:
-        log.debug("Recovering beam tilt and converting to mrad")
+        log.info("Recovering beam tilt and converting to mrad")
         df[star.Relion.BEAMTILTX] = np.arcsin(cs['ctf/tilt_A'][:, 0] / cs['ctf/cs_mm'] * 1e-7) * 1e3
         df[star.Relion.BEAMTILTY] = np.arcsin(cs['ctf/tilt_A'][:, 1] / cs['ctf/cs_mm'] * 1e-7) * 1e3
     if 'ctf/shift_A' in cs.dtype.names:
@@ -297,7 +297,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
                          swapxy=False, invertx=False, inverty=False):
 
     log = logging.getLogger('root')
-    log.debug("Reading primary file")
+    log.info("Reading primary input file")
     cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
     df = util.dataframe_from_records_mapped(cs, general)
     df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy, invertx=invertx, inverty=inverty)
@@ -335,7 +335,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
     log.info("Directly copied fields: %s" % ", ".join(df.columns))
 
     if star.Relion.DEFOCUSANGLE in df:
-        log.debug("Converting DEFOCUSANGLE from radians to degrees")
+        log.info("Converting DEFOCUSANGLE from radians to degrees")
         df[star.Relion.DEFOCUSANGLE] = np.rad2deg(df[star.Relion.DEFOCUSANGLE])
     elif star.Relion.DEFOCUSV in df and star.Relion.DEFOCUSU in df:
         log.warning("Defocus angles not found")
@@ -343,33 +343,33 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         log.warning("Defocus values not found")
 
     if star.Relion.PHASESHIFT in df:
-        log.debug("Converting PHASESHIFT from degrees to radians")
+        log.info("Converting PHASESHIFT from degrees to radians")
         df[star.Relion.PHASESHIFT] = np.rad2deg(df[star.Relion.PHASESHIFT])
 
     if star.Relion.ORIGINX in df.columns and boxsize is not None:
         df[star.Relion.ORIGINS] *= cs["blob/shape"][0] / boxsize
 
     if star.Relion.RANDOMSUBSET in df.columns:
-        log.debug("Changing RANDOMSUBSET to 1-based index")
+        log.info("Changing RANDOMSUBSET to 1-based index")
         if df[star.Relion.RANDOMSUBSET].value_counts().size == 1:
             df.drop(star.Relion.RANDOMSUBSET, axis=1, inplace=True)
         else:
             df[star.Relion.RANDOMSUBSET] += 1
 
     if star.Relion.CLASS in df.columns:
-        log.debug("Changing CLASS to 1-based index")
+        log.info("Changing CLASS to 1-based index")
         df[star.Relion.CLASS] += 1
 
     if star.Relion.OPTICSGROUP in df.columns:
-        log.debug("Changing OPTICSGROUP to 1-based index")
+        log.info("Changing OPTICSGROUP to 1-based index")
         df[star.Relion.OPTICSGROUP] += 1
 
     if df.columns.intersection(star.Relion.ANGLES).size == len(star.Relion.ANGLES):
-        log.debug("Converting Rodrigues coordinates to Euler angles")
+        log.info("Converting Rodrigues coordinates to Euler angles")
         df[star.Relion.ANGLES] = np.rad2deg(geom.rot2euler(geom.expmap(df[star.Relion.ANGLES].values)))
         log.info("Converted Rodrigues coordinates to Euler angles")
     elif star.Relion.ANGLEPSI in df:
-        log.debug("Converting ANGLEPSI from degrees to radians")
+        log.info("Converting ANGLEPSI from degrees to radians")
         df[star.Relion.ANGLEPSI] = np.rad2deg(df[star.Relion.ANGLEPSI])
     elif star.is_particle_star(df):
         log.warning("Angular alignment parameters not found")
@@ -379,6 +379,6 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
         if path_field in df:
             if '>' in df[path_field].iloc[0]:
                 df[path_field] = df[path_field].apply(lambda x: x.replace('>', '', 1))
-                log.debug(f"Removed '>' from paths in field {path_field}")
+                log.info(f"Removed '>' from paths in field {path_field}")
 
     return df
