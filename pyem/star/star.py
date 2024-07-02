@@ -481,7 +481,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
 def augment_star_ucsf(df, inplace=True):
     df = df if inplace else df.copy()
     df.reset_index(inplace=True)
-    if "@" in df.iloc[0][Relion.IMAGE_NAME]:
+    if Relion.IMAGE_NAME in df and "@" in df.iloc[0][Relion.IMAGE_NAME]:
         if Relion.IMAGE_NAME in df:
             df[[UCSF.IMAGE_INDEX, UCSF.IMAGE_PATH]] = \
                     df[Relion.IMAGE_NAME].str.split("@", n=2, expand=True)
