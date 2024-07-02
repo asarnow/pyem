@@ -40,7 +40,7 @@ def main(args):
                     "Use --noswapxy if unswapping is needed (unlikely).")
 
     if args.input[0].endswith(".cs"):
-        log.debug("Detected CryoSPARC 2+ .cs file")
+        log.info("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
         if args.first10k:
             cs = cs[:10000]
@@ -81,7 +81,7 @@ def main(args):
             log.error("Required fields could not be mapped. Are you using the right input file(s)?")
             return 1
     else:
-        log.debug("Detected CryoSPARC 0.6.5 .csv file")
+        log.info("Detected CryoSPARC 0.6.5 .csv file")
         if len(args.input) > 1:
             log.error("Only one file at a time supported for CryoSPARC 0.6.5 .csv format")
             return 1
@@ -109,10 +109,10 @@ def main(args):
              glob(args.copy_micrograph_coordinates)), join="inner")
         key = star.merge_key(df, coord_star, threshold=0)
         if key is None and not args.strip_uid:
-            log.debug("Merge key not found, removing leading UIDs")
+            log.info("Merge key not found, removing leading UIDs")
             df = star.strip_path_uids(df, inplace=True)
             key = star.merge_key(df, coord_star)
-        log.debug("Coordinates merge key: %s" % key)
+        log.info("Coordinates merge key: %s" % key)
         if args.cached or key == star.Relion.IMAGE_NAME:
             fields = star.Relion.MICROGRAPH_COORDS
         else:
