@@ -84,14 +84,14 @@ def cryosparc_2_cs_particle_locations(cs, df=None, swapxy=True, invertx=False, i
             df[star.Relion.COORDX] = 1 - df[star.Relion.COORDX]
         if inverty:
             # cryoSPARC coordinates have origin in "bottom left" so inverting Y is default for Relion correctness
-            # (and therefore also for Import Particles). However, cryoSPARC Patch Motion flips images physically
-            # vs. SerialEM, Motioncor2 doesn't, so "inverting twice" (not inverting) is required if switching.
+            # ("top left"). Note Import Particles, which takes Relion coordinates, also Y flips coordinates.
+            # Additionally, MotionCor2/RelionCorr flip images physically vs. SerialEM, while Patch Motion doesn't.
+            # Ergo "inverting twice" (skipping this branch) is required if switching.
             df[star.Relion.COORDY] = 1 - df[star.Relion.COORDY]
         if swapxy:
             # In cryoSPARC, fast axis is long axis of K3, 'location/micrograph_shape' is [y, x].
             # In Relion and numpy (e.g. pyem.mrc), the fast axis is the short axis of K3, shape is (x, y).
             # cryoSPARC import particles correctly imports *Relion convention* coordinates, which we also want.
-            # Default behavior is now to always swap.
             df[star.Relion.COORDS] = np.round(df[star.Relion.COORDS] *
                                               cs['location/micrograph_shape'][:, ::-1]).astype(int)
         else:
