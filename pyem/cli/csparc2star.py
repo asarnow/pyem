@@ -91,11 +91,12 @@ def main(args):
     if args.cls is not None:
         df = star.select_classes(df, args.cls)
 
-    if args.flipy:
+    if args.flipy or args.flipy_pose:
         log.info("Flipping refined shifts in Y")
         df[star.Relion.ORIGINY] = -df[star.Relion.ORIGINY]
         log.info("Flipping particle orientation through XZ plane")
         df = star.transform_star(df, np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]), leftmult=True)
+    if args.flipy or args.flipy_ctf:
         log.info("Flipping defocus angles")
         df[star.Relion.DEFOCUSANGLE] = -df[star.Relion.DEFOCUSANGLE]
 
@@ -165,7 +166,9 @@ def _main_():
                         action="store_false")
     parser.add_argument("--invertx", help="Invert particle coordinate X axis", action="store_true")
     parser.add_argument("--inverty", help="Invert particle coordinate Y axis", action="store_false")
-    parser.add_argument("--flipy", help="Invert refined particle Y shifts", action="store_true")
+    parser.add_argument("--flipy", help="Invert particle Y shifts, angles, defocus angle", action="store_true")
+    parser.add_argument("--flipy-pose", help="Invert particle Y shifts and angles", action="store_true")
+    parser.add_argument("--flipy-ctf", help="Invert particle defocus angle", action="store_true")
     parser.add_argument("--cached", help="Keep paths from the Cryosparc 2+ cache when merging coordinates",
                         action="store_true")
     parser.add_argument("--transform",
