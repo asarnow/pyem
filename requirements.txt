@@ -1,5 +1,6 @@
 numba>=0.41
 numpy>=1.14
+numexpr>=2.8.0
 scipy>=1.2
 matplotlib>=2.2
 seaborn>=0.9
