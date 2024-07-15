@@ -24,7 +24,6 @@ import os.path
 import pyfftw.interfaces.numpy_fft as fft
 import scipy.ndimage as ndi
 import seaborn as sns
-import skimage as ski
 import sys
 from pyem import ctf
 from pyem import mrc
@@ -86,7 +85,7 @@ def main(args):
         gL = np.real(fft.irfft2(GL))
         g = gL / gH
         p2, p98 = np.percentile(g, [4, 98])
-        g = ski.exposure.rescale_intensity(g, in_range=(p2, p98))
+        g = np.clip(g, p2, p98)
     else:
         g = np.real(fft.irfft2(I))
     g = g[:, ::-1].T
