@@ -15,14 +15,11 @@ Asarnow, D., Palovcak, E., Cheng, Y. UCSF pyem v0.5. Zenodo https://doi.org/10.5
 
 # Installation
 
-## Coming soon...
 Install pyem to any conda environment (Python >= 3.9) from conda-forge:
 
 ```
 conda install -c conda-forge pyem
 ```
-
-## In the meantime...
 
 I recommend using [miniforge](https://github.com/conda-forge/miniforge) (and mamba), in which case the channel argument should be dropped.
 
