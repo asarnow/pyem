@@ -21,7 +21,11 @@ Install pyem to any conda environment (Python >= 3.9) from conda-forge:
 conda install -c conda-forge pyem
 ```
 
-I recommend using [miniforge](https://github.com/conda-forge/miniforge) (and mamba), in which case the channel argument should be dropped.
+I recommend using [miniforge](https://github.com/conda-forge/miniforge) (and mamba), in which case the channel argument should be dropped:
+
+```
+mamba install pyem
+```
 
 For development pyem can be installed with an egg-link and adding pyem.cli programs to the $PATH:
 
