@@ -175,8 +175,10 @@ def _main_():
                         help="Apply rotation matrix or 3x4 rotation plus translation matrix to particles (Numpy format)",
                         type=str)
     parser.add_argument("--relion2", "-r2", help="Relion 2 compatible outputs", action="store_true")
-    parser.add_argument("--strip-uid", help="Strip all leading UIDs from file names", nargs="?", default=None, const=-1,
-                        type=int)
+    parser.add_argument("--strip-uid",
+                        help=("Strip all leading UIDs from file names (default) or provide an integer to strip that number "
+                        "of UIDs (starting from the left)"),
+                        nargs="?", default=None, const=-1, type=int)
     parser.add_argument("--10k", help="Only read first 10,000 particles for rapid testing.", action="store_true",
                         dest="first10k")
     parser.add_argument("--loglevel", "-l", type=str, default="WARNING", help="Logging level and debug output")
