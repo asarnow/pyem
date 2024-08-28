@@ -482,7 +482,7 @@ def transform_star(df, r, t=None, inplace=False, rots=None, invert=False,
         if adjust_defocus:
             newstar[Relion.DEFOCUSU] += tt[:, -1] * calculate_apix(df)
             newstar[Relion.DEFOCUSV] += tt[:, -1] * calculate_apix(df)
-            newstar[Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(newstar[Relion.DEFOCUSV], newstar[Relion.DEFOCUSV]))
+            # newstar[Relion.DEFOCUSANGLE] = np.rad2deg(np.arctan2(newstar[Relion.DEFOCUSV], newstar[Relion.DEFOCUSV]))
 
     return newstar
 
