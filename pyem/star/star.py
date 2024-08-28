@@ -178,6 +178,7 @@ class UCSF:
     UID = "ucsfUid"
     PARTICLE_UID = "ucsfParticleUid"
     MICROGRAPH_UID = "ucsfMicrographUid"
+    PARTICLEBINNING = "ucsfParticleBinning"
     Z_0_0 = "Z(0,0)"  # Piston.
     Z_neg1_1 = "Z(-1,1)"  # Shift ("tilt") X.
     Z_1_1 = "Z(1,1)"  # Shift ("tilt") Y.
@@ -339,15 +340,22 @@ def all_same_class(df, inplace=False):
 
 def recenter(df, inplace=False):
     df = df if inplace else df.copy()
-    intoff = np.round(df[Relion.ORIGINS]).values
-    diffxy = df[Relion.ORIGINS] - intoff
-    df[Relion.COORDS] = df[Relion.COORDS] - intoff
-    df[Relion.ORIGINS] = diffxy
     if Relion.ORIGINZ in df:
-        intoffz = np.round(df[Relion.ORIGINZ]).values
-        diffz = df[Relion.ORIGINZ] - intoffz
-        df[Relion.COORDZ] = df[Relion.COORDZ] - intoffz
-        df[Relion.ORIGINZ] = diffz
+        origins = Relion.ORIGINS3D
+        coords = Relion.COORDS3D
+    else:
+        origins = Relion.ORIGINS
+        coords = Relion.COORDS
+
+    if UCSF.PARTICLEBINNING in df:
+        intoff = np.round(df[origins] * df[UCSF.PARTICLEBINNING]).values
+        diffxy = df[origins] - (intoff / df[UCSF.PARTICLEBINNING])
+    else:
+        intoff = np.round(df[origins]).values
+        diffxy = df[origins] - intoff
+
+    df[coords] = df[coords] - intoff
+    df[origins] = diffxy
     sync_coords_from_pixel(df)
     return df
 
@@ -504,6 +512,10 @@ def augment_star_ucsf(df, inplace=True):
 
     if Relion.MICROGRAPH_NAME in df:
         df[UCSF.MICROGRAPH_BASENAME] = df[Relion.MICROGRAPH_NAME].apply(os.path.basename)
+
+    if Relion.MICROGRAPHPIXELSIZE in df and Relion.IMAGEPIXELSIZE in df:
+        df[UCSF.PARTICLEBINNING] = df[Relion.IMAGEPIXELSIZE] / df[Relion.MICROGRAPHPIXELSIZE]
+
     return df
 
 
@@ -581,6 +593,9 @@ def check_defaults(df, inplace=False):
             df[Relion.DETECTORPIXELSIZE] = df[Relion.MAGNIFICATION] * df[Relion.IMAGEPIXELSIZE] / 10000
     elif Relion.DETECTORPIXELSIZE in df and Relion.MAGNIFICATION in df:
         df[Relion.IMAGEPIXELSIZE] = df[Relion.DETECTORPIXELSIZE] * df[Relion.MAGNIFICATION] / 10000
+
+    if Relion.MICROGRAPHORIGINALPIXELSIZE in df and Relion.MICROGRAPHPIXELSIZE in df:
+        df[Relion.MICROGRAPHBINNING] = df[Relion.MICROGRAPHPIXELSIZE] / df[Relion.MICROGRAPHORIGINALPIXELSIZE]
 
     sync_coords_from_angst(df)
 
