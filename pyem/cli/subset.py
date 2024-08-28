@@ -19,15 +19,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import sys
-from pyem.star import parse_star
-from pyem.star import write_star
+from pyem.star import Relion
+from pyem.star import parse_starfile
+from pyem.star import write_starfile
 
 
 def main(args):
-    df = parse_star(args.input, keep_index=False)
+    df = parse_starfile(args.input, augment=False)
 
     if args.cls is not None:
-        clsfields = [f for f in df.columns if "ClassNumber" in f]
+        clsfields = [f for f in df.columns if Relion.CLASS in f]
         if len(clsfields) == 0:
             print("No class labels found")
             return 1
@@ -38,31 +39,35 @@ def main(args):
         df = df.loc[ind]
 
     if args.max_astigmatism is not None:
-        astigmatism = df["rlnDefocusU"] - df["rlnDefocusV"]
+        astigmatism = df[Relion.DEFOCUSU] - df[Relion.DEFOCUSV]
         ind = astigmatism <= args.max_astigmatism
         df = df.loc[ind]
 
     if args.max_resolution is not None:
         if "rlnFinalResolution" in df.columns:
             ind = df["rlnFinalResolution"] <= args.max_resolution
-        elif "rlnCtfMaxResolution" in df.columns:
-            ind = df["rlnCtfMaxResolution"] <= args.max_resolution
+        elif Relion.CTFMAXRESOLUTION in df.columns:
+            ind = df[Relion.CTFMAXRESOLUTION] <= args.max_resolution
         else:
             print("No CTF resolution field found in input")
             return 1
         df = df.loc[ind]
 
     if args.max_ctf_fom is not None:
-        ind = df["rlnCtfFigureOfMerit"] <= args.max_ctf_fom
+        ind = df[Relion.CTFFIGUREOFMERIT] <= args.max_ctf_fom
+        df = df.loc[ind]
+
+    if args.min_autopick_fom is not None:
+        ind = df[Relion.AUTOPICKFIGUREOFMERIT] >= args.min_autopick_fom
         df = df.loc[ind]
 
     if args.min_ctf_fom is not None:
-        ind = df["rlnCtfFigureOfMerit"] >= args.min_ctf_fom
+        ind = df[Relion.CTFFIGUREOFMERIT] >= args.min_ctf_fom
         df = df.loc[ind]
     
     if args.min_particles is not None:
-        counts = df["rlnMicrographName"].value_counts()
-        subset = df.set_index("rlnMicrographName").loc[counts.index[counts > args.min_particles]]
+        counts = df[Relion.MICROGRAPH_NAME].value_counts()
+        subset = df.set_index(Relion.MICROGRAPH_NAME).loc[counts.index[counts > args.min_particles]]
         df = subset.reset_index()
 
     if args.subsample is not None:
@@ -78,7 +83,7 @@ def main(args):
         else:
             df = df.sample(int(args.subsample), random_state=args.seed)
 
-    write_star(args.output, df)
+    write_starfile(args.output, df)
     return 0
 
 
@@ -92,6 +97,8 @@ def _main_():
     parser.add_argument("--max-resolution", help="Maximum CTF resolution in Angstroms",
                         type=float)
     parser.add_argument("--max-ctf-fom", help="Maximum CTF figure-of-merit (useful for removing ice)",
+                        type=float)
+    parser.add_argument("--min-autopick-fom", help="Minimum Autopick figure-of-merit",
                         type=float)
     parser.add_argument("--min-ctf-fom", help="Minimum CTF figure-of-merit",
                         type=float)
