@@ -379,9 +379,10 @@ def zero_origins(df, inplace=False):
 
 def scale_coordinates(df, factor, inplace=False):
     df = df if inplace else df.copy()
-    df[Relion.COORDS] = df[Relion.COORDS] * factor
     if Relion.COORDZ in df:
-        df[Relion.COORDZ] = df[Relion.COORDZ] * factor
+        df[Relion.COORDS3D] = df[Relion.COORDS3D] * factor
+    else:
+        df[Relion.COORDS] = df[Relion.COORDS] * factor
     return df
 
 

@@ -175,7 +175,8 @@ def main(args):
         star.scale_magnification(df, args.scale_particles, inplace=True)
 
     if args.scale_coordinates is not None:
-        star.scale_coordinates(df, args.scale_coordinates, inplace=True)
+        factor = np.array([np.double(tok) for tok in args.target.split(",")])
+        star.scale_coordinates(df, factor, inplace=True)
 
     if args.scale_origins is not None:
         star.scale_origins(df, args.scale_origins, inplace=True)
@@ -355,7 +356,7 @@ def _main_():
                         help="Factor to rescale particle origins and magnification (rebin refined particles)",
                         type=float)
     parser.add_argument("--scale-coordinates", help="Factor to rescale particle coordinates",
-                        type=float)
+                        type=str)
     parser.add_argument("--scale-origins", help="Factor to rescale particle origins",
                         type=float)
     parser.add_argument("--scale-magnification", help="Factor to rescale magnification (pixel size)",
