@@ -175,7 +175,7 @@ def main(args):
         star.scale_magnification(df, args.scale_particles, inplace=True)
 
     if args.scale_coordinates is not None:
-        factor = np.array([np.double(tok) for tok in args.target.split(",")])
+        factor = np.array([np.double(tok) for tok in args.scale_coordinates.split(",")])
         star.scale_coordinates(df, factor, inplace=True)
 
     if args.scale_origins is not None:
