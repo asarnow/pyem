@@ -312,7 +312,7 @@ def split_micrographs(df):
 
 
 def replace_micrograph_path(df, path, inplace=False):
-    return replace_micrograph_path(df, path, field=Relion.MICROGRAPH_NAME, inplace=inplace)
+    return replace_field_path(df, path, field=Relion.MICROGRAPH_NAME, inplace=inplace)
 
 def replace_field_path(df, path, field=Relion.MICROGRAPH_NAME, inplace=False):
     df = df if inplace else df.copy()
