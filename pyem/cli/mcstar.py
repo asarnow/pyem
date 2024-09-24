@@ -21,7 +21,6 @@
 import glob
 import logging
 import os.path
-import pathlib
 import pandas as pd
 import sys
 from pyem import star
