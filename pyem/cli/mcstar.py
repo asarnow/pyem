@@ -21,6 +21,7 @@
 import glob
 import logging
 import os.path
+import pathlib
 import pandas as pd
 import sys
 from pyem import star
@@ -32,17 +33,24 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
     mic_stars = glob.glob(os.path.join(args.input, "*.star"))
-
+    if len(args.suffix) > 0 and not args.suffix.startswith("_"):
+        args.suffix = "_" + args.suffix
     if args.nodw:
-        mics = [m[:-5] + ".mrc" for m in mic_stars]
+        mics = [m[:-5] + args.suffix + ".mrc" for m in mic_stars]
     else:
-        mics = [m[:-5] + "_DW.mrc" for m in mic_stars]
+        mics = [m[:-5] + args.suffix + "_DW.mrc" for m in mic_stars]
     for m in mics:
         if not os.path.exists(m):
             log.warning("%s does not exist" % m)
 
     df = pd.DataFrame({star.Relion.MICROGRAPH_NAME: mics,
                        star.Relion.MICROGRAPHMETADATA: mic_stars})
+
+    if args.meta_path is not None:
+        df = star.replace_field_path(df, args.meta_path, field=star.Relion.MICROGRAPHMETADATA)
+
+    if args.mic_path is not None:
+        df = star.replace_field_path(df, args.mic_path, field=star.Relion.MICROGRAPH_NAME)
 
     if args.set_optics is None:
         df[star.Relion.OPTICSGROUP] = 1
@@ -95,6 +103,9 @@ def _main_():
     parser.add_argument("input", default=".", help="Motion correction output directory with individual .star files")
     parser.add_argument("output", default="corrected_micrographs.star", help="Path for output micrographs .star file")
     parser.add_argument("--nodw", action="store_true", help="Don't add _DW to micrograph names")
+    parser.add_argument("--suffix", default="", help="Suffix for micrograph paths (inserted after _ and before _DW)")
+    parser.add_argument("--meta-path", help="Dirname for star files")
+    parser.add_argument("--mic-path", help="Dirname for micrographs")
     parser.add_argument("--apix", "--angpix", type=float, help="Pixel size in Angstroms")
     parser.add_argument("--bin", "-b", type=float, default=None, help="Binning factor during motion correction")
     parser.add_argument("--ac", "-ac", type=float, default=None, help="Amplitude contrast")
