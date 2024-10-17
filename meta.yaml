@@ -1,6 +1,6 @@
 package:
   name: pyem
-  version: 0.6
+  version: 0.64
 
 source:
   path: .
