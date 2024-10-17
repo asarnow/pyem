@@ -358,7 +358,7 @@ def recenter(df, inplace=False):
 
     df[coords] = df[coords] - intoff
     df[origins] = diffxy
-    sync_coords_from_pixel(df)
+    sync_origins_from_pixel(df, inplace=True)
     return df
 
 
@@ -371,7 +371,7 @@ def recenter_modf(df, inplace=False):
         remz, offsetz = np.vectorize(modf)(df[Relion.ORIGINZ])
         df[Relion.ORIGINZ] = remz
         df[Relion.COORDZ] = df[Relion.COORDZ] - offsetz
-    sync_coords_from_pixel(df)
+    sync_origins_from_pixel(df, inplace=True)
     return df
 
 
@@ -598,7 +598,7 @@ def check_defaults(df, inplace=False):
     if Relion.MICROGRAPHORIGINALPIXELSIZE in df and Relion.MICROGRAPHPIXELSIZE in df:
         df[Relion.MICROGRAPHBINNING] = df[Relion.MICROGRAPHPIXELSIZE] / df[Relion.MICROGRAPHORIGINALPIXELSIZE]
 
-    sync_coords_from_angst(df)
+    sync_origins_from_angst(df)
 
     if Relion.ORIGINZANGST in df:
         df[Relion.IMAGEDIMENSION] = 3
@@ -689,7 +689,8 @@ def decode_byte_strings(df, fmt='UTF-8', inplace=False):
     return df
 
 
-def sync_coords_from_pixel(df):
+def sync_origins_from_pixel(df, inplace=False):
+    df = df if inplace else df.copy()
     for it in zip(Relion.ORIGINS3D, Relion.ORIGINSANGST3D):
         if it[0] in df:
             df[it[1]] = df[it[0]] * df[Relion.IMAGEPIXELSIZE]
@@ -698,7 +699,8 @@ def sync_coords_from_pixel(df):
     return df
 
 
-def sync_coords_from_angst(df):
+def sync_origins_from_angst(df, inplace=False):
+    df = df if inplace else df.copy()
     for it in zip(Relion.ORIGINSANGST3D, Relion.ORIGINS3D):
         if it[0] in df:
             df[it[1]] = df[it[0]] / df[Relion.IMAGEPIXELSIZE]

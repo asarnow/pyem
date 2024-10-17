@@ -159,7 +159,9 @@ def subparticle_expansion(s, ops=None, dists=0, rots=None, rotate=True, invert=F
         log.debug("Yielding expansion %d" % i)
         log.debug("Rotation: %s" % str(ops[i]).replace("\n", "\n" + " " * 10))
         log.debug("Translation: %s (%f px)" % (str(dists[i]), np.linalg.norm(dists[i])))
-        yield star.transform_star(s, ops[i], dists[i], rots=rots, rotate=rotate, invert=invert, adjust_defocus=adjust_defocus)
+        xs = star.transform_star(s, ops[i], dists[i], rots=rots, rotate=rotate, invert=invert, adjust_defocus=adjust_defocus)
+        star.sync_origins_from_pixel(xs, inplace=True)
+        yield xs
 
 
 def _main_():
