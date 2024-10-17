@@ -253,7 +253,7 @@ def write_starfile(star_path, df, resort_fields=True, resort_records=False, simp
     if not star_path.endswith(".star"):
         star_path += ".star"
     if resort_records:
-        df = sort_records(df, inplace=True)
+        df = sort_records(df)
     if simplify:
         df = simplify_star_ucsf(df)
     if optics:
