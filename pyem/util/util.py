@@ -22,7 +22,7 @@ import natsort
 import numpy as np
 import pandas as pd
 import subprocess
-from distutils.spawn import find_executable as which
+from shutil import which
 from .. import geom
 from .. import mrc
 from .. import vop
