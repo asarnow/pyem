@@ -287,7 +287,7 @@ def select_classes(df, classes):
 
 
 def to_micrographs(df):
-    gb = df.groupby(Relion.MICROGRAPH_NAME)
+    gb = df.groupby(Relion.MICROGRAPH_NAME, numeric_only=True)
     mu = gb.mean()
     df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
              [Relion.MICROGRAPH_NAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
