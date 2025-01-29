@@ -43,13 +43,6 @@ def main(args):
         log.info("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
 
-        # convert shifts from alignment psize to blob psize
-        for dimension in ["alignments2D", "alignments3D"]:
-            try:
-                cs[f"{dimension}/shift"] = cs[f"{dimension}/shift"] * cs[f"{dimension}/psize_A"].reshape(-1, 1) / cs["blob/psize_A"].reshape(-1, 1)
-            except ValueError:
-                pass
-
         if args.first10k:
             cs = cs[:10000]
 
