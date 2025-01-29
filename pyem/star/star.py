@@ -598,7 +598,7 @@ def check_defaults(df, inplace=False):
     if Relion.MICROGRAPHORIGINALPIXELSIZE in df and Relion.MICROGRAPHPIXELSIZE in df:
         df[Relion.MICROGRAPHBINNING] = df[Relion.MICROGRAPHPIXELSIZE] / df[Relion.MICROGRAPHORIGINALPIXELSIZE]
 
-    sync_origins_from_angst(df, inplace = True)
+    sync_origins_from_angst(df, inplace=True)
 
     if Relion.ORIGINZANGST in df:
         df[Relion.IMAGEDIMENSION] = 3
