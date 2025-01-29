@@ -42,6 +42,7 @@ def main(args):
     if args.input[0].endswith(".cs"):
         log.info("Detected CryoSPARC 2+ .cs file")
         cs = np.load(args.input[0])
+
         if args.first10k:
             cs = cs[:10000]
 
