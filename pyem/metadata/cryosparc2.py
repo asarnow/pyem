@@ -298,7 +298,7 @@ def parse_cryosparc_2_cs(csfile, passthroughs=None, minphic=0, boxsize=None,
 
     log = logging.getLogger('root')
     log.info("Reading primary input file")
-    cs = csfile if type(csfile) is np.ndarray else np.load(csfile)
+    cs = csfile if type(csfile) is np.ndarray else np.load(csfile, max_header_size=100000)
     df = util.dataframe_from_records_mapped(cs, general)
     df = cryosparc_2_cs_particle_locations(cs, df, swapxy=swapxy, invertx=invertx, inverty=inverty)
     df = cryosparc_2_cs_model_parameters(cs, df, minphic=minphic)
