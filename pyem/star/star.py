@@ -608,7 +608,7 @@ def check_defaults(df, inplace=False):
 
     sync_origins_from_angst(df, inplace=True)
 
-    if Relion.ORIGINZANGST in df:
+    if Relion.ORIGINZANGST in df or Relion.COORDZ in df:
         df[Relion.IMAGEDIMENSION] = 3
     else:
         df[Relion.IMAGEDIMENSION] = 2
