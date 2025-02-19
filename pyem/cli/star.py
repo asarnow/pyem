@@ -375,7 +375,7 @@ def _main_():
                         type=float)
     parser.add_argument("--suffix", help="Suffix for multiple output files",
                         type=str, default="")
-    parser.add_argument("--to-micrographs", help="Convert particles STAR to micrographs STAR",
+    parser.add_argument("--to-micrographs", "--to-tomograms", help="Convert particles STAR to micrographs/tomograms STAR",
                         action="store_true")
     parser.add_argument("--micrograph-path", help="Replacement path for micrographs")
     parser.add_argument("--strip-uid", help="Strip UIDs in particle and micrograph paths", nargs="?", type=int,
