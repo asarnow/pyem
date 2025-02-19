@@ -286,11 +286,15 @@ def select_classes(df, classes):
     return df.loc[ind]
 
 
-def to_micrographs(df):
-    gb = df.groupby(Relion.MICROGRAPH_NAME)
+def to_micrographs(df, field=None):
+    if field is None:
+        field = Relion.MICROGRAPH_NAME
+        if Relion.TOMONAME in df:
+            field = Relion.TOMONAME
+    gb = df.groupby(field)
     mu = gb.mean(numeric_only=True)
     df = mu[[c for c in Relion.CTF_PARAMS + Relion.MICROSCOPE_PARAMS +
-             [Relion.MICROGRAPH_NAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
+             [Relion.MICROGRAPH_NAME, Relion.TOMONAME, Relion.OPTICSGROUP] if c in mu]].reset_index()
     # if Relion.IMAGEPIXELSIZE in df:
     #     if Relion.MICROGRAPHPIXELSIZE not in df and Relion.MICROGRAPHORIGINALPIXELSIZE not in df:
     #         if Relion.MICROGRAPHBINNING in df:
