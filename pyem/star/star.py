@@ -302,11 +302,15 @@ def to_micrographs(df):
     return df
 
 
-def split_micrographs(df):
-    gb = df.groupby(Relion.MICROGRAPH_NAME)
+def split_micrographs(df, field=None):
+    if field is None:
+        field = Relion.MICROGRAPH_NAME
+        if Relion.TOMONAME in df:
+            field = Relion.TOMONAME
+    gb = df.groupby(field)
     dfs = {}
     for g in gb:
-        g[1].drop(Relion.MICROGRAPH_NAME, axis=1, inplace=True, errors="ignore")
+        g[1].drop(field, axis=1, inplace=True, errors="ignore")
         dfs[g[0]] = g[1]
     return dfs
 
