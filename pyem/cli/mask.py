@@ -67,6 +67,7 @@ def main(args):
             y = np.sin(np.linspace(np.pi/2, 0, args.edge_width + 1))  # Range of the edge profile.
         f = interp1d(x, y[1:])
         final[idx] = f(dt[idx])  # Insert edge heights interpolated at distance transform values.
+    np.clip(final, 0, 1, out=final)
     write(args.output, final, psz=hdr["xlen"] / hdr["nx"])
     return 0
 
