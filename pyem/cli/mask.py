@@ -33,6 +33,10 @@ def main(args):
     if args.threshold is None:
         print("Please provide a binarization threshold")
         return 1
+
+    if args.close_size is None:
+        args.close_size = args.extend
+
     data, hdr = read(args.input, inc_header=True)
     mask = binarize_volume(data, args.threshold, minvol=args.minvol, fill=args.fill)
     if args.base_map is not None:
@@ -48,11 +52,11 @@ def main(args):
         mask = base_mask
     elif args.extend > 0:
         if args.pre_close:
-            se = binary_sphere(args.extend, False)
+            se = binary_sphere(args.close_size, False)
             mask = binary_closing(mask, structure=se, iterations=args.close_iterations)
         mask = binary_dilate(mask, args.extend, strel=args.relion)
     if args.post_close:
-        se = binary_sphere(args.extend, False)
+        se = binary_sphere(args.close_size, False)
         mask = binary_closing(mask, structure=se, iterations=args.close_iterations)
     final = mask.astype(np.single)
     if args.edge_width != 0:
@@ -97,6 +101,7 @@ def _main_():
     parser.add_argument("--post-close", "--postclose", "--close", "-c", help="Perform morphological closing after dilation", action="store_true")
     parser.add_argument("--pre-close", "--preclose", help="Perform morphological closing before dilation", action="store_true")
     parser.add_argument("--close-iterations", "-ci", help="Number of morphological closing iterations", type=int, default=1)
+    parser.add_argument("--close-size", "-cs", help="Structuring element size for morphological closing ", type=int)
     parser.add_argument("--relion", help="Mimics relion_mask_create output (slower)", action="store_true")
     parser.add_argument("--base-map", "-b",
                         help="Create and write a matched mask instead of regular output (see project wiki)")
