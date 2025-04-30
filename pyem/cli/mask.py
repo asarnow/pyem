@@ -47,10 +47,13 @@ def main(args):
             base_mask = base_mask | incl_mask
         mask = base_mask
     elif args.extend > 0:
+        if args.pre_close:
+            se = binary_sphere(args.extend, False)
+            mask = binary_closing(mask, structure=se, iterations=args.close_iterations)
         mask = binary_dilate(mask, args.extend, strel=args.relion)
-    if args.close:
+    if args.post_close:
         se = binary_sphere(args.extend, False)
-        mask = binary_closing(mask, structure=se, iterations=1)
+        mask = binary_closing(mask, structure=se, iterations=args.close_iterations)
     final = mask.astype(np.single)
     if args.edge_width != 0:
         dt = distance_transform_edt(~mask)  # Compute *outward* distance transform of mask.
@@ -91,7 +94,9 @@ def _main_():
                         action="store_true")
     parser.add_argument("--minvol", "-m", help="Minimum volume for mask segments (pass -1 for largest segment only)",
                         type=int, default=0)
-    parser.add_argument("--close", "-c", help="Perform morphological closing", action="store_true")
+    parser.add_argument("--post-close", "--postclose", "--close", "-c", help="Perform morphological closing after dilation", action="store_true")
+    parser.add_argument("--pre-close", "--preclose", help="Perform morphological closing before dilation", action="store_true")
+    parser.add_argument("--close-iterations", "-ci", help="Number of morphological closing iterations", type=int, default=1)
     parser.add_argument("--relion", help="Mimics relion_mask_create output (slower)", action="store_true")
     parser.add_argument("--base-map", "-b",
                         help="Create and write a matched mask instead of regular output (see project wiki)")
