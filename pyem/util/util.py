@@ -40,10 +40,16 @@ def relion_symmetry_group(sym):
             "Need relion_refine on PATH to obtain symmetry operators")
     stdout = subprocess.getoutput(
         "%s --sym %s --i /dev/null --o /dev/null --print_symmetry_ops" % (relion, sym))
-    lines = stdout.split("\n")[2:]
-    lines = [l for l in lines if not l.lstrip().startswith("Euler angles:")]
+    lines = stdout.split("\n")
+    st = 0
+    for li in lines:
+        if li.startswith("R("):
+            break
+        st += 1
+    lines = lines[st:]
+    lines = [li for li in lines if not li.lstrip().startswith("Euler angles:")]
     return [np.array(
-        [[np.double(val) for val in l.split()] for l in lines[i:i + 3]])
+        [[np.double(val) for val in li.split()] for li in lines[i:i + 3]])
         for i in range(1, len(lines), 4)]
 
 
