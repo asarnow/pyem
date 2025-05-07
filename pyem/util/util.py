@@ -43,7 +43,7 @@ def relion_symmetry_group(sym):
     lines = stdout.split("\n")
     st = 0
     for li in lines:
-        if li.startswith("R("):
+        if li.lstrip().startswith("R("):
             break
         st += 1
     lines = lines[st:]
