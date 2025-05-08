@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
-from util import argsortby
+from pyem.util import argsortby
 from .convert import rot2euler
 from .quat_numba import distq
 from .quat_numba import qslerp
