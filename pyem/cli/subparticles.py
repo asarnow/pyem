@@ -34,8 +34,16 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    if args.target is None and args.sym is None and args.transform is None and args.euler is None:
-        log.error("At least a target, transformation matrix, Euler angles, or a symmetry group must be provided")
+    if args.I1_C3 or args.I1_C5:
+        if args.sym is not None and args.sym != "I1":
+            log.error("--I1_C3 or --I1_C5 must be specified with --sym I1 or without --sym")
+            return 1
+        args.sym = "I1"
+
+    if (args.target is None and args.sym is None and args.transform is None and
+            args.euler is None and args.displacement == 0):
+        log.error("A target, displacement, transformation matrix, Euler angles, "
+                  "or a symmetry group must be provided")
         return 1
     elif (args.target is not None or args.transform is not None) and args.boxsize is None and args.origin is None:
         log.error("An origin must be provided via --boxsize or --origin")
@@ -88,7 +96,7 @@ def main(args):
             return 1
     elif args.boxsize is not None:
         args.origin = np.ones(3) * args.boxsize / 2
-    
+
     if args.sym is not None:
         args.sym = util.relion_symmetry_group(args.sym)
 
@@ -116,16 +124,36 @@ def main(args):
             d = r.dot(args.origin) + d - args.origin
         else:
             d = 0
-    elif args.sym is not None:
+    elif args.sym is not None or args.displacement != 0:
         r = np.identity(3)
         d = -args.displacement / args.apix
     else:
-        log.error("At least a target or symmetry group must be provided via --target or --sym")
+        log.error("At least a target, symmetry group, or displacement must be provided")
         return 1
 
     log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
-    ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
     log.debug("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
+
+    if args.I1_C3:
+        log.warning("Target rotation set to I1 C3 axis")
+        r = geom.vec2rot(np.array([0.382, 0.0, 1.0]))
+        if args.match_sym is None:
+            log.warning("--match-sym set to 3")
+            args.match_sym = 3
+    elif args.I1_C5:
+        log.warning("Target rotation set to I1 C5 axis")
+        r = geom.vec2rot(np.array([0.0, 0.618, 1.0]))
+        if args.match_sym is None:
+            log.warning("--match-sym set to 5")
+            args.match_sym = 5
+
+    ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
+
+    if args.match_sym is not None:
+        symidx = geom.argsort_sym(args.sym)
+        ops = [ops[i] for i in symidx]
+        ops = ops[::args.match_sym]
+
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.invert, adjust_defocus=args.adjust_defocus))
  
     if args.recenter:
@@ -173,7 +201,7 @@ def _main_():
     parser.add_argument("--boxsize", help="Particle box size in pixels (used to define origin only)", type=int)
     parser.add_argument("--class", help="Keep this class in output, may be passed multiple times",
                         action="append", type=int, dest="cls")
-    parser.add_argument("--displacement", help="Distance of new origin from symmetrix axis in Angstroms",
+    parser.add_argument("--displacement", help="Distance of new origin along symmetrix axis (Angstroms)",
                         type=float, default=0)
     parser.add_argument("--origin", help="Origin coordinates in Angstroms", metavar="x,y,z")
     parser.add_argument("--target", help="Target coordinates in Angstroms", metavar="x,y,z")
@@ -193,6 +221,11 @@ def _main_():
     parser.add_argument("--suffix", help="Suffix for multiple output files")
     parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles ("
                                       "Relion conventions)")
+    parser.add_argument("--match-sym", help="Subgroup order for matched symmetry", type=int)
+    parser.add_argument("--I1-C3", help="Replaces target rotation with [0.382, 0.0, 1.0] and sets --match-sym 3",
+                        action="store_true")
+    parser.add_argument("--I1-C5", help="Replaces target rotation with [0.0, 0.618, 1.0] and sets --match-sym 5",
+                        action="store_true")
     parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
     sys.exit(main(parser.parse_args()))
 
