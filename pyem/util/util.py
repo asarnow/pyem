@@ -144,7 +144,7 @@ def natsort_values(df, col, inplace=False):
     return df
 
 
-def sortby(a, order):
+def sortby(a, order=(0, 1, 2)):
     b = a[a[:, order[0]].argsort()]  # First sort doesn't need to be stable.
     for o in order[1:]:
         b = b[b[:, o].argsort(kind='mergesort')]
