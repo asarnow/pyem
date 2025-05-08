@@ -142,3 +142,10 @@ def natsort_values(df, col, inplace=False):
     df.sort_values("__natsort_key__", inplace=True)
     df.drop("__natsort_key__", axis=1, inplace=True)
     return df
+
+
+def sortby(a, order):
+    b = a[a[:, order[0]].argsort()]  # First sort doesn't need to be stable.
+    for o in order[1:]:
+        b = b[b[:, o].argsort(kind='mergesort')]
+    return b
