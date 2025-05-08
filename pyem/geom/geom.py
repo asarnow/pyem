@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
+from util import argsortby
+from .convert import rot2euler
 from .quat_numba import distq
 from .quat_numba import qslerp
 from .quat_numba import qtimes
@@ -90,3 +92,11 @@ def phi5(r, r2=None):
     if r2 is not None:
         r = r.dot(r2.T)
     return np.linalg.norm(np.eye(3) - r)
+
+
+def argsort_sym(sym):
+    eulers = np.rad2deg(rot2euler(np.array(sym)))
+    reu = np.round(eulers, decimals=1)
+    reu[reu[:, 2] <= -180, 2] = reu[reu[:, 2] <= -180, 2] + 360
+    idx = argsortby(reu)
+    return idx
