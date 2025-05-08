@@ -151,7 +151,7 @@ def sortby(a, order=(0, 1, 2)):
     return b
 
 
-def argsortby(a, order):
+def argsortby(a, order=(0, 1, 2)):
     ia = a[:, order[0]].argsort()
     b = a[ia]
     for o in order[1:]:
