@@ -149,3 +149,13 @@ def sortby(a, order=(0, 1, 2)):
     for o in order[1:]:
         b = b[b[:, o].argsort(kind='mergesort')]
     return b
+
+
+def argsortby(a, order):
+    ia = a[:, order[0]].argsort()
+    b = a[ia]
+    for o in order[1:]:
+        ib = b[:, o].argsort(kind='mergesort')
+        ia = ia[ib]
+        b = b[ib]
+    return ia
