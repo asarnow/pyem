@@ -75,7 +75,7 @@ def euler2rot(alpha, beta, gamma):
 @numba.jit(nopython=True, nogil=True)
 def vec2rot(v):
     ax = v / np.linalg.norm(v)
-    return euler2rot(*np.array([np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), 0.]))
+    return euler2rot(np.arctan2(ax[1], ax[0]), np.arccos(ax[2]), 0.)
 
 
 @numba.jit(nopython=True, nogil=True)
