@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from pyem.util import argsortby
-from .convert import rot2euler
+from .convert_numba import rot2euler
 from .quat_numba import distq
 from .quat_numba import qslerp
 from .quat_numba import qtimes
