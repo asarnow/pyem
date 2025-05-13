@@ -45,3 +45,17 @@ def query_connected(kdt, maxdist):
                 nb[idx] = nb[p[0]]
     return nb
 
+
+def find_subgroups(sym, sub, rtol=1e-3, atol=1e-8):
+    inds = set(range(len(sym)))
+    d = {}
+    while len(inds) > 0:
+        i = inds.pop()
+        d[i] = []
+        for si, s in enumerate(sub):
+            for j in inds:
+                if np.all(np.isclose(np.dot(sym[i], s), sym[j], rtol=rtol, atol=atol)):
+                    d[i].append(j)
+                    inds -= {j}
+                    break
+    return d
