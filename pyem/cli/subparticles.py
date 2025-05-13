@@ -132,18 +132,18 @@ def main(args):
         log.error("At least a target, symmetry group, or displacement must be provided")
         return 1
 
-    log.debug("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
-    log.debug("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
+    log.info("Final rotation: %s" % str(r).replace("\n", "\n" + " " * 16))
+    log.info("Final translation: %s (%f px)" % (str(d), np.linalg.norm(d)))
 
     if args.I1_C3:
-        log.warning("Target rotation set to I1 C3 axis")
+        log.info("Target rotation set to I1 C3 axis")
         r = geom.vec2rot(np.array([0.382, 0.0, 1.0]))
-        log.warning("--subgroup set to C3")
+        log.debug("--subgroup set to C3")
         args.subgroup = "C3"
     elif args.I1_C5:
-        log.warning("Target rotation set to I1 C5 axis")
+        log.info("Target rotation set to I1 C5 axis")
         r = geom.vec2rot(np.array([0.0, 0.618, 1.0]))
-        log.warning("--subgroup set to C5")
+        log.debug("--subgroup set to C5")
         args.subgroup = "C5"
 
     ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
@@ -152,7 +152,7 @@ def main(args):
         args.subgroup = util.relion_symmetry_group(args.subgroup)
         subgroups = algo.find_subgroups(ops, args.subgroup)
         ops = [ops[k] for k in subgroups]
-        log.warning("Subgroup search found %d operators" % len(subgroups))
+        log.info("Subgroup search found %d operators" % len(subgroups))
 
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.invert, adjust_defocus=args.adjust_defocus))
  
