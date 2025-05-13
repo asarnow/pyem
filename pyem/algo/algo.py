@@ -46,7 +46,7 @@ def query_connected(kdt, maxdist):
     return nb
 
 
-def find_subgroups(sym, sub, rtol=1e-3, atol=1e-8):
+def find_subgroups(sym, sub, rtol=1e-8, atol=1e-3):
     inds = set(range(len(sym)))
     d = {}
     while len(inds) > 0:
