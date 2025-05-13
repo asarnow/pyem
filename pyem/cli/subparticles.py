@@ -23,6 +23,7 @@ import numpy as np
 import os
 import os.path
 import sys
+from pyem import algo
 from pyem import geom
 from pyem import star
 from pyem import util
@@ -137,22 +138,21 @@ def main(args):
     if args.I1_C3:
         log.warning("Target rotation set to I1 C3 axis")
         r = geom.vec2rot(np.array([0.382, 0.0, 1.0]))
-        if args.match_sym is None:
-            log.warning("--match-sym set to 3")
-            args.match_sym = 3
+        log.warning("--subgroup set to C3")
+        args.subgroup = "C3"
     elif args.I1_C5:
         log.warning("Target rotation set to I1 C5 axis")
         r = geom.vec2rot(np.array([0.0, 0.618, 1.0]))
-        if args.match_sym is None:
-            log.warning("--match-sym set to 5")
-            args.match_sym = 5
+        log.warning("--subgroup set to C5")
+        args.subgroup = "C5"
 
     ops = [op.dot(r.T) for op in args.sym] if args.sym is not None else [r.T]
 
-    if args.match_sym is not None:
-        symidx = geom.argsort_sym(args.sym)
-        ops = [ops[i] for i in symidx]
-        ops = ops[::args.match_sym]
+    if args.subgroup is not None:
+        args.subgroup = util.relion_symmetry_group(args.subgroup)
+        subgroups = algo.find_subgroups(ops, args.subgroup)
+        ops = [ops[k] for k in subgroups]
+        log.warning("Subgroup search found %d operators" % len(subgroups))
 
     dfs = list(subparticle_expansion(df, ops, d, rotate=args.shift_only, invert=args.invert, adjust_defocus=args.adjust_defocus))
  
@@ -221,10 +221,10 @@ def _main_():
     parser.add_argument("--suffix", help="Suffix for multiple output files")
     parser.add_argument("--sym", help="Symmetry group for whole-particle expansion or symmetry-derived subparticles ("
                                       "Relion conventions)")
-    parser.add_argument("--match-sym", help="Subgroup order for matched symmetry", type=int)
-    parser.add_argument("--I1-C3", help="Replaces target rotation with [0.382, 0.0, 1.0] and sets --match-sym 3",
+    parser.add_argument("--subgroup", help="Symmetry (sub)group to eliminate after target transformation")
+    parser.add_argument("--I1-C3", help="Replaces target rotation with [0.382, 0.0, 1.0] and sets --subgroup C3",
                         action="store_true")
-    parser.add_argument("--I1-C5", help="Replaces target rotation with [0.0, 0.618, 1.0] and sets --match-sym 5",
+    parser.add_argument("--I1-C5", help="Replaces target rotation with [0.0, 0.618, 1.0] and sets --subgroup C5",
                         action="store_true")
     parser.add_argument("--relion2", "-r2", help="Write Relion2 compatible STAR file", action="store_true")
     sys.exit(main(parser.parse_args()))
