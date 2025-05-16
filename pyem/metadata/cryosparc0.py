@@ -23,7 +23,7 @@ from pyem import star
 
 
 def parse_cryosparc_065_csv(csvfile):
-    with open(csvfile, 'rU') as f:
+    with open(csvfile, 'r') as f:
         lines = enumerate(f)
         idx = -1
         headers = None

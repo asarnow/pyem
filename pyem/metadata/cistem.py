@@ -28,7 +28,7 @@ def parse_f9_par(fn):
                  "Pixel size of images (A)": None}
     ln = 1
     skip = 0
-    with open(fn, 'rU') as f:
+    with open(fn, 'r') as f:
         lastheader = False
         firstblock = True
         for l in f:
