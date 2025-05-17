@@ -25,7 +25,7 @@ import os.path
 try:
     import Queue
 except ImportError:
-    import queue
+    import queue as Queue
 import sys
 import threading
 from multiprocessing import cpu_count
@@ -149,7 +149,7 @@ def main(args):
                 args=(queue, fname, apix, iothreads))
             threads.append((prod, cons))
             iothreads.acquire()
-            log.debug("iotheads at %d" % iothreads._Semaphore__value)
+            log.debug("iotheads at %d" % iothreads._value)
             log.debug("Start consumer for %s" % fname)
             cons.start()
             log.debug("Start producer for %s" % fname)
