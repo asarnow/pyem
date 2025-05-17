@@ -120,7 +120,7 @@ def main(args):
     return 0
 
 
-def project(f3d, p, s, sx, sy, a, pfac=2, apply_ctf=False, size=None, flip_phase=False):
+def project(f3d, p, s, sx, sy, a, pfac=2, apply_ctf=False, size=-1, flip_phase=False):
     orient = util.euler2rot(np.deg2rad(p[star.Relion.ANGLEROT]),
                             np.deg2rad(p[star.Relion.ANGLETILT]),
                             np.deg2rad(p[star.Relion.ANGLEPSI]))
