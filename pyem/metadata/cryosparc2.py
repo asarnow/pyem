@@ -145,6 +145,13 @@ def cryosparc_2_cs_model_parameters(cs, df=None, minphic=0):
     if df is None:
         df = pd.DataFrame()
     phic_names = [n for n in cs.dtype.names if "class_posterior" in n]
+    # convert shifts from alignment psize to blob psize
+    for dimension in ["alignments2D", "alignments3D"]:
+        try:
+            cs[f"{dimension}/shift"] = cs[f"{dimension}/shift"] * cs[f"{dimension}/psize_A"].reshape(-1, 1) / cs["blob/psize_A"].reshape(-1, 1)
+            cs[f"{dimension}/psize_A"] = cs["blob/psize_A"]
+        except ValueError:
+            pass
     if u'alignments3D/class_posterior' in cs.dtype.names:
         log.info("Assigning pose from single 3D refinement")
         for k in model:
