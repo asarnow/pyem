@@ -109,7 +109,7 @@ def main(args):
     if args.star is not None:
         log.info("Writing output .star file")
         if args.crop is not None:
-            df = star.recenter(df, inplace=True)
+            df = star.recenter(df, inplace=True, missing_coords_error=False)
         if args.subtract:
             df[star.UCSF.IMAGE_ORIGINAL_PATH] = df[star.UCSF.IMAGE_PATH]
             df[star.UCSF.IMAGE_ORIGINAL_INDEX] = df[star.UCSF.IMAGE_INDEX]
