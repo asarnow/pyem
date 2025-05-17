@@ -171,8 +171,8 @@ def main(args):
     log.info("Finished projection subtraction")
 
     log.info("Writing output .star file")
-    if args.crop is not None and star.Relion.COORDX in df:
-        df = star.recenter(df, inplace=True)
+    if args.crop is not None:
+        df = star.recenter(df, inplace=True, missing_coords_error=False)
     star.simplify_star_ucsf(df)
     star.write_star(args.output, df)
 

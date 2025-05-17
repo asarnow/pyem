@@ -348,7 +348,7 @@ def all_same_class(df, inplace=False):
     return si
 
 
-def recenter(df, inplace=False):
+def recenter(df, inplace=False, missing_coords_error=True):
     df = df if inplace else df.copy()
     if Relion.ORIGINZ in df:
         origins = Relion.ORIGINS3D
@@ -364,7 +364,8 @@ def recenter(df, inplace=False):
         intoff = np.round(df[origins]).values
         diffxy = df[origins] - intoff
 
-    df[coords] = df[coords] - intoff
+    if np.all([c in df for c in coords]) or missing_coords_error:
+        df[coords] = df[coords] - intoff
     df[origins] = diffxy
     sync_origins_from_pixel(df, inplace=True)
     return df
