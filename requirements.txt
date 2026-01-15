@@ -1,5 +1,5 @@
 numba>=0.41
-numpy>=1.14
+numpy>=1.26
 numexpr>=2.8.0
 scipy>=1.2
 matplotlib>=2.2
