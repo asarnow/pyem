@@ -26,6 +26,7 @@
 # # Columns: #1 - micrograph number; #2 - defocus 1 [Angstroms]; #3 - defocus 2; #4 - azimuth of astigmatism; #5 - additional phase shift [radians]; #6 - cross correlation; #7 - spacing (in Angstroms) up to which CTF rings were fit successfully
 # 1.000000 16793.875000 15208.728516 -66.871671 0.000000 -0.029152 9.327273
 import glob
+import numpy as np
 import os.path
 import pandas as pd
 import sys
