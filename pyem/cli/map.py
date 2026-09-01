@@ -41,7 +41,7 @@ def main(args):
 
     data, hdr = read(args.input, inc_header=True)
     if args.half2 is not None:
-        half2, hdr_half2 = read(args.input, inc_header=True)
+        half2, hdr_half2 = read(args.half2, inc_header=True)
         if data.shape == half2.shape:
             data += half2
         else:
