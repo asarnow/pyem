@@ -145,7 +145,7 @@ def append(fname, data, cast=False):
                     raise ValueError("Can't cast %s to %s" % (data.dtype, dtype))
             else:
                 raise IOError("Mismatched mode and dtype %d, %s" % (mode, data.dtype))
-        f.seek(36)  # First byte of zlen.
+        f.seek(48)  # First byte of zlen.
         zlen = np.fromfile(f, dtype=np.float32, count=1)
         if data.shape[0] != nx or data.shape[1] != ny:
             raise ValueError("Data has different shape than destination file")
@@ -157,7 +157,7 @@ def append(fname, data, cast=False):
         zlen += apix * data.shape[2]
         f.seek(8)
         nz.astype(np.int32).tofile(f)
-        f.seek(36)
+        f.seek(48)
         zlen.astype(np.float32).tofile(f)
 
 
