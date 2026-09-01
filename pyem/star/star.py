@@ -602,7 +602,7 @@ def check_defaults(df, inplace=False):
         elif Relion.MAGNIFICATION in df:
             df[Relion.DETECTORPIXELSIZE] = df[Relion.MAGNIFICATION] * df[Relion.IMAGEPIXELSIZE] / 10000
     elif Relion.DETECTORPIXELSIZE in df and Relion.MAGNIFICATION in df:
-        df[Relion.IMAGEPIXELSIZE] = df[Relion.DETECTORPIXELSIZE] / df[Relion.MAGNIFICATION] / 10000
+        df[Relion.IMAGEPIXELSIZE] = df[Relion.DETECTORPIXELSIZE] / df[Relion.MAGNIFICATION] * 10000
 
     if Relion.MICROGRAPHORIGINALPIXELSIZE in df and Relion.MICROGRAPHPIXELSIZE in df:
         df[Relion.MICROGRAPHBINNING] = df[Relion.MICROGRAPHPIXELSIZE] / df[Relion.MICROGRAPHORIGINALPIXELSIZE]
