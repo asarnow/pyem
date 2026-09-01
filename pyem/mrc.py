@@ -122,6 +122,8 @@ def write(fname, data, psz=1, origin=None, fast=False):
     :param origin: Coordinate of origin voxel.
     :param fast: Skip computing density statistics in header. Default is False.
     """
+    if data.dtype not in MODE:
+        raise IOError("Unknown MRC data type %d" % datatype)
     data = np.atleast_3d(data)
     if fast:
         header = mrc_header(data.shape, dtype=data.dtype, psz=psz)
@@ -129,19 +131,26 @@ def write(fname, data, psz=1, origin=None, fast=False):
         header = mrc_header_complete(data, psz=psz, origin=origin)
     with open(fname, 'wb') as f:
         f.write(header.tobytes())
-        f.write(np.require(data, dtype=np.float32).tobytes(order="F"))
+        f.write(data.tobytes(order="F"))
 
 
-def append(fname, data):
+def append(fname, data, cast=False):
     data = np.atleast_3d(data)
     with open(fname, 'r+b') as f:
-        nx, ny, nz = np.fromfile(f, dtype=np.int32, count=3)
+        nx, ny, nz, mode = np.fromfile(f, dtype=np.int32, count=4)
+        dtype = MODE[mode]
+        if dtype != data.dtype:
+            if cast:
+                if not np.can_cast(data.dtype, dtype):
+                    raise ValueError("Can't cast %s to %s" % (data.dtype, dtype))
+            else:
+                raise IOError("Mismatched mode and dtype %d, %s" % (mode, data.dtype))
         f.seek(36)  # First byte of zlen.
         zlen = np.fromfile(f, dtype=np.float32, count=1)
         if data.shape[0] != nx or data.shape[1] != ny:
             raise ValueError("Data has different shape than destination file")
         f.seek(0, os.SEEK_END)
-        f.write(np.require(data, dtype=np.float32).tobytes(order="F"))
+        f.write(np.require(data, dtype=dtype).tobytes(order="F"))
         # Update header after new data is written.
         apix = zlen / nz
         nz += data.shape[2]
