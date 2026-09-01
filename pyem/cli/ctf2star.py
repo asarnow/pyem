@@ -53,7 +53,7 @@ def main(args):
                 row[star.Relion.DEFOCUSU] = float(tok[1])
                 row[star.Relion.DEFOCUSV] = float(tok[2])
                 row[star.Relion.DEFOCUSANGLE] = float(tok[3])
-                row[star.Relion.PHASESHIFT] = float(tok[4])
+                row[star.Relion.PHASESHIFT] = np.rad2deg(float(tok[4]))
                 row[star.Relion.CTFFIGUREOFMERIT] = float(tok[5])
                 row[star.Relion.CTFMAXRESOLUTION] = float(tok[6])
                 row[star.Relion.MAGNIFICATION] = 10000
