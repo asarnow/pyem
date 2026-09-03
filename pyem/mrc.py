@@ -262,19 +262,22 @@ class ZSliceWriter:
         self.dtype = None
         self.f = None
         self.i = 0
+        self.i0 = 0
+        self.mode = mode
         if shape is not None:
             self.set_shape(shape)
         if dtype is not None:
             self.set_dtype(dtype)
         if "a" in mode:
             hdr = read_header(self.path)
-            self.f = open(self.path, 'ab')
+            self.f = open(self.path, 'r+b')
             self.psz = hdr["xlen"] / hdr["nx"]
-            self.set_shape((hdr["nx"], hdr["ny"]))
+            self.set_shape((hdr["ny"], hdr["nx"]))
             if hdr["datatype"] in MODE:
-                self.set_dtype(hdr["datatype"])
+                self.set_dtype(MODE[hdr["datatype"]])
             else:
                 raise IOError("Unknown MRC data type %d" % hdr['datatype'])
+            self.i = self.i0 = int(hdr["nz"])
             self.f.seek(0, os.SEEK_END)
         else:
             self.f = open(self.path, 'wb')
@@ -315,13 +318,22 @@ class ZSliceWriter:
         assert arr.size % self.size == 0
         # self.f.seek(HEADER_LEN + self.i * self.dtype.itemsize * arr.size)
         self.f.write(np.require(arr, dtype=self.dtype).tobytes())
-        self.i += arr.size / self.size
+        self.i += arr.size // self.size
 
     def close(self):
-        header = mrc_header(shape=(self.shape[1], self.shape[0], self.i),
+        if "a" in self.mode:
+            if self.i != self.i0:
+                self.f.seek(8)
+                np.int32(self.i).tofile(self.f)
+                self.f.seek(48)
+                np.float32(self.i * self.psz).tofile(self.f)
+        elif self.shape is None:
+            raise IOError("ZSliceWriter closed with no data written")
+        else:   
+            header = mrc_header(shape=(self.shape[1], self.shape[0], self.i),
                             dtype=self.dtype, psz=self.psz)
-        self.f.seek(0)
-        self.f.write(header.tobytes())
+            self.f.seek(0)
+            self.f.write(header.tobytes())
         self.f.close()
 
     def __enter__(self):
