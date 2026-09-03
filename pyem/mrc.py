@@ -53,7 +53,7 @@ def mrc_header_complete(data, psz=1.0, origin=None):
     header = mrc_header(data.shape, data.dtype, psz=psz)
     header_f = header.view(np.float32)
     header_f[19:22] = [data.min(), data.max(), data.mean()]
-    header_f[54] = np.sqrt(np.mean(data**2))
+    header_f[54] = np.sqrt(np.mean(np.square(data, dtype=np.float64)))
     if origin is None:
         header_f[49:52] = (0, 0, 0)
     elif origin == "center":
@@ -123,7 +123,7 @@ def write(fname, data, psz=1, origin=None, fast=False):
     :param fast: Skip computing density statistics in header. Default is False.
     """
     if data.dtype not in MODE:
-        raise IOError("Unknown MRC data type %d" % datatype)
+        raise IOError("Unknown MRC data type %s" % data.dtype)
     data = np.atleast_3d(data)
     if fast:
         header = mrc_header(data.shape, dtype=data.dtype, psz=psz)
