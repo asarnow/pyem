@@ -87,7 +87,7 @@ def qslerp(q1, q2, t, longest=False):
 def distq(q1, q2):
     pi_half = np.pi / 2
     v = np.abs(np.sum(q1 * q2))
-    v = np.clip(0, 1.0, v)
+    v = max(0.0, min(v, 1.0))
     v = np.arccos(v)
     v *= 2
     # msk = v > pi_half
