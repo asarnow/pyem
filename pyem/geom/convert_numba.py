@@ -304,7 +304,7 @@ def e2q_vec(eu, out=None):
         out = np.zeros((len(eu), 4))
     for i in range(len(eu)):
         out[i, 0] = np.cos((eu[i, 0] + eu[i, 2]) / 2) * np.cos(eu[i, 1] / 2)
-        out[i, 1] = np.cos((eu[i, 0] - eu[i, 2]) / 2) * np.sin(eu[i, 1] / 2)
-        out[i, 2] = np.sin((eu[i, 0] - eu[i, 2]) / 2) * np.sin(eu[i, 1] / 2)
+        out[i, 1] = np.sin((eu[i, 2] - eu[i, 0]) / 2) * np.sin(eu[i, 1] / 2)
+        out[i, 2] = np.cos((eu[i, 2] - eu[i, 0]) / 2) * np.sin(eu[i, 1] / 2)
         out[i, 3] = np.sin((eu[i, 0] + eu[i, 2]) / 2) * np.cos(eu[i, 1] / 2)
     return out
