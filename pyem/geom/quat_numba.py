@@ -185,7 +185,7 @@ def dqconj_sca(q):
 
 @numba.jit(nopython=True, cache=False, nogil=True)
 def dq2sc(q):
-    theta = 2 * np.arccos(q[0].real)
+    theta = 2 * np.arccos(min(1.0, q[0].real))
     # nr = 1 / np.linalg.norm(q[1:].real)
     nr = np.sin(theta / 2)
     if nr < 1E-6:

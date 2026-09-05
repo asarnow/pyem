@@ -184,29 +184,11 @@ def euler2quat(alpha, beta, gamma):
 
 @numba.jit(nopython=True, nogil=True)
 def quat2euler(q):
-    aa = q[0] ** 2
-    bb = q[1] ** 2
-    cc = q[2] ** 2
-    dd = q[3] ** 2
-    ab = q[0] * q[1]
-    ac = q[0] * q[2]
-    bd = q[1] * q[3]
-    cd = q[2] * q[3]
-
-    # alpha = np.arctan2(bd + ac, ab - cd)
-    alpha = np.arctan2(np.abs(ab - cd), bd + ac)
-
-    # if alpha < 0:
-    #     alpha += 2 * np.pi
-
-    beta = np.arccos(aa - bb - cc + dd)
-
-    # gamma = np.arctan2(bd - ac, ab + cd)
-    gamma = 2 * np.arctan2(np.abs(bd - ac), ab + cd)
-
-    # if gamma < 0:
-    #     gamma += 2 * np.pi
-
+    ha1 = np.arctan2(q[1], q[2])
+    ha2 = np.arctan2(q[3], q[0])
+    alpha = ha2 - ha1
+    beta = 2 * np.arccos(min(1.0, np.sqrt(q[0]**2 + q[3]**2)))
+    gamma = ha1 + ha2
     return alpha, beta, gamma
 
 
@@ -263,7 +245,7 @@ def aa2rot(e):
 
 @numba.jit(nopython=True, nogil=True)
 def logmap(r):
-    angle = np.arccos((np.trace(r) - 1) * 0.5)
+    angle = np.arccos(min(1.0, (np.trace(r) - 1) * 0.5))
     ax = np.zeros(3, dtype=r.dtype)
     if angle < 1e-12:
         return ax

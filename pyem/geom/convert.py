@@ -149,7 +149,7 @@ def quat2euler(q):
     ha1 = np.arctan2(q[1], q[2])
     ha2 = np.arctan2(q[3], q[0])
     alpha = ha2 - ha1  # np.arctan2(r21/r20)
-    beta = 2 * np.arccos(np.sqrt(q[0]**2 + q[3]**2))  # np.arccos*r33
+    beta = 2 * np.arccos(np.minimum(1.0, np.sqrt(q[0]**2 + q[3]**2)))  # np.arccos*r33
     gamma = ha1 + ha2  # np.arctan2(r12/-r02)
     return alpha, beta, gamma
 
