@@ -44,6 +44,5 @@ def bincorr_nb(p1, p2, bins, n=-1):
     p1r = _bincount_nb(bflat, np.abs(p1flat)**2, out=np.zeros(n, dtype=np.float64))
     p2r = _bincount_nb(bflat, np.abs(p2flat)**2, out=np.zeros(n, dtype=np.float64))
     mag = np.sqrt(p1r * p2r)
-    mag[-1] += 1e-17
-    frc = fcc / mag
+    frc = fcc / np.maximum(mag, 1e-17)
     return frc

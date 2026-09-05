@@ -27,8 +27,7 @@ def bincorr(p1, p2, bins, minlength=0):
     mag = np.sqrt(
         np.bincount(bflat, np.abs(p1flat) ** 2, minlength=minlength) *
         np.bincount(bflat, np.abs(p2flat) ** 2, minlength=minlength))
-    mag[-1] += 1e-17
-    frc = (fcr + fcc * 1j) / mag
+    frc = (fcr + fcc * 1j) / np.maximum(mag, 1e-17)
     return frc
 
 
