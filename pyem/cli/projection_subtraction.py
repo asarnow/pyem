@@ -52,8 +52,9 @@ def main(args):
     log.addHandler(hdlr)
     log.setLevel(logging.getLevelName(args.loglevel.upper()))
 
-    if args.dest is None and args.suffix == "":
+    if args.dest is None:
         args.dest = ""
+    if args.suffix == "" and args.prefix == "" and args.dest == "":
         args.suffix = "_subtracted"
 
     log.info("Reading particle .star file")
@@ -65,11 +66,15 @@ def main(args):
     df.sort_values(star.UCSF.IMAGE_ORIGINAL_PATH, inplace=True, kind="mergesort")
     gb = df.groupby(star.UCSF.IMAGE_ORIGINAL_PATH)
     df[star.UCSF.IMAGE_INDEX] = gb.cumcount()
-    df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_ORIGINAL_PATH].map(
-        lambda x: os.path.join(
-            args.dest,
-            args.prefix +
-            os.path.basename(x).replace(".mrcs", args.suffix + ".mrcs")))
+    def output_path(p):
+        base, ext = os.path.splitext(os.path.basename(p))
+        return os.path.join(args.dest, args.prefix + base + args.suffix + ext)
+    df[star.UCSF.IMAGE_PATH] = df[star.UCSF.IMAGE_ORIGINAL_PATH].map(output_path)
+    
+    if (df[star.UCSF.IMAGE_PATH] == df[star.UCSF.IMAGE_ORIGINAL_PATH]).any():
+        log.error("Output stack path equals input stack path, "
+                  "use --dest, --prefix, or --suffix to redirect output")
+        return 1
 
     if args.submap_ft is None:
         log.info("Reading volume")
