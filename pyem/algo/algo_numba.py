@@ -27,7 +27,7 @@ def _bincount_nb(bins, data, out):
 @numba.jit(cache=False, nopython=True, nogil=True)
 def bincount_nb(bins, data, out=None):
     if out is None:
-        out = np.zeros(bins.max(), dtype=data.dtype)
+        out = np.zeros(bins.max() + 1, dtype=data.dtype)
     _bincount_nb(bins, data, out)
     return out
 
@@ -38,7 +38,7 @@ def bincorr_nb(p1, p2, bins, n=-1):
     p1flat = p1.reshape(-1)
     p2flat = p2.reshape(-1)
     if n == -1:
-        n = np.max(bflat)
+        n = np.max(bflat) + 1
     fc = p1flat * np.conj(p2flat)
     fcc = _bincount_nb(bflat, fc, out=np.zeros(n, dtype=np.complex128))
     p1r = _bincount_nb(bflat, np.abs(p1flat)**2, out=np.zeros(n, dtype=np.float64))
