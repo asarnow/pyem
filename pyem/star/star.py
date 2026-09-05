@@ -391,9 +391,12 @@ def zero_origins(df, inplace=False):
     df[Relion.COORDY] = df[Relion.COORDY] - df[Relion.ORIGINY]
     df[Relion.ORIGINX] = 0
     df[Relion.ORIGINY] = 0
+    df[Relion.ORIGINXANGST] = 0
+    df[Relion.ORIGINYANGST] = 0
     if Relion.ORIGINZ in df and Relion.COORDZ in df:
         df[Relion.COORDZ] = df[Relion.COORDZ] - df[Relion.ORIGINZ]
         df[Relion.ORIGINZ] = 0
+        df[Relion.ORIGINZANGST] = 0
     return df
 
 
