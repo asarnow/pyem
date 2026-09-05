@@ -358,8 +358,9 @@ def recenter(df, inplace=False, missing_coords_error=True):
         coords = Relion.COORDS
 
     if UCSF.PARTICLEBINNING in df:
-        intoff = np.round(df[origins] * df[UCSF.PARTICLEBINNING]).values
-        diffxy = df[origins] - (intoff / df[UCSF.PARTICLEBINNING])
+        binning = df[UCSF.PARTICLEBINNING].values[:, None]
+        intoff = np.round(df[origins].values * binning)
+        diffxy = df[origins] - intoff / binning
     else:
         intoff = np.round(df[origins]).values
         diffxy = df[origins] - intoff

@@ -29,12 +29,12 @@ def main(args):
     for i, f in enumerate(args.input[1:]):
         x = mrc.read(f)
         olddif = x - mu
-        mu += (x - mu) / (i + 1)
+        mu += (x - mu) / (i + 2)
         m2 += olddif * (x - mu)
     var = m2 / len(args.input)
-    mrc.write(args.output, var)
+    mrc.write(args.output, var.astype(np.float32))
     if args.mean is not None:
-        mrc.write(args.mean, mu)
+        mrc.write(args.mean, mu.astype(np.float32))
     return 0
 
 
